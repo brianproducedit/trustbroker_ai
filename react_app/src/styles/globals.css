@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --color-brand-blue: #2457E6;
+  --color-brand-blue-hover: #1A47C9;
+  --color-brand-blue-soft: #F1F5FF;
+  --color-brand-navy: #0E1B35;
+  --color-canvas: #F6F8FC;
+  
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F8FAFC;
+  --color-surface-tint: #525E7C;
+  --color-border: #DDE4EF;
+  --color-border-subtle: #EDF2F7;
+  
+  --color-text-primary: #1A2940;
+  --color-text-secondary: #5D6B82;
+  --color-text-tertiary: #8C9BAE;
+
+  --color-success: #13795B;
+  --color-success-subtle: #E8F6F1;
+  --color-warning: #9A5B00;
+  --color-warning-subtle: #FEF7EC;
+  --color-danger: #B4232C;
+  --color-danger-subtle: #FDF2F2;
+
+  /* Dark Theme Tokens for Dashboard and Audit Ledger */
+  --color-dark-bg: #0B1326;
+  --color-dark-surface: #0F182E;
+  --color-dark-surface-container: #171F33;
+  --color-dark-surface-low: #131B2E;
+  --color-dark-surface-high: #222A3D;
+  --color-dark-surface-highest: #2D3449;
+  --color-dark-border: #2E364A;
+  --color-dark-text-primary: #DAE2FD;
+  --color-dark-text-secondary: #ACB9D2;
+  --color-dark-text-muted: #8D90A0;
+  --color-dark-primary: #B4C5FF;
+  --color-dark-primary-container: #2563EB;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+}
