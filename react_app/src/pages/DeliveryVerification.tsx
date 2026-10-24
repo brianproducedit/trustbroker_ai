@@ -81,7 +81,9 @@ export const DeliveryVerification: React.FC = () => {
       const assessment = await submitEvidence(contract.id, selectedMilestone.id, {
         contractId: contract.id,
         milestoneId: selectedMilestone.id,
-        submittedBy: activeRole === 'supplier' ? contract.supplier.name : 'Tariro Moyo',
+        submittedBy: activeRole === 'freelancer' 
+          ? (contract.freelancer?.name || (contract as any).supplier?.name || 'Tariro Moyo') 
+          : 'Tariro Moyo',
         description: notes,
         repoUrl,
         liveUrl,
@@ -101,7 +103,7 @@ export const DeliveryVerification: React.FC = () => {
 
   const handleAuthorizeRelease = () => {
     releasePayment(contract.id, selectedMilestone.id)
-    toast.success(`Payment released: ${formatCurrency(selectedMilestone.amount)} USD sent to supplier!`)
+    toast.success(`Payment released: ${formatCurrency(selectedMilestone.amount)} USD sent to freelancer!`)
     addNotification({
       title: 'Payment Released',
       description: `${formatCurrency(selectedMilestone.amount)} USD transferred for verified milestone.`,
@@ -114,7 +116,7 @@ export const DeliveryVerification: React.FC = () => {
     if (!revisionNotes.trim()) return
     requestRevision(contract.id, selectedMilestone.id, revisionNotes.trim())
     setRevisionDialogOpen(false)
-    toast.info('Revision request sent to supplier')
+    toast.info('Revision request sent to freelancer')
     addNotification({
       title: 'Revision Requested',
       description: `Client requested adjustments for milestone: "${revisionNotes.slice(0, 50)}..."`,
@@ -149,12 +151,12 @@ export const DeliveryVerification: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {activeRole === 'buyer' 
+              {activeRole === 'client' 
                 ? 'Review Deliverables & Verify Work' 
                 : 'Submit Work for Verification'}
             </h1>
             <p className="text-xs text-slate-400">
-              {activeRole === 'buyer'
+              {activeRole === 'client'
                 ? 'Review submitted repositories, live preview links, and automated criterion evaluations.'
                 : 'Submit your project links and notes to run automated verification and unlock milestone payment.'}
             </p>
@@ -359,8 +361,8 @@ export const DeliveryVerification: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Action Buttons for Buyer */}
-                    {activeRole === 'buyer' && !isSettled && (
+                    {/* Action Buttons for Client */}
+                    {activeRole === 'client' && !isSettled && (
                       <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
                         <Button
                           onClick={handleAuthorizeRelease}

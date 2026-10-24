@@ -29,15 +29,15 @@ export const SupplierPayouts: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Aggregate all milestones for the supplier
+  // Aggregate all milestones for the freelancer
   const allMilestones = contracts.flatMap((contract) =>
     contract.milestones.map((m) => ({
       ...m,
       contractId: contract.id,
       contractCode: contract.code,
       contractTitle: contract.title,
-      clientName: contract.buyer.name,
-      clientOrg: contract.buyer.organization || 'Acme Global',
+      clientName: contract.client?.name || (contract as any).buyer?.name || 'Elena Rostova',
+      clientOrg: contract.client?.organization || (contract as any).buyer?.organization || 'Acme Global Ventures',
     }))
   )
 
@@ -52,20 +52,20 @@ export const SupplierPayouts: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6">
-        {/* Buyer View Banner Notice */}
-        {activeRole === 'buyer' && (
+        {/* Client View Banner Notice */}
+        {activeRole === 'client' && (
           <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-800/60 flex items-center justify-between gap-4 text-xs">
             <div className="flex items-center gap-2.5 text-blue-300">
               <Info className="w-4 h-4 flex-shrink-0 text-blue-400" />
               <span>
-                <strong>Buyer Preview:</strong> You are currently logged in as Elena Rostova (Buyer). Payout records show disbursements made to supplier Tariro Moyo.
+                <strong>Client Preview:</strong> You are currently viewing payouts as Elena Rostova (Client). Records show disbursements released to freelancer Tariro Moyo.
               </span>
             </div>
             <button
               onClick={toggleActiveRole}
-              className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors flex-shrink-0"
+              className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors flex-shrink-0 cursor-pointer"
             >
-              Switch to Supplier Persona
+              Switch to Freelancer Mode
             </button>
           </div>
         )}
@@ -78,10 +78,10 @@ export const SupplierPayouts: React.FC = () => {
               <span>PAYPAL PAYOUTS &amp; EARNINGS DISBURSEMENT</span>
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
-              Supplier Payouts &amp; Escrow Releases
+              Freelancer Payouts &amp; Escrow Releases
             </h1>
             <p className="text-xs text-slate-400">
-              Real-time audit of funds staged in PayPal Orders Sandbox and captured into your supplier wallet.
+              Real-time audit of funds staged in PayPal Orders Sandbox and captured into your freelancer wallet.
             </p>
           </div>
 

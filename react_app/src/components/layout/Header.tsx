@@ -11,8 +11,8 @@ export const Header: React.FC = () => {
   const navLinks = [
     { label: 'Home', to: ROUTES.HOME },
     { label: 'How it works', to: ROUTES.HOW_IT_WORKS },
-    { label: 'For Buyers', to: ROUTES.FOR_BUYERS },
-    { label: 'For Suppliers', to: ROUTES.FOR_SUPPLIERS },
+    { label: 'For Clients', to: ROUTES.FOR_CLIENTS },
+    { label: 'For Freelancers', to: ROUTES.FOR_FREELANCERS },
     { label: 'Developers', to: ROUTES.DEVELOPER_PORTAL },
   ]
 

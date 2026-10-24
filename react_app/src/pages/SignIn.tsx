@@ -16,14 +16,15 @@ export const SignIn: React.FC = () => {
   const [searchParams] = useSearchParams()
   const { login } = useContractStore()
 
-  const roleParam = searchParams.get('role') as 'buyer' | 'supplier' | null
+  const roleParam = searchParams.get('role')
   const redirectParam = searchParams.get('redirect')
 
-  const [selectedRole, setSelectedRole] = useState<'buyer' | 'supplier'>(
-    roleParam === 'supplier' ? 'supplier' : 'buyer'
-  )
+  const initialRole: 'client' | 'freelancer' =
+    roleParam === 'supplier' || roleParam === 'freelancer' ? 'freelancer' : 'client'
+
+  const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer'>(initialRole)
   const [email, setEmail] = useState(
-    roleParam === 'supplier' ? 'tariro@devstudio.co.zw' : 'elena@acmeglobal.com'
+    initialRole === 'freelancer' ? 'tariro@devstudio.co.zw' : 'elena@acmeglobal.com'
   )
   const [password, setPassword] = useState('password123')
   const [showPassword, setShowPassword] = useState(false)
@@ -31,11 +32,11 @@ export const SignIn: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (roleParam === 'supplier') {
-      setSelectedRole('supplier')
+    if (roleParam === 'supplier' || roleParam === 'freelancer') {
+      setSelectedRole('freelancer')
       setEmail('tariro@devstudio.co.zw')
-    } else if (roleParam === 'buyer') {
-      setSelectedRole('buyer')
+    } else if (roleParam === 'buyer' || roleParam === 'client') {
+      setSelectedRole('client')
       setEmail('elena@acmeglobal.com')
     }
   }, [roleParam])
@@ -47,15 +48,15 @@ export const SignIn: React.FC = () => {
     setTimeout(() => {
       login(selectedRole)
       setIsLoading(false)
-      const roleName = selectedRole === 'buyer' ? 'Client' : 'Supplier'
+      const roleName = selectedRole === 'client' ? 'Client' : 'Freelancer'
       toast.success(`Signed in successfully as ${roleName}!`)
       navigate(redirectParam ? decodeURIComponent(redirectParam) : ROUTES.DASHBOARD)
     }, 450)
   }
 
-  const handleQuickFill = (role: 'buyer' | 'supplier') => {
+  const handleQuickFill = (role: 'client' | 'freelancer') => {
     setSelectedRole(role)
-    if (role === 'buyer') {
+    if (role === 'client') {
       setEmail('elena@acmeglobal.com')
     } else {
       setEmail('tariro@devstudio.co.zw')
@@ -95,11 +96,11 @@ export const SignIn: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  variant={selectedRole === 'buyer' ? 'default' : 'outline'}
+                  variant={selectedRole === 'client' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleQuickFill('buyer')}
+                  onClick={() => handleQuickFill('client')}
                   className={`h-8 text-xs font-medium justify-center gap-1.5 ${
-                    selectedRole === 'buyer'
+                    selectedRole === 'client'
                       ? 'bg-blue-600 hover:bg-blue-700 text-white'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
@@ -110,17 +111,17 @@ export const SignIn: React.FC = () => {
 
                 <Button
                   type="button"
-                  variant={selectedRole === 'supplier' ? 'default' : 'outline'}
+                  variant={selectedRole === 'freelancer' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleQuickFill('supplier')}
+                  onClick={() => handleQuickFill('freelancer')}
                   className={`h-8 text-xs font-medium justify-center gap-1.5 ${
-                    selectedRole === 'supplier'
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    selectedRole === 'freelancer'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <UserCheck className="w-3.5 h-3.5" />
-                  <span>Supplier (Tariro)</span>
+                  <span>Freelancer (Tariro)</span>
                 </Button>
               </div>
             </div>
@@ -208,7 +209,7 @@ export const SignIn: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span>Sign In as {selectedRole === 'buyer' ? 'Client' : 'Supplier'}</span>
+                    <span>Sign In as {selectedRole === 'client' ? 'Client' : 'Freelancer'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

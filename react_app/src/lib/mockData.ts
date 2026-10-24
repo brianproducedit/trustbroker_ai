@@ -12,21 +12,21 @@ export const INITIAL_CONTRACTS: Contract[] = [
     currency: 'USD',
     stagedAmount: 3200,
     releasedAmount: 800,
-    buyer: {
-      id: 'buyer-01',
+    client: {
+      id: 'client-01',
       name: 'Elena Rostova',
       email: 'elena@acmeglobal.com',
       organization: 'Acme Global Ventures (San Francisco, USA)',
-      role: 'buyer',
+      role: 'client',
       accepted: true,
       acceptedAt: '2026-10-20T10:15:00Z',
     },
-    supplier: {
-      id: 'supplier-01',
+    freelancer: {
+      id: 'freelancer-01',
       name: 'Tariro Moyo',
       email: 'tariro@devstudio.co.zw',
       organization: 'DevStudio Harare (Harare, Zimbabwe)',
-      role: 'supplier',
+      role: 'freelancer',
       accepted: true,
       acceptedAt: '2026-10-20T11:42:00Z',
     },
@@ -151,7 +151,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
       {
         id: 'log-1',
         timestamp: '2026-10-20T09:00:00Z',
-        actor: 'Elena Rostova (Buyer)',
+        actor: 'Elena Rostova (Client)',
         action: 'SOW_DRAFTED',
         details: 'Initial statement of work generated from natural language project brief via Gemini AI.',
         recordHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
@@ -159,17 +159,17 @@ export const INITIAL_CONTRACTS: Contract[] = [
       {
         id: 'log-2',
         timestamp: '2026-10-20T10:15:00Z',
-        actor: 'Elena Rostova (Buyer)',
-        action: 'BUYER_ACCEPTED',
-        details: 'Buyer accepted contract terms and authorized PayPal Sandbox pre-authorization.',
+        actor: 'Elena Rostova (Client)',
+        action: 'CLIENT_ACCEPTED',
+        details: 'Client accepted contract terms and authorized PayPal Sandbox pre-authorization.',
         recordHash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
       },
       {
         id: 'log-3',
         timestamp: '2026-10-20T11:42:00Z',
-        actor: 'Tariro Moyo (Supplier)',
-        action: 'SUPPLIER_ACCEPTED',
-        details: 'Supplier counter-signed SOW milestones and committed to deliverables.',
+        actor: 'Tariro Moyo (Freelancer)',
+        action: 'FREELANCER_ACCEPTED',
+        details: 'Freelancer counter-signed SOW milestones and committed to deliverables.',
         recordHash: '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b',
       },
       {
@@ -211,20 +211,20 @@ export const INITIAL_CONTRACTS: Contract[] = [
     currency: 'USD',
     stagedAmount: 4800,
     releasedAmount: 0,
-    buyer: {
-      id: 'buyer-02',
+    client: {
+      id: 'client-02',
       name: 'Marcus Vance',
       email: 'marcus@apexlabs.ke',
       organization: 'Apex Labs Nairobi',
-      role: 'buyer',
+      role: 'client',
       accepted: true,
     },
-    supplier: {
-      id: 'supplier-02',
+    freelancer: {
+      id: 'freelancer-02',
       name: 'Sofia Al-Mansoor',
       email: 'sofia@cloudcraft.de',
       organization: 'CloudCraft Berlin',
-      role: 'supplier',
+      role: 'freelancer',
       accepted: true,
     },
     milestones: [
@@ -255,18 +255,18 @@ export const INITIAL_CONTRACTS: Contract[] = [
     currency: 'USD',
     stagedAmount: 1850,
     releasedAmount: 1850,
-    buyer: {
-      id: 'buyer-01',
+    client: {
+      id: 'client-01',
       name: 'Elena Rostova',
       email: 'elena@acmeglobal.com',
-      role: 'buyer',
+      role: 'client',
       accepted: true,
     },
-    supplier: {
-      id: 'supplier-03',
+    freelancer: {
+      id: 'freelancer-03',
       name: 'Liam Chen',
       email: 'liam@syntaxlogic.sg',
-      role: 'supplier',
+      role: 'freelancer',
       accepted: true,
     },
     milestones: [],

@@ -60,7 +60,7 @@ export const ForSuppliers: React.FC = () => {
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-11 px-6 gap-2">
-                <Link to="/sign-in?role=supplier&redirect=/dashboard">
+                <Link to="/sign-in?role=freelancer&redirect=/dashboard">
                   View Freelancer Portal
                   <ArrowRight className="w-4 h-4" />
                 </Link>

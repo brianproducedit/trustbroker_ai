@@ -16,8 +16,8 @@ export interface PaymentTransaction {
   amount: number
   currency: string
   status: PaymentStatus
-  buyerEmail?: string
-  supplierEmail?: string
+  clientEmail?: string
+  freelancerEmail?: string
   paypalStatus?: string
   createdAt: string
   updatedAt: string

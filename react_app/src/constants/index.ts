@@ -6,8 +6,10 @@ export const ROUTES = {
   // Public Pages
   HOME: '/',
   HOW_IT_WORKS: '/how-it-works',
-  FOR_BUYERS: '/for-buyers',
-  FOR_SUPPLIERS: '/for-suppliers',
+  FOR_CLIENTS: '/for-clients',
+  FOR_FREELANCERS: '/for-freelancers',
+  FOR_BUYERS: '/for-clients',
+  FOR_SUPPLIERS: '/for-freelancers',
   DEVELOPER_PORTAL: '/developers',
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',

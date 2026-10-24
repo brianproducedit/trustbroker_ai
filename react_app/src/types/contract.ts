@@ -37,7 +37,7 @@ export interface ContractParty {
   name: string
   email: string
   organization?: string
-  role: 'buyer' | 'supplier'
+  role: 'client' | 'freelancer'
   accepted: boolean
   acceptedAt?: string
 }
@@ -62,8 +62,8 @@ export interface Contract {
   currency: string
   stagedAmount: number
   releasedAmount: number
-  buyer: ContractParty
-  supplier: ContractParty
+  client: ContractParty
+  freelancer: ContractParty
   milestones: Milestone[]
   auditLogs: ContractAuditLog[]
   createdAt: string

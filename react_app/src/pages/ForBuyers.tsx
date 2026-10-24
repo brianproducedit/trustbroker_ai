@@ -59,14 +59,14 @@ export const ForBuyers: React.FC = () => {
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-11 px-6 gap-2">
-                <Link to="/sign-in?role=buyer&redirect=/dashboard/create-project">
+                <Link to="/sign-in?role=client&redirect=/dashboard/create-project">
                   Create Your First Project
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
 
               <Button asChild variant="outline" size="lg" className="border-slate-300 text-slate-700 text-xs h-11 px-6">
-                <Link to="/sign-in?role=buyer&redirect=/dashboard">
+                <Link to="/sign-in?role=client&redirect=/dashboard">
                   Explore Client Dashboard
                 </Link>
               </Button>

@@ -98,6 +98,41 @@ export const CreateProject: React.FC = () => {
   // Step 4: Confirm
   const [confirmedAccuracy, setConfirmedAccuracy] = useState(true)
 
+  // Validation errors
+  const [step2Errors, setStep2Errors] = useState<{ title?: string; milestones?: string }>({})
+  const [step3Errors, setStep3Errors] = useState<{ name?: string; email?: string }>({})
+
+  const validateStep2 = () => {
+    const errors: { title?: string; milestones?: string } = {}
+    if (!projectTitle.trim()) {
+      errors.title = 'Project title is required'
+    }
+    if (milestones.length === 0) {
+      errors.milestones = 'At least one milestone is required'
+    } else {
+      const invalid = milestones.some((m) => !m.title.trim() || Number(m.amount) <= 0)
+      if (invalid) {
+        errors.milestones = 'All milestones must have a title and amount greater than $0'
+      }
+    }
+    setStep2Errors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const validateStep3 = () => {
+    const errors: { name?: string; email?: string } = {}
+    if (!supplierName.trim()) {
+      errors.name = 'Freelancer name is required'
+    }
+    if (!supplierEmail.trim()) {
+      errors.email = 'Freelancer email is required'
+    } else if (!/\S+@\S+\.\S+/.test(supplierEmail)) {
+      errors.email = 'Please provide a valid email address (e.g. name@domain.com)'
+    }
+    setStep3Errors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   // Budget calculation
   const totalBudget = milestones.reduce((sum, m) => sum + (Number(m.amount) || 0), 0)
 
@@ -249,7 +284,7 @@ export const CreateProject: React.FC = () => {
           {[
             { num: 1, label: '1. Project Brief' },
             { num: 2, label: '2. Review & Edit SOW' },
-            { num: 3, label: '3. Assign Supplier' },
+            { num: 3, label: '3. Assign Freelancer' },
             { num: 4, label: '4. Final Confirmation' },
           ].map((s) => {
             const isActive = step === s.num
@@ -392,9 +427,15 @@ export const CreateProject: React.FC = () => {
                     <Input
                       id="proj-title"
                       value={projectTitle}
-                      onChange={(e) => setProjectTitle(e.target.value)}
+                      onChange={(e) => {
+                        setProjectTitle(e.target.value)
+                        if (step2Errors.title) setStep2Errors((prev) => ({ ...prev, title: undefined }))
+                      }}
                       className="bg-[#131B2E] border-[#2D3449] text-white text-xs"
                     />
+                    {step2Errors.title && (
+                      <p className="text-[11px] text-red-400 font-medium">{step2Errors.title}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -410,6 +451,12 @@ export const CreateProject: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                {step2Errors.milestones && (
+                  <p className="text-[11px] text-red-400 font-medium p-2.5 bg-red-950/30 border border-red-900/40 rounded-lg">
+                    {step2Errors.milestones}
+                  </p>
+                )}
 
                 {/* Milestones List */}
                 <div className="space-y-3 pt-2">
@@ -549,10 +596,12 @@ export const CreateProject: React.FC = () => {
 
                 <Button
                   size="sm"
-                  onClick={() => setStep(3)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2"
+                  onClick={() => {
+                    if (validateStep2()) setStep(3)
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2 cursor-pointer"
                 >
-                  Assign Supplier
+                  Assign Freelancer
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </CardFooter>
@@ -560,19 +609,19 @@ export const CreateProject: React.FC = () => {
           </div>
         )}
 
-        {/* STEP 3: ASSIGN SUPPLIER */}
+        {/* STEP 3: ASSIGN FREELANCER */}
         {step === 3 && (
           <Card className="border-[#222A3D] bg-[#131B2E] text-white">
             <CardHeader>
               <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
                 <UserCheck className="w-4 h-4" />
-                <span>Step 3: Assign Freelancer / Supplier</span>
+                <span>Step 3: Assign Freelancer</span>
               </div>
               <CardTitle className="text-lg font-bold mt-1 text-white">
                 Who will be delivering this work?
               </CardTitle>
               <CardDescription className="text-xs text-slate-400">
-                The supplier will receive the contract, review milestones, and digitally accept terms before work begins.
+                The freelancer will receive the contract, review milestones, and digitally accept terms before work begins.
               </CardDescription>
             </CardHeader>
 
@@ -580,29 +629,41 @@ export const CreateProject: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="sup-name" className="text-xs text-slate-300">
-                    Supplier Full Name
+                    Freelancer Full Name
                   </Label>
                   <Input
                     id="sup-name"
                     value={supplierName}
-                    onChange={(e) => setSupplierName(e.target.value)}
+                    onChange={(e) => {
+                      setSupplierName(e.target.value)
+                      if (step3Errors.name) setStep3Errors((prev) => ({ ...prev, name: undefined }))
+                    }}
                     placeholder="e.g. Tariro Moyo"
                     className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
                   />
+                  {step3Errors.name && (
+                    <p className="text-[11px] text-red-400 font-medium">{step3Errors.name}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="sup-email" className="text-xs text-slate-300">
-                    Supplier Email Address
+                    Freelancer Email Address
                   </Label>
                   <Input
                     id="sup-email"
                     type="email"
                     value={supplierEmail}
-                    onChange={(e) => setSupplierEmail(e.target.value)}
+                    onChange={(e) => {
+                      setSupplierEmail(e.target.value)
+                      if (step3Errors.email) setStep3Errors((prev) => ({ ...prev, email: undefined }))
+                    }}
                     placeholder="e.g. tariro@devstudio.co.zw"
                     className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
                   />
+                  {step3Errors.email && (
+                    <p className="text-[11px] text-red-400 font-medium">{step3Errors.email}</p>
+                  )}
                 </div>
               </div>
 
@@ -630,7 +691,7 @@ export const CreateProject: React.FC = () => {
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D]">
-                    <span className="text-[10px] text-emerald-400 font-mono font-semibold uppercase block">Supplier (Delivering)</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-semibold uppercase block">Freelancer (Delivering)</span>
                     <span className="font-semibold text-white">{supplierName || 'Not specified'}</span>
                     <span className="text-[11px] text-slate-400 block">{supplierEmail || 'Not specified'}</span>
                   </div>
@@ -643,7 +704,7 @@ export const CreateProject: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setStep(2)}
-                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs gap-1.5"
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Back to SOW
@@ -651,8 +712,10 @@ export const CreateProject: React.FC = () => {
 
               <Button
                 size="sm"
-                onClick={() => setStep(4)}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2"
+                onClick={() => {
+                  if (validateStep3()) setStep(4)
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2 cursor-pointer"
               >
                 Review &amp; Confirm
                 <ArrowRight className="w-3.5 h-3.5" />

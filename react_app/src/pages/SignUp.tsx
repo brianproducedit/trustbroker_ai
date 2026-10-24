@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 export const SignUp: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const roleParam = searchParams.get('role') as 'buyer' | 'supplier' | null
+  const roleParam = searchParams.get('role')
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -23,16 +23,18 @@ export const SignUp: React.FC = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [role, setRole] = useState<'buyer' | 'supplier'>(
-    roleParam === 'supplier' ? 'supplier' : 'buyer'
+  const [role, setRole] = useState<'client' | 'freelancer'>(
+    roleParam === 'supplier' || roleParam === 'freelancer' ? 'freelancer' : 'client'
   )
   const [agreed, setAgreed] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (roleParam === 'supplier' || roleParam === 'buyer') {
-      setRole(roleParam)
+    if (roleParam === 'supplier' || roleParam === 'freelancer') {
+      setRole('freelancer')
+    } else if (roleParam === 'buyer' || roleParam === 'client') {
+      setRole('client')
     }
   }, [roleParam])
 
@@ -107,11 +109,11 @@ export const SignUp: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
-                    variant={role === 'buyer' ? 'default' : 'outline'}
+                    variant={role === 'client' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setRole('buyer')}
+                    onClick={() => setRole('client')}
                     className={`h-8 text-xs font-medium ${
-                      role === 'buyer'
+                      role === 'client'
                         ? 'bg-blue-600 hover:bg-blue-700 text-white'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
@@ -120,12 +122,12 @@ export const SignUp: React.FC = () => {
                   </Button>
                   <Button
                     type="button"
-                    variant={role === 'supplier' ? 'default' : 'outline'}
+                    variant={role === 'freelancer' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setRole('supplier')}
+                    onClick={() => setRole('freelancer')}
                     className={`h-8 text-xs font-medium ${
-                      role === 'supplier'
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      role === 'freelancer'
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >

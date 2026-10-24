@@ -140,13 +140,13 @@ export const HowItWorks: React.FC = () => {
             </p>
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" className="bg-white hover:bg-slate-100 text-blue-700 font-semibold text-xs h-10 px-5 gap-2">
-                <Link to="/sign-in?role=buyer&redirect=/dashboard">
+                <Link to="/sign-in?role=client&redirect=/dashboard">
                   Try Client Flow
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/40 text-white hover:bg-white/10 font-semibold text-xs h-10 px-5 gap-2">
-                <Link to="/sign-in?role=supplier&redirect=/dashboard">
+                <Link to="/sign-in?role=freelancer&redirect=/dashboard">
                   Try Freelancer Flow
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>

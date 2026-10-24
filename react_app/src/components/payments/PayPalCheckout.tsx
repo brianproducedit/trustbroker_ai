@@ -51,10 +51,10 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       <div className="bg-[#0D221D] border border-emerald-800/60 rounded-xl p-5 flex flex-col gap-3 text-emerald-200">
         <div className="flex items-center gap-2 text-emerald-400">
           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="font-semibold text-sm">PayPal Sandbox Reserve Staged Successfully</span>
+          <span className="font-semibold text-sm">Payment Staged Successfully in Sandbox</span>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed">
-          The funds of <strong className="text-white">{formatCurrency(amount, currency)}</strong> are secured in the PayPal Sandbox conditional holding reserve for contract <strong className="text-white">{contractCode}</strong>. Payment release is now bound to AI deliverable verification.
+          The funds of <strong className="text-white">{formatCurrency(amount, currency)}</strong> are staged in PayPal Sandbox for contract <strong className="text-white">{contractCode}</strong>. Payouts will be released upon verified deliverable inspection.
         </p>
         <div className="bg-[#0B1326] p-3 rounded-lg border border-[#222A3D] font-mono text-xs flex flex-col gap-1.5 text-slate-300">
           <div className="flex items-center justify-between">
@@ -62,8 +62,8 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             <span className="font-bold text-emerald-400">{capturedOrderId}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Reserve Mode:</span>
-            <span className="text-blue-300">Conditional Milestone Gate</span>
+            <span className="text-slate-400">Payment Condition:</span>
+            <span className="text-blue-300">Milestone Delivery Verification</span>
           </div>
         </div>
       </div>
@@ -83,7 +83,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       </div>
 
       <p className="text-xs text-slate-300 leading-relaxed">
-        Stage contract funds into PayPal Sandbox reserve. The payment will be held until the supplier submits deliverables and Gemini AI verifies that all acceptance criteria are met.
+        Stage contract funds into PayPal Sandbox. Funds will be held until the freelancer submits deliverables and acceptance criteria are verified.
       </p>
 
       {errorMsg && (
@@ -111,7 +111,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
                   intent: 'CAPTURE',
                   purchase_units: [
                     {
-                      description: `TrustBroker AI Reserve for ${contractCode}`,
+                      description: `TrustBroker AI Payment for ${contractCode}`,
                       amount: {
                         currency_code: currency,
                         value: amount.toFixed(2),
@@ -143,17 +143,17 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             type="button"
             onClick={handleSimulatedCheckout}
             disabled={isProcessing}
-            className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/20"
+            className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
           >
             {isProcessing ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Authorizing Sandbox Reserve...</span>
+                <span>Staging Payment in Sandbox...</span>
               </>
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                <span>Instant 1-Click Sandbox Stage ({formatCurrency(amount, currency)})</span>
+                <span>1-Click Sandbox Payment Stage ({formatCurrency(amount, currency)})</span>
               </>
             )}
           </button>

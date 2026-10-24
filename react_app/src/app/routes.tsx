@@ -25,8 +25,8 @@ export const AppRoutes: React.FC = () => {
       {/* Public Pages (Light Theme) */}
       <Route path={ROUTES.HOME} element={<Landing />} />
       <Route path={ROUTES.HOW_IT_WORKS} element={<HowItWorks />} />
-      <Route path={ROUTES.FOR_BUYERS} element={<ForBuyers />} />
-      <Route path={ROUTES.FOR_SUPPLIERS} element={<ForSuppliers />} />
+      <Route path={ROUTES.FOR_CLIENTS} element={<ForBuyers />} />
+      <Route path={ROUTES.FOR_FREELANCERS} element={<ForSuppliers />} />
       <Route path={ROUTES.DEVELOPER_PORTAL} element={<DeveloperPortal />} />
       <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
       <Route path={ROUTES.SIGN_UP} element={<SignUp />} />

@@ -7,16 +7,16 @@ import type { EvidenceSubmission, VerificationAssessment } from '@/types/verific
 interface ContractStore {
   contracts: Contract[]
   activeContractId: string
-  activeRole: 'buyer' | 'supplier'
+  activeRole: 'client' | 'freelancer'
   isAuthenticated: boolean
   isLoading: boolean
   
   // Auth Actions
-  login: (role: 'buyer' | 'supplier') => void
+  login: (role: 'client' | 'freelancer') => void
   signOut: () => void
 
   // Actions
-  setActiveRole: (role: 'buyer' | 'supplier') => void
+  setActiveRole: (role: 'client' | 'freelancer') => void
   toggleActiveRole: () => void
   setActiveContract: (id: string) => void
   getActiveContract: () => Contract | undefined
@@ -35,7 +35,7 @@ interface ContractStore {
   updateContractDraft: (contractId: string, updates: Partial<Contract>) => void
   deleteContract: (contractId: string) => void
   cancelContract: (contractId: string, reason?: string) => void
-  acceptContract: (contractId: string, role: 'buyer' | 'supplier') => void
+  acceptContract: (contractId: string, role: 'client' | 'freelancer') => void
   
   // Milestone Actions
   addMilestone: (contractId: string, milestone: Milestone) => void
@@ -58,7 +58,7 @@ interface ContractStore {
 export const useContractStore = create<ContractStore>((set, get) => ({
   contracts: INITIAL_CONTRACTS,
   activeContractId: 'contract-1',
-  activeRole: 'buyer',
+  activeRole: 'client',
   isAuthenticated: true,
   isLoading: false,
 
@@ -68,7 +68,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   setActiveRole: (role) => set({ activeRole: role }),
 
   toggleActiveRole: () =>
-    set((state) => ({ activeRole: state.activeRole === 'buyer' ? 'supplier' : 'buyer' })),
+    set((state) => ({ activeRole: state.activeRole === 'client' ? 'freelancer' : 'client' })),
 
   setActiveContract: (id) => set({ activeContractId: id }),
 
@@ -79,10 +79,10 @@ export const useContractStore = create<ContractStore>((set, get) => ({
 
   getRoleContracts: () => {
     const { contracts, activeRole } = get()
-    if (activeRole === 'buyer') {
-      return contracts.filter((c) => c.buyer.email === 'elena@acmeglobal.com')
+    if (activeRole === 'client') {
+      return contracts.filter((c) => c.client.email === 'elena@acmeglobal.com')
     }
-    return contracts.filter((c) => c.supplier.email === 'tariro@devstudio.co.zw')
+    return contracts.filter((c) => c.freelancer.email === 'tariro@devstudio.co.zw')
   },
 
   getRoleMetrics: () => {
@@ -96,9 +96,9 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     let pendingCount = 0
     roleContracts.forEach((c) => {
       c.milestones.forEach((m) => {
-        if (activeRole === 'buyer' && (m.status === 'verifying' || m.status === 'submitted')) {
+        if (activeRole === 'client' && (m.status === 'verifying' || m.status === 'submitted')) {
           pendingCount += 1
-        } else if (activeRole === 'supplier' && (m.status === 'in_progress' || m.status === 'pending')) {
+        } else if (activeRole === 'freelancer' && (m.status === 'in_progress' || m.status === 'pending')) {
           pendingCount += 1
         }
       })
@@ -128,19 +128,19 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       currency: 'USD',
       stagedAmount: 0,
       releasedAmount: 0,
-      buyer: {
-        id: 'buyer-01',
+      client: {
+        id: 'client-01',
         name: 'Elena Rostova',
         email: 'elena@acmeglobal.com',
-        role: 'buyer',
+        role: 'client',
         accepted: true,
         acceptedAt: new Date().toISOString(),
       },
-      supplier: {
-        id: 'supplier-01',
+      freelancer: {
+        id: 'freelancer-01',
         name: 'Tariro Moyo',
         email: 'tariro@devstudio.co.zw',
-        role: 'supplier',
+        role: 'freelancer',
         accepted: false,
       },
       milestones,
@@ -233,32 +233,32 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     set((state) => {
       const updated = state.contracts.map((c) => {
         if (c.id === contractId || c.code === contractId) {
-          const buyerAccepted = role === 'buyer' ? true : c.buyer.accepted
-          const supplierAccepted = role === 'supplier' ? true : c.supplier.accepted
-          const bothAccepted = buyerAccepted && supplierAccepted
+          const clientAccepted = role === 'client' ? true : c.client.accepted
+          const freelancerAccepted = role === 'freelancer' ? true : c.freelancer.accepted
+          const bothAccepted = clientAccepted && freelancerAccepted
           const status: ContractStatus = bothAccepted ? 'active' : 'pending_acceptance'
 
           return {
             ...c,
             status,
-            buyer: {
-              ...c.buyer,
-              accepted: buyerAccepted,
-              acceptedAt: role === 'buyer' ? new Date().toISOString() : c.buyer.acceptedAt,
+            client: {
+              ...c.client,
+              accepted: clientAccepted,
+              acceptedAt: role === 'client' ? new Date().toISOString() : c.client.acceptedAt,
             },
-            supplier: {
-              ...c.supplier,
-              accepted: supplierAccepted,
-              acceptedAt: role === 'supplier' ? new Date().toISOString() : c.supplier.acceptedAt,
+            freelancer: {
+              ...c.freelancer,
+              accepted: freelancerAccepted,
+              acceptedAt: role === 'freelancer' ? new Date().toISOString() : c.freelancer.acceptedAt,
             },
             auditLogs: [
               ...c.auditLogs,
               {
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
-                actor: role === 'buyer' ? c.buyer.name : c.supplier.name,
+                actor: role === 'client' ? c.client.name : c.freelancer.name,
                 action: `${role.toUpperCase()}_ACCEPTED`,
-                details: `${role === 'buyer' ? 'Client' : 'Supplier'} digitally accepted contract terms.`,
+                details: `${role === 'client' ? 'Client' : 'Freelancer'} digitally accepted contract terms.`,
               },
             ],
           }
@@ -505,7 +505,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 timestamp: new Date().toISOString(),
                 actor: 'PayPal Sandbox Gateway',
                 action: 'PAYMENT_RELEASED',
-                details: `Disbursement executed for milestone: $${releasedDelta} USD released to supplier.`,
+                details: `Disbursement executed for milestone: $${releasedDelta} USD released to freelancer.`,
               },
             ],
           }

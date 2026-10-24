@@ -17,6 +17,16 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ROUTES } from '@/constants'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -32,11 +42,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const [searchQuery, setSearchQuery] = useState('')
   const [notifsOpen, setNotifsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
 
   const activeContract = contracts.find((c) => c.id === activeContractId || c.code === activeContractId) || contracts[0]
 
   const handleSignOut = () => {
     setProfileOpen(false)
+    setSignOutOpen(false)
     signOut()
     toast.success('Signed out successfully')
     navigate(ROUTES.HOME)
@@ -45,7 +57,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const handleRoleToggle = () => {
     toggleActiveRole()
     setProfileOpen(false)
-    const nextRole = activeRole === 'buyer' ? 'Supplier (Freelancer)' : 'Client (Hiring)'
+    const nextRole = activeRole === 'client' ? 'Freelancer' : 'Client'
     toast.info(`Switched view to ${nextRole} Mode`)
   }
 
@@ -257,19 +269,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 className="flex items-center gap-2.5 pl-1 cursor-pointer group text-left"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-800 transition-transform group-hover:scale-105 ${
-                  activeRole === 'buyer'
+                  activeRole === 'client'
                     ? 'bg-gradient-to-tr from-blue-600 to-indigo-500'
                     : 'bg-gradient-to-tr from-emerald-600 to-teal-500'
                 }`}>
-                  {activeRole === 'buyer' ? 'ER' : 'TM'}
+                  {activeRole === 'client' ? 'ER' : 'TM'}
                 </div>
                 <div className="hidden xl:flex flex-col text-left">
                   <span className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors leading-none flex items-center gap-1.5">
-                    <span>{activeRole === 'buyer' ? 'Elena Rostova' : 'Tariro Moyo'}</span>
-                    <UserCheck className={`w-3 h-3 ${activeRole === 'buyer' ? 'text-blue-400' : 'text-emerald-400'}`} />
+                    <span>{activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo'}</span>
+                    <UserCheck className={`w-3 h-3 ${activeRole === 'client' ? 'text-blue-400' : 'text-emerald-400'}`} />
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 uppercase font-mono leading-none">
-                    {activeRole === 'buyer' ? 'Client' : 'Supplier'}
+                    {activeRole === 'client' ? 'Client' : 'Freelancer'}
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
@@ -280,13 +292,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#131B2E] border border-[#222A3D] shadow-2xl p-3 z-50 flex flex-col gap-2">
                   <div className="p-2 border-b border-[#222A3D] flex flex-col gap-0.5">
                     <span className="text-xs font-bold text-white">
-                      {activeRole === 'buyer' ? 'Elena Rostova' : 'Tariro Moyo'}
+                      {activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo'}
                     </span>
                     <span className="text-[11px] font-mono text-slate-400 truncate">
-                      {activeRole === 'buyer' ? 'elena@acmeglobal.com' : 'tariro@devstudio.co.zw'}
+                      {activeRole === 'client' ? 'elena@acmeglobal.com' : 'tariro@devstudio.co.zw'}
                     </span>
                     <span className="text-[10px] text-blue-400 font-mono mt-1">
-                      Mode: {activeRole === 'buyer' ? 'Client (Hiring)' : 'Supplier (Freelancer)'}
+                      Mode: {activeRole === 'client' ? 'Client' : 'Freelancer'}
                     </span>
                   </div>
 
@@ -297,14 +309,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-[#172038] transition-colors cursor-pointer"
                   >
                     <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Switch to {activeRole === 'buyer' ? 'Supplier Mode' : 'Client Mode'}</span>
+                    <span>Switch to {activeRole === 'client' ? 'Freelancer Mode' : 'Client Mode'}</span>
                   </button>
 
                   <div className="h-px bg-[#222A3D] my-1" />
 
                   {/* Sign Out */}
                   <button
-                    onClick={handleSignOut}
+                    onClick={() => {
+                      setProfileOpen(false)
+                      setSignOutOpen(true)
+                    }}
                     type="button"
                     className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 transition-colors cursor-pointer"
                   >
@@ -317,15 +332,38 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </div>
         </header>
 
+        {/* Sign Out Confirmation AlertDialog */}
+        <AlertDialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+          <AlertDialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Sign Out Confirmation</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-400 text-xs">
+                Are you sure you want to sign out of TrustBroker AI? You will need to sign in again to access contracts and staged payments.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2">
+              <AlertDialogCancel className="border-[#2D3449] bg-[#0E1528] text-slate-300 hover:bg-[#171F33] text-xs">
+                Stay Signed In
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSignOut}
+                className="bg-red-600 hover:bg-red-700 text-white text-xs"
+              >
+                Sign Out
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Clean Context Status Ribbon */}
         <div className="bg-[#10182E] border-b border-[#222A3D] px-4 sm:px-6 py-2 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-slate-300">
               <span className="text-emerald-400 font-medium mr-1.5">
-                {activeRole === 'buyer' ? 'Client Workspace:' : 'Supplier Workspace:'}
+                {activeRole === 'client' ? 'Client Workspace:' : 'Freelancer Workspace:'}
               </span>
-              {activeRole === 'buyer' 
+              {activeRole === 'client' 
                 ? 'Create contracts, stage payments via PayPal Sandbox, and approve verified milestones.' 
                 : 'Review contracts, submit deliverable evidence, and track milestone disbursements.'}
             </span>

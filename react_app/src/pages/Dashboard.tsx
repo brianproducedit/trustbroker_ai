@@ -11,6 +11,16 @@ import type { ColDef, ICellRendererParams } from 'ag-grid-community'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { 
   FileText, 
   DollarSign, 
@@ -19,11 +29,12 @@ import {
   Sparkles, 
   ArrowUpRight, 
   Plus, 
-  Filter,
-  Clock,
-  ExternalLink,
-  UploadCloud,
-  Briefcase
+  Filter, 
+  Clock, 
+  ExternalLink, 
+  UploadCloud, 
+  Briefcase,
+  Inbox
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -48,10 +59,12 @@ const darkLedgerTheme = themeQuartz.withPart(colorSchemeDark).withParams({
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate()
-  const { contracts, activeRole, getRoleContracts, getRoleMetrics, releasePayment } = useContractStore()
+  const { contracts, activeRole, toggleActiveRole, getRoleContracts, getRoleMetrics, releasePayment } = useContractStore()
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'needs_action' | 'in_verification' | 'settled'>('all')
   const [selectedContractId, setSelectedContractId] = useState<string>('contract-1')
+  const [releaseDialogOpen, setReleaseDialogOpen] = useState(false)
+  const [pendingReleaseMilestone, setPendingReleaseMilestone] = useState<{ id: string; amount: number; title: string } | null>(null)
 
   const roleContracts = useMemo(() => {
     return getRoleContracts()
@@ -104,11 +117,13 @@ export const Dashboard: React.FC = () => {
       ),
     },
     {
-      headerName: activeRole === 'buyer' ? 'Supplier' : 'Client',
-      field: activeRole === 'buyer' ? 'supplier.name' : 'buyer.name',
+      headerName: activeRole === 'client' ? 'Freelancer' : 'Client',
+      field: activeRole === 'client' ? 'freelancer.name' : 'client.name',
       width: 170,
       cellRenderer: (params: ICellRendererParams) => {
-        const party = activeRole === 'buyer' ? params.data.supplier : params.data.buyer
+        const party = activeRole === 'client' 
+          ? (params.data.freelancer || params.data.supplier) 
+          : (params.data.client || params.data.buyer)
         return (
           <div className="flex flex-col justify-center h-full text-xs">
             <span className="text-slate-200 font-medium truncate">{party?.name}</span>
@@ -129,7 +144,7 @@ export const Dashboard: React.FC = () => {
           <span className="text-[10px] text-slate-400">
             {params.data.releasedAmount > 0 
               ? `${formatCurrency(params.data.releasedAmount)} released` 
-              : activeRole === 'buyer' ? 'Staged in Sandbox' : 'Funds Staged'}
+              : activeRole === 'client' ? 'Staged in Sandbox' : 'Funds Staged'}
           </span>
         </div>
       ),
@@ -179,7 +194,7 @@ export const Dashboard: React.FC = () => {
 
   const handleRelease = (milestoneId: string, amount: number) => {
     releasePayment(selectedContract.id, milestoneId)
-    toast.success(`Payment released: ${formatCurrency(amount)} USD to supplier!`)
+    toast.success(`Payment released: ${formatCurrency(amount)} USD to freelancer!`)
   }
 
   return (
@@ -189,17 +204,17 @@ export const Dashboard: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {activeRole === 'buyer' ? 'Your Contracts & Procurements' : 'Your Projects & Deliverables'}
+              {activeRole === 'client' ? 'Your Contracts & Procurements' : 'Your Projects & Deliverables'}
             </h1>
             <p className="text-xs text-slate-400">
-              {activeRole === 'buyer'
+              {activeRole === 'client'
                 ? 'Stage funds in PayPal Sandbox, monitor active milestones, and authorize payouts upon verified delivery.'
                 : 'Review contracted milestones, submit deliverable evidence for verification, and receive disbursements.'}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            {activeRole === 'buyer' ? (
+            {activeRole === 'client' ? (
               <Button
                 onClick={() => navigate(ROUTES.NEW_PROJECT)}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9"
@@ -226,14 +241,14 @@ export const Dashboard: React.FC = () => {
             <CardContent className="p-4 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                  {activeRole === 'buyer' ? 'Active Contracts' : 'Active Projects'}
+                  {activeRole === 'client' ? 'Active Contracts' : 'Active Projects'}
                 </span>
                 <Briefcase className="w-4 h-4 text-blue-400" />
               </div>
               <div className="mt-3">
                 <div className="text-2xl font-bold font-mono text-white">{roleMetrics.activeCount}</div>
                 <div className="text-[11px] text-slate-400 mt-0.5">
-                  {activeRole === 'buyer' ? 'Active supplier contracts' : 'Active client engagements'}
+                  {activeRole === 'client' ? 'Active freelancer contracts' : 'Active client engagements'}
                 </div>
               </div>
             </CardContent>
@@ -253,7 +268,7 @@ export const Dashboard: React.FC = () => {
                   {formatCurrency(roleMetrics.escrowAmount)}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-0.5">
-                  {activeRole === 'buyer' ? 'Staged in PayPal Sandbox' : 'Guaranteed by client'}
+                  {activeRole === 'client' ? 'Staged in PayPal Sandbox' : 'Guaranteed by client'}
                 </div>
               </div>
             </CardContent>
@@ -312,7 +327,7 @@ export const Dashboard: React.FC = () => {
                   onClick={() => setActiveFilter(tab.id as any)}
                   className={`px-3 py-1 text-xs rounded-md transition-colors cursor-pointer ${
                     activeFilter === tab.id
-                      ? activeRole === 'buyer' ? 'bg-blue-600 text-white font-medium shadow-xs' : 'bg-emerald-600 text-white font-medium shadow-xs'
+                      ? activeRole === 'client' ? 'bg-blue-600 text-white font-medium shadow-xs' : 'bg-emerald-600 text-white font-medium shadow-xs'
                       : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
                   }`}
                 >
@@ -328,149 +343,197 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Main Grid & Contract Details Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (8 cols): AG Grid Ledger */}
-          <div className="lg:col-span-8 bg-[#131B2E] rounded-xl border border-[#222A3D] p-4 shadow-sm flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-400" />
-                <h3 className="text-sm font-semibold text-white">Contracts Ledger</h3>
-              </div>
-              <span className="text-[11px] font-mono text-slate-400">
-                Click row to inspect details
-              </span>
+        {roleContracts.length === 0 ? (
+          <div className="bg-[#131B2E] rounded-xl border border-[#222A3D] p-12 text-center flex flex-col items-center justify-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#172038] border border-blue-900/40 flex items-center justify-center text-blue-400">
+              <Inbox className="w-8 h-8" />
             </div>
-
-            {/* AG Grid Container */}
-            <div
-              className="w-full rounded-lg overflow-hidden border border-[#222A3D] bg-[#0E1528]"
-              style={{ minHeight: '260px', height: '360px', width: '100%', backgroundColor: '#0E1528' }}
-            >
-              <AgGridReact
-                theme={darkLedgerTheme}
-                rowData={filteredContracts}
-                columnDefs={columnDefs}
-                defaultColDef={defaultColDef}
-                rowSelection="single"
-                onRowClicked={handleRowClick}
-                headerHeight={40}
-                rowHeight={52}
-                animateRows={true}
-              />
+            <div className="space-y-1.5 max-w-md">
+              <h3 className="text-base font-bold text-white">No contracts found in this workspace</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {activeRole === 'client'
+                  ? "You haven't created any contracts yet. Draft an AI-assisted scope and stage milestone payments in PayPal Sandbox."
+                  : "You haven't been assigned to any contracts yet. Switch to Client mode to create a project or check back later."}
+              </p>
             </div>
+            {activeRole === 'client' ? (
+              <Button onClick={() => navigate(ROUTES.NEW_PROJECT)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9">
+                <Plus className="w-4 h-4" />
+                <span>Create Your First Project</span>
+              </Button>
+            ) : (
+              <Button onClick={() => toggleActiveRole()} variant="outline" className="border-[#2D3449] bg-[#171F33] text-slate-200 text-xs h-9">
+                Switch to Client Mode
+              </Button>
+            )}
           </div>
-
-          {/* Right Column (4 cols): Selected Contract Overview Panel */}
-          <div className="lg:col-span-4 bg-[#131B2E] rounded-xl border border-[#222A3D] p-5 shadow-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <h3 className="text-xs font-mono uppercase tracking-wider text-slate-200 font-semibold">
-                  Contract Overview
-                </h3>
-              </div>
-              <span className="font-mono text-[11px] text-blue-400 font-semibold">
-                {selectedContract?.code}
-              </span>
-            </div>
-
-            {/* Selected Contract Info */}
-            <div className="space-y-1.5">
-              <span className="text-sm font-bold text-white leading-tight block">
-                {selectedContract?.title}
-              </span>
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                <span>Staged Budget:</span>
-                <span className="font-mono text-emerald-400 font-bold">
-                  {formatCurrency(selectedContract?.stagedAmount || 0, selectedContract?.currency)}
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column (8 cols): AG Grid Ledger */}
+            <div className="lg:col-span-8 bg-[#131B2E] rounded-xl border border-[#222A3D] p-4 shadow-sm flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-sm font-semibold text-white">Contracts Ledger</h3>
+                </div>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Click row to inspect details
                 </span>
               </div>
-            </div>
 
-            {/* AI Verification Score Bar */}
-            <div className="bg-[#171F33] p-3.5 rounded-xl border border-[#222A3D] space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Delivery Status</span>
-                <span className="font-mono text-emerald-400 font-bold">
-                  {activeMilestone?.assessment?.overallScore ? `${activeMilestone.assessment.overallScore}% Passed` : 'Ready for Review'}
-                </span>
-              </div>
-              <Progress value={activeMilestone?.assessment?.overallScore || 94} className="h-2" />
-            </div>
-
-            {/* Milestones Checklist */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-300 block">
-                Milestones &amp; Payouts
-              </span>
-              <div className="space-y-2">
-                {selectedContract?.milestones?.map((m) => (
-                  <div
-                    key={m.id}
-                    className="p-2.5 rounded-lg bg-[#0E1528] border border-[#222A3D] flex items-center justify-between text-xs"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {m.status === 'settled' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      ) : m.status === 'verifying' ? (
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" />
-                      ) : (
-                        <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      )}
-                      <span className="text-slate-200 font-medium truncate">{m.title}</span>
-                    </div>
-                    <span className="font-mono text-emerald-400 text-[11px] font-semibold shrink-0">
-                      {formatCurrency(m.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons tailored to role */}
-            <div className="flex flex-col gap-2 pt-2 border-t border-[#222A3D]">
-              {activeRole === 'buyer' ? (
-                <>
-                  {activeMilestone && activeMilestone.status === 'verified' && activeMilestone.paymentStatus !== 'released' && (
-                    <Button
-                      onClick={() => handleRelease(activeMilestone.id, activeMilestone.amount)}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
-                    >
-                      <DollarSign className="w-4 h-4" />
-                      <span>Release Milestone Payment (${activeMilestone.amount})</span>
-                    </Button>
-                  )}
+              {/* AG Grid Container */}
+              {filteredContracts.length === 0 ? (
+                <div className="w-full rounded-lg border border-[#222A3D] bg-[#0E1528] py-16 flex flex-col items-center justify-center gap-3 text-center">
+                  <Inbox className="w-8 h-8 text-slate-500" />
+                  <p className="text-xs text-slate-400">No contracts match this filter category.</p>
                   <Button
+                    size="sm"
                     variant="outline"
-                    onClick={() => navigate(ROUTES.CONTRACT_DETAIL(selectedContract?.id || 'contract-1'))}
-                    className="w-full border-[#2D3449] bg-[#171F33] hover:bg-[#222A3D] text-slate-200 text-xs gap-1.5 h-9"
+                    onClick={() => setActiveFilter('all')}
+                    className="border-[#2D3449] bg-[#171F33] text-slate-300 text-xs"
                   >
-                    <span>View Contract Details</span>
-                    <ExternalLink className="w-3 h-3" />
+                    View All Contracts
                   </Button>
-                </>
+                </div>
               ) : (
-                <>
-                  <Button
-                    onClick={() => navigate(ROUTES.DELIVERY_VERIFICATION(selectedContract?.id || 'contract-1'))}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
-                  >
-                    <UploadCloud className="w-4 h-4" />
-                    <span>Submit Work for Verification</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate(ROUTES.CONTRACT_DETAIL(selectedContract?.id || 'contract-1'))}
-                    className="w-full border-[#2D3449] bg-[#171F33] hover:bg-[#222A3D] text-slate-200 text-xs gap-1.5 h-9"
-                  >
-                    <span>Review Acceptance Terms</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                </>
+                <div
+                  className="w-full rounded-lg overflow-hidden border border-[#222A3D] bg-[#0E1528]"
+                  style={{ minHeight: '260px', height: '360px', width: '100%', backgroundColor: '#0E1528' }}
+                >
+                  <AgGridReact
+                    theme={darkLedgerTheme}
+                    rowData={filteredContracts}
+                    columnDefs={columnDefs}
+                    defaultColDef={defaultColDef}
+                    rowSelection="single"
+                    onRowClicked={handleRowClick}
+                    headerHeight={40}
+                    rowHeight={52}
+                    animateRows={true}
+                  />
+                </div>
               )}
             </div>
+
+            {/* Right Column (4 cols): Selected Contract Overview Panel */}
+            <div className="lg:col-span-4 bg-[#131B2E] rounded-xl border border-[#222A3D] p-5 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-xs font-mono uppercase tracking-wider text-slate-200 font-semibold">
+                    Contract Overview
+                  </h3>
+                </div>
+                <span className="font-mono text-[11px] text-blue-400 font-semibold">
+                  {selectedContract?.code}
+                </span>
+              </div>
+
+              {/* Selected Contract Info */}
+              <div className="space-y-1.5">
+                <span className="text-sm font-bold text-white leading-tight block">
+                  {selectedContract?.title}
+                </span>
+                <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                  <span>Staged Budget:</span>
+                  <span className="font-mono text-emerald-400 font-bold">
+                    {formatCurrency(selectedContract?.stagedAmount || 0, selectedContract?.currency)}
+                  </span>
+                </div>
+              </div>
+
+              {/* AI Verification Score Bar */}
+              <div className="bg-[#171F33] p-3.5 rounded-xl border border-[#222A3D] space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Delivery Status</span>
+                  <span className="font-mono text-emerald-400 font-bold">
+                    {activeMilestone?.assessment?.overallScore ? `${activeMilestone.assessment.overallScore}% Passed` : 'Ready for Review'}
+                  </span>
+                </div>
+                <Progress value={activeMilestone?.assessment?.overallScore || 94} className="h-2" />
+              </div>
+
+              {/* Milestones Checklist */}
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-slate-300 block">
+                  Milestones &amp; Payouts
+                </span>
+                <div className="space-y-2">
+                  {selectedContract?.milestones?.map((m) => (
+                    <div
+                      key={m.id}
+                      className="p-2.5 rounded-lg bg-[#0E1528] border border-[#222A3D] flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {m.status === 'settled' ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        ) : m.status === 'verifying' ? (
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" />
+                        ) : (
+                          <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        )}
+                        <span className="text-slate-200 font-medium truncate">{m.title}</span>
+                      </div>
+                      <span className="font-mono text-emerald-400 text-[11px] font-semibold shrink-0">
+                        {formatCurrency(m.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons tailored to role */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#222A3D]">
+                {activeRole === 'client' ? (
+                  <>
+                    {activeMilestone && activeMilestone.status === 'verified' && activeMilestone.paymentStatus !== 'released' && (
+                      <Button
+                        onClick={() => {
+                          setPendingReleaseMilestone({
+                            id: activeMilestone.id,
+                            amount: activeMilestone.amount,
+                            title: activeMilestone.title
+                          })
+                          setReleaseDialogOpen(true)
+                        }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        <span>Release Milestone Payment (${activeMilestone.amount})</span>
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(ROUTES.CONTRACT_DETAIL(selectedContract?.id || 'contract-1'))}
+                      className="w-full border-[#2D3449] bg-[#171F33] hover:bg-[#222A3D] text-slate-200 text-xs gap-1.5 h-9"
+                    >
+                      <span>View Contract Details</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => navigate(ROUTES.DELIVERY_VERIFICATION(selectedContract?.id || 'contract-1'))}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
+                    >
+                      <UploadCloud className="w-4 h-4" />
+                      <span>Submit Work for Verification</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(ROUTES.CONTRACT_DETAIL(selectedContract?.id || 'contract-1'))}
+                      className="w-full border-[#2D3449] bg-[#171F33] hover:bg-[#222A3D] text-slate-200 text-xs gap-1.5 h-9"
+                    >
+                      <span>Review Acceptance Terms</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom Recent Activity Stream */}
         <Card className="border-[#222A3D] bg-[#131B2E] text-white">
@@ -513,6 +576,35 @@ export const Dashboard: React.FC = () => {
             ))}
           </CardContent>
         </Card>
+
+        {/* Payment Release Confirmation Dialog */}
+        <AlertDialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+          <AlertDialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Authorize Payment Release</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-400 text-xs">
+                Are you sure you want to release {pendingReleaseMilestone ? formatCurrency(pendingReleaseMilestone.amount) : '$0'} USD to {selectedContract?.freelancer?.name || (selectedContract as any)?.supplier?.name || 'the freelancer'}?
+                This will disburse the staged funds from PayPal Sandbox for milestone "{pendingReleaseMilestone?.title}". This action is irreversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2">
+              <AlertDialogCancel className="border-[#2D3449] bg-[#0E1528] text-slate-300 hover:bg-[#171F33] text-xs">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingReleaseMilestone) {
+                    handleRelease(pendingReleaseMilestone.id, pendingReleaseMilestone.amount)
+                    setReleaseDialogOpen(false)
+                  }
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+              >
+                Confirm &amp; Disburse Funds
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   )

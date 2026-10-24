@@ -60,7 +60,7 @@ export const Landing: React.FC = () => {
             {/* Persona Action Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Button asChild size="lg" className="h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm gap-2">
-                <Link to="/sign-in?role=buyer&redirect=/dashboard">
+                <Link to="/sign-in?role=client&redirect=/dashboard">
                   <UserCheck className="w-4 h-4 text-blue-200" />
                   <span>I am Hiring (Client Demo)</span>
                   <ArrowRight className="w-4 h-4" />
@@ -68,9 +68,9 @@ export const Landing: React.FC = () => {
               </Button>
 
               <Button asChild variant="outline" size="lg" className="h-11 px-6 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border-slate-300 font-medium text-sm gap-2">
-                <Link to="/sign-in?role=supplier&redirect=/dashboard">
+                <Link to="/sign-in?role=freelancer&redirect=/dashboard">
                   <UserCheck className="w-4 h-4 text-slate-500" />
-                  <span>I am a Freelancer (Supplier Demo)</span>
+                  <span>I am a Freelancer (Demo)</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
@@ -109,7 +109,7 @@ export const Landing: React.FC = () => {
                 </div>
                 <h3 className="font-semibold text-base text-[#1A2940]">Agree on Terms</h3>
                 <p className="text-xs text-[#5D6B82] leading-relaxed">
-                  Both client and supplier review and digitally accept the contract scope. Terms are locked before work begins.
+                  Both client and freelancer review and digitally accept the contract scope. Terms are locked before work begins.
                 </p>
               </CardContent>
             </Card>
@@ -159,7 +159,7 @@ export const Landing: React.FC = () => {
 
                 <div className="pt-2 flex flex-col sm:flex-row gap-3">
                   <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white gap-2 text-xs">
-                    <Link to="/sign-in?role=buyer&redirect=/dashboard/contracts/contract-1">
+                    <Link to="/sign-in?role=client&redirect=/dashboard/contracts/contract-1">
                       Explore This Contract
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
