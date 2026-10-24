@@ -1,0 +1,13 @@
+{
+  "name": "trustbroker-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrustBroker AI — AI-Powered Cross-Border Work Verification & SOW Platform",
+  "scripts": {
+    "build": "npm --prefix react_app install && npm --prefix react_app run build && node -e \"const fs=require('fs'); fs.cpSync('react_app/dist', 'dist', {recursive: true});\"",
+    "start": "npm --prefix react_app run preview"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
