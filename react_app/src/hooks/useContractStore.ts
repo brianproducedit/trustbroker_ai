@@ -32,11 +32,23 @@ interface ContractStore {
   
   // SOW Actions
   createContractDraft: (title: string, description: string, milestones: Milestone[]) => string
+  updateContractDraft: (contractId: string, updates: Partial<Contract>) => void
+  deleteContract: (contractId: string) => void
+  cancelContract: (contractId: string, reason?: string) => void
   acceptContract: (contractId: string, role: 'buyer' | 'supplier') => void
+  
+  // Milestone Actions
+  addMilestone: (contractId: string, milestone: Milestone) => void
+  removeMilestone: (contractId: string, milestoneId: string) => void
   updateMilestone: (contractId: string, milestoneId: string, updates: Partial<Milestone>) => void
+  
+  // Payment Staging
+  stagePayment: (contractId: string, amount: number, paypalOrderId: string) => void
   
   // Evidence & Verification
   submitEvidence: (contractId: string, milestoneId: string, submission: Omit<EvidenceSubmission, 'id' | 'submittedAt' | 'version'>) => Promise<VerificationAssessment>
+  requestRevision: (contractId: string, milestoneId: string, notes: string) => void
+  resubmitDelivery: (contractId: string, milestoneId: string) => void
   releasePayment: (contractId: string, milestoneId: string) => void
   
   // Add Audit Event
@@ -136,8 +148,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          actor: 'Elena Rostova (Buyer)',
-          action: 'SOW_DRAFTED',
+          actor: 'Elena Rostova (Client)',
+          action: 'CONTRACT_CREATED',
           details: `Draft created: "${title}" with ${milestones.length} milestones.`,
         },
       ],
@@ -151,6 +163,70 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     }))
 
     return newId
+  },
+
+  updateContractDraft: (contractId, updates) => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          const updatedMilestones = updates.milestones || c.milestones
+          const totalAmount = updatedMilestones.reduce((sum, m) => sum + m.amount, 0)
+          return {
+            ...c,
+            ...updates,
+            totalAmount,
+            version: c.version + 1,
+            updatedAt: new Date().toISOString(),
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: 'Elena Rostova (Client)',
+                action: 'CONTRACT_UPDATED',
+                details: `Contract scope updated to version ${c.version + 1}.`,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
+  },
+
+  deleteContract: (contractId) => {
+    set((state) => {
+      const remaining = state.contracts.filter((c) => c.id !== contractId && c.code !== contractId)
+      return {
+        contracts: remaining,
+        activeContractId: remaining[0]?.id || '',
+      }
+    })
+  },
+
+  cancelContract: (contractId, reason = 'Cancelled by mutual request.') => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            status: 'cancelled' as ContractStatus,
+            updatedAt: new Date().toISOString(),
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: 'System',
+                action: 'CONTRACT_CANCELLED',
+                details: reason,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
   },
 
   acceptContract: (contractId, role) => {
@@ -182,7 +258,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 timestamp: new Date().toISOString(),
                 actor: role === 'buyer' ? c.buyer.name : c.supplier.name,
                 action: `${role.toUpperCase()}_ACCEPTED`,
-                details: `${role === 'buyer' ? 'Buyer' : 'Supplier'} digitally accepted contract terms.`,
+                details: `${role === 'buyer' ? 'Client' : 'Supplier'} digitally accepted contract terms.`,
               },
             ],
           }
@@ -193,21 +269,85 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     })
   },
 
+  addMilestone: (contractId, milestone) => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          const updatedMilestones = [...c.milestones, milestone]
+          const totalAmount = updatedMilestones.reduce((sum, m) => sum + m.amount, 0)
+          return {
+            ...c,
+            milestones: updatedMilestones,
+            totalAmount,
+            updatedAt: new Date().toISOString(),
+          }
+        }
+        return c
+      }),
+    }))
+  },
+
+  removeMilestone: (contractId, milestoneId) => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          const updatedMilestones = c.milestones.filter((m) => m.id !== milestoneId)
+          const totalAmount = updatedMilestones.reduce((sum, m) => sum + m.amount, 0)
+          return {
+            ...c,
+            milestones: updatedMilestones,
+            totalAmount,
+            updatedAt: new Date().toISOString(),
+          }
+        }
+        return c
+      }),
+    }))
+  },
+
   updateMilestone: (contractId, milestoneId, updates) => {
     set((state) => {
       const updated = state.contracts.map((c) => {
         if (c.id === contractId || c.code === contractId) {
+          const updatedMilestones = c.milestones.map((m) =>
+            m.id === milestoneId ? { ...m, ...updates } : m
+          )
+          const totalAmount = updatedMilestones.reduce((sum, m) => sum + m.amount, 0)
           return {
             ...c,
-            milestones: c.milestones.map((m) =>
-              m.id === milestoneId ? { ...m, ...updates } : m
-            ),
+            milestones: updatedMilestones,
+            totalAmount,
+            updatedAt: new Date().toISOString(),
           }
         }
         return c
       })
       return { contracts: updated }
     })
+  },
+
+  stagePayment: (contractId, amount, paypalOrderId) => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            stagedAmount: c.stagedAmount + amount,
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: 'PayPal Sandbox',
+                action: 'PAYMENT_STAGED',
+                details: `Staged $${amount} USD for milestone funding (PayPal Order: ${paypalOrderId}).`,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
   },
 
   submitEvidence: async (contractId, milestoneId, submission) => {
@@ -241,7 +381,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           feedback: 'Code deliverables match milestone scope.',
         },
       ],
-      summaryAnalysis: 'AI Verification complete. All acceptance criteria evaluated. Deliverables meet requirements for milestone payment authorization.',
+      summaryAnalysis: 'AI Verification complete. All acceptance criteria evaluated. Deliverables meet requirements for milestone payment release.',
       assessedAt: new Date().toISOString(),
       modelUsed: 'Gemini 1.5 Pro',
       requiresHumanReview: false,
@@ -281,6 +421,60 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     })
 
     return assessment
+  },
+
+  requestRevision: (contractId, milestoneId, notes) => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            milestones: c.milestones.map((m) => {
+              if (m.id === milestoneId) {
+                return {
+                  ...m,
+                  status: 'revision_requested' as MilestoneStatus,
+                }
+              }
+              return m
+            }),
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: 'Elena Rostova (Client)',
+                action: 'REVISION_REQUESTED',
+                details: `Revision requested: "${notes}".`,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
+  },
+
+  resubmitDelivery: (contractId, milestoneId) => {
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            milestones: c.milestones.map((m) => {
+              if (m.id === milestoneId) {
+                return {
+                  ...m,
+                  status: 'in_progress' as MilestoneStatus,
+                }
+              }
+              return m
+            }),
+          }
+        }
+        return c
+      }),
+    }))
   },
 
   releasePayment: (contractId, milestoneId) => {

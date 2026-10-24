@@ -24,7 +24,8 @@
 
     /* Path Aliases */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "cn": ["./src/lib/utils"]
     }
   },
   "include": ["src"]

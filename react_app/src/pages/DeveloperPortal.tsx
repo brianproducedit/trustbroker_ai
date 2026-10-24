@@ -1,221 +1,244 @@
 import React, { useState } from 'react'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { SandboxBanner } from '@/components/common/SandboxBanner'
-import { 
-  Code2, 
-  Copy, 
-  Check, 
-  ExternalLink
-} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Code2, Copy, Check, Key, Terminal, Send } from 'lucide-react'
+import { toast } from 'sonner'
 
 export const DeveloperPortal: React.FC = () => {
-  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const copyCode = (code: string, id: string) => {
     navigator.clipboard.writeText(code)
-    setCopiedCode(id)
-    setTimeout(() => setCopiedCode(null), 2000)
+    setCopiedId(id)
+    toast.success('Snippet copied to clipboard')
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const curlExample = `curl -X POST "https://api.trustbroker.ai/v1/deliveries/verify" \\
+  const curlDraftSow = `curl -X POST "https://api.trustbroker.ai/v1/contracts/draft" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "brief": "React web application with PayPal checkout flow and TypeScript validation.",
+    "budget": 3400,
+    "currency": "USD"
+  }'`
+
+  const curlVerify = `curl -X POST "https://api.trustbroker.ai/v1/deliveries/verify" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "contract_id": "TB-2026-084",
     "milestone_id": "ms-2",
     "repo_url": "https://github.com/devstudio/react-landing-verified",
-    "live_url": "https://react-landing-demo.vercel.app",
-    "evidence_notes": "Completed React 18 frontend with strict TypeScript compiler validation."
+    "live_url": "https://react-landing-demo.vercel.app"
   }'`
 
-  const pythonExample = `import httpx
+  const pythonSdk = `from trustbroker import TrustBrokerClient
 
-client = httpx.Client(base_url="https://api.trustbroker.ai/v1")
-response = client.post(
-    "/ai/draft-sow",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    json={
-        "brief": "I need a React 18 landing page with Tailwind CSS, strict TypeScript checks, and PayPal checkout.",
-        "budget": 3200,
-        "currency": "USD"
-    }
+client = TrustBrokerClient(api_key="YOUR_API_KEY")
+
+# 1. Generate contract from plain language
+contract = client.contracts.create_from_brief(
+    brief="Next.js SaaS dashboard with PayPal Orders v2",
+    budget=4500,
+    currency="USD"
 )
-sow_data = response.json()
-print("Drafted Milestones:", len(sow_data["milestones"]))`
+print(f"Created contract: {contract.id} with {len(contract.milestones)} milestones")`
 
   return (
     <div className="min-h-screen bg-[#F6F8FC] text-[#1A2940] flex flex-col font-sans">
       <Header />
 
       <main className="w-full pt-[68px] flex-1">
-        <SandboxBanner />
+        {/* Hero */}
+        <section className="py-12 bg-white border-b border-[#DDE4EF]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5">
+              <Code2 className="w-3.5 h-3.5 text-blue-600" />
+              REST API &amp; SDKs
+            </Badge>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-10">
-          {/* Header */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-600 font-semibold">
-              <Code2 className="w-4 h-4" />
-              <span>DEVELOPER RESOURCES &bull; REST API V1</span>
-            </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-[#1A2940]">
-              TrustBroker AI Developer Portal
+              TrustBroker Developer Platform
             </h1>
-            <p className="text-sm sm:text-base text-[#5D6B82] max-w-2xl leading-relaxed">
-              Programmatic interface for agentic commerce, AI statement of work synthesis, and conditional PayPal release orchestration.
+            <p className="text-sm text-[#5D6B82] max-w-2xl leading-relaxed">
+              Integrate AI contract drafting, PayPal milestone payments, and automated delivery evaluation directly into your marketplace or agency workflow.
             </p>
           </div>
+        </section>
 
-          {/* Quick Links Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col gap-2">
-              <span className="text-xs font-mono text-blue-600 font-bold uppercase">OpenAPI 3.1</span>
-              <h3 className="text-sm font-bold text-slate-900">FastAPI OpenAPI Spec</h3>
-              <p className="text-xs text-slate-500">Auto-generated interactive Swagger schema.</p>
-              <a
-                href="#swagger"
-                className="text-xs text-blue-600 font-semibold hover:underline inline-flex items-center gap-1 mt-2"
-              >
-                <span>Explore /docs</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
+        {/* Content Tabs */}
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="bg-slate-100 p-1 border border-slate-200">
+              <TabsTrigger value="overview" className="text-xs font-medium">Overview</TabsTrigger>
+              <TabsTrigger value="endpoints" className="text-xs font-medium">API Endpoints</TabsTrigger>
+              <TabsTrigger value="authentication" className="text-xs font-medium">Authentication</TabsTrigger>
+            </TabsList>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col gap-2">
-              <span className="text-xs font-mono text-emerald-600 font-bold uppercase">PayPal API</span>
-              <h3 className="text-sm font-bold text-slate-900">Orders v2 Sandbox</h3>
-              <p className="text-xs text-slate-500">Direct server-to-server webhook endpoints.</p>
-              <a
-                href="https://developer.paypal.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 font-semibold hover:underline inline-flex items-center gap-1 mt-2"
-              >
-                <span>PayPal Dev Portal</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="border-[#DDE4EF] bg-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-blue-600" />
+                      REST API
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Predictable JSON endpoints with standard HTTP status codes.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-xs text-slate-600">
+                    Base URL: <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-600 font-mono">https://api.trustbroker.ai/v1</code>
+                  </CardContent>
+                </Card>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col gap-2">
-              <span className="text-xs font-mono text-indigo-600 font-bold uppercase">Gemini AI</span>
-              <h3 className="text-sm font-bold text-slate-900">Gemini 1.5 Pro JSON Mode</h3>
-              <p className="text-xs text-slate-500">Structured criteria evaluation schemas.</p>
-              <a
-                href="https://ai.google.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 font-semibold hover:underline inline-flex items-center gap-1 mt-2"
-              >
-                <span>Google AI Studio</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          </div>
+                <Card className="border-[#DDE4EF] bg-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Send className="w-4 h-4 text-emerald-600" />
+                      Webhooks
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Instant events for milestone verification and payment releases.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-xs text-slate-600">
+                    Real-time HMAC SHA-256 signed event payloads.
+                  </CardContent>
+                </Card>
 
-          {/* Core Endpoints Table */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#DDE4EF] flex flex-col gap-4">
-            <h3 className="text-base font-bold text-[#1A2940]">Key REST Endpoints</h3>
-            <div className="flex flex-col divide-y divide-slate-100 text-xs">
-              <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                    POST
-                  </span>
-                  <span className="font-mono font-semibold text-slate-900">/api/ai/draft-sow</span>
-                </div>
-                <span className="text-slate-500">Parses natural language brief into structured milestones and criteria.</span>
+                <Card className="border-[#DDE4EF] bg-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Key className="w-4 h-4 text-indigo-600" />
+                      PayPal Orders v2
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Native PayPal SDK compatibility with server authorization.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-xs text-slate-600">
+                    Seamless staging and capture synchronization.
+                  </CardContent>
+                </Card>
               </div>
 
-              <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    POST
-                  </span>
-                  <span className="font-mono font-semibold text-slate-900">/api/payments/create-order</span>
-                </div>
-                <span className="text-slate-500">Stages pre-authorized reserve funds using PayPal Orders API.</span>
-              </div>
+              {/* Code Sample Card */}
+              <Card className="border-[#DDE4EF] bg-white">
+                <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-bold">Python SDK Quickstart</CardTitle>
+                    <CardDescription className="text-xs">Create a contract from natural language in 3 lines.</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyCode(pythonSdk, 'py')}
+                    className="h-7 text-xs gap-1 border-slate-200"
+                  >
+                    {copiedId === 'py' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId === 'py' ? 'Copied' : 'Copy'}
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <pre className="p-4 bg-slate-900 text-slate-100 rounded-b-xl text-xs font-mono overflow-x-auto leading-relaxed">
+                    {pythonSdk}
+                  </pre>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                    POST
-                  </span>
-                  <span className="font-mono font-semibold text-slate-900">/api/deliveries/verify</span>
-                </div>
-                <span className="text-slate-500">Evaluates evidence artifacts and outputs pass/fail gate decision.</span>
-              </div>
+            {/* Endpoints Tab */}
+            <TabsContent value="endpoints" className="space-y-6">
+              <Card className="border-[#DDE4EF] bg-white">
+                <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-600 text-white font-mono text-[10px]">POST</Badge>
+                      <span className="font-mono text-xs font-semibold text-slate-800">/contracts/draft</span>
+                    </div>
+                    <CardDescription className="text-xs">Generate an SOW draft with milestones from brief.</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyCode(curlDraftSow, 'c1')}
+                    className="h-7 text-xs gap-1 border-slate-200"
+                  >
+                    {copiedId === 'c1' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId === 'c1' ? 'Copied' : 'Copy cURL'}
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <pre className="p-4 bg-slate-900 text-slate-100 rounded-b-xl text-xs font-mono overflow-x-auto leading-relaxed">
+                    {curlDraftSow}
+                  </pre>
+                </CardContent>
+              </Card>
 
-              <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">
-                    POST
-                  </span>
-                  <span className="font-mono font-semibold text-slate-900">/api/payments/release-milestone</span>
-                </div>
-                <span className="text-slate-500">Captures and disburses payment to supplier once criteria pass.</span>
-              </div>
-            </div>
-          </div>
+              <Card className="border-[#DDE4EF] bg-white">
+                <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-emerald-600 text-white font-mono text-[10px]">POST</Badge>
+                      <span className="font-mono text-xs font-semibold text-slate-800">/deliveries/verify</span>
+                    </div>
+                    <CardDescription className="text-xs">Trigger AI evaluation of submitted repository or live link.</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyCode(curlVerify, 'c2')}
+                    className="h-7 text-xs gap-1 border-slate-200"
+                  >
+                    {copiedId === 'c2' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId === 'c2' ? 'Copied' : 'Copy cURL'}
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <pre className="p-4 bg-slate-900 text-slate-100 rounded-b-xl text-xs font-mono overflow-x-auto leading-relaxed">
+                    {curlVerify}
+                  </pre>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Interactive Code Snippets */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* cURL Example */}
-            <div className="bg-[#0E1B35] rounded-2xl p-5 border border-slate-800 text-white flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="font-mono text-xs text-blue-400 font-semibold">cURL Request</span>
-                <button
-                  onClick={() => copyCode(curlExample, 'curl')}
-                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
-                >
-                  {copiedCode === 'curl' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <pre className="py-4 font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed">
-                {curlExample}
-              </pre>
-            </div>
-
-            {/* Python Example */}
-            <div className="bg-[#0E1B35] rounded-2xl p-5 border border-slate-800 text-white flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="font-mono text-xs text-emerald-400 font-semibold">Python Client (httpx)</span>
-                <button
-                  onClick={() => copyCode(pythonExample, 'python')}
-                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
-                >
-                  {copiedCode === 'python' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <pre className="py-4 font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed">
-                {pythonExample}
-              </pre>
-            </div>
-          </div>
-        </div>
+            {/* Authentication Tab */}
+            <TabsContent value="authentication" className="space-y-6">
+              <Card className="border-[#DDE4EF] bg-white">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Key className="w-4 h-4 text-blue-600" />
+                    Bearer Token Authentication
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    All API requests require an API key passed in the Authorization header.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 text-xs text-slate-600">
+                  <p>Pass your token in the request headers:</p>
+                  <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg font-mono text-xs">
+                    Authorization: Bearer tb_live_sandbox_994a8e32
+                  </pre>
+                  <p className="text-slate-500 text-[11px]">
+                    Sandbox keys begin with <code className="text-blue-600 font-mono">tb_live_sandbox_</code> and interact only with PayPal Sandbox endpoints.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </section>
       </main>
 
       <Footer />
     </div>
   )
 }
+
+export default DeveloperPortal

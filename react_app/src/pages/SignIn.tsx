@@ -3,7 +3,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
 import { useContractStore } from '@/hooks/useContractStore'
-import { Lock, Mail, ArrowRight, ShieldCheck, UserCheck } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Lock, Mail, ArrowRight, ShieldCheck, UserCheck, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export const SignIn: React.FC = () => {
   const navigate = useNavigate()
@@ -19,7 +25,9 @@ export const SignIn: React.FC = () => {
   const [email, setEmail] = useState(
     roleParam === 'supplier' ? 'tariro@devstudio.co.zw' : 'elena@acmeglobal.com'
   )
-  const [password, setPassword] = useState('••••••••••••')
+  const [password, setPassword] = useState('password123')
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -39,8 +47,10 @@ export const SignIn: React.FC = () => {
     setTimeout(() => {
       login(selectedRole)
       setIsLoading(false)
-      navigate(redirectParam || ROUTES.DASHBOARD)
-    }, 400)
+      const roleName = selectedRole === 'buyer' ? 'Client' : 'Supplier'
+      toast.success(`Signed in successfully as ${roleName}!`)
+      navigate(redirectParam ? decodeURIComponent(redirectParam) : ROUTES.DASHBOARD)
+    }, 450)
   }
 
   const handleQuickFill = (role: 'buyer' | 'supplier') => {
@@ -67,127 +77,159 @@ export const SignIn: React.FC = () => {
 
       {/* Main Card */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 my-8">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-[#DDE4EF] p-8 flex flex-col gap-6">
-          <div className="flex flex-col gap-2 text-center">
-            <h1 className="text-2xl font-bold text-[#1A2940]">Sign in to TrustBroker</h1>
-            <p className="text-xs text-[#5D6B82]">
-              Access your contracts, PayPal Sandbox reserves, and verification assessments.
-            </p>
-          </div>
+        <Card className="w-full max-w-md shadow-sm border-[#DDE4EF] bg-white">
+          <CardHeader className="text-center pb-3">
+            <CardTitle className="text-2xl font-bold text-[#1A2940]">Sign In</CardTitle>
+            <CardDescription className="text-xs text-[#5D6B82] mt-1">
+              Access your contracts, staged milestone funds, and verification reports.
+            </CardDescription>
+          </CardHeader>
 
-          {/* Quick Demo Role Fill Selector */}
-          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 font-medium px-1">
-              <span>Quick Demo Fill:</span>
-              <span className="text-blue-600 font-semibold">1-Click Test Login</span>
+          <CardContent className="space-y-5">
+            {/* Quick Demo Test Logins */}
+            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium px-1">
+                <span>Demo Accounts:</span>
+                <span className="text-blue-600 font-semibold text-[10px]">1-Click Quick Fill</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={selectedRole === 'buyer' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleQuickFill('buyer')}
+                  className={`h-8 text-xs font-medium justify-center gap-1.5 ${
+                    selectedRole === 'buyer'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Client (Elena)</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant={selectedRole === 'supplier' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleQuickFill('supplier')}
+                  className={`h-8 text-xs font-medium justify-center gap-1.5 ${
+                    selectedRole === 'supplier'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Supplier (Tariro)</span>
+                </Button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('buyer')}
-                className={`py-1.5 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors ${
-                  selectedRole === 'buyer'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="signin-email" className="text-xs font-semibold text-[#1A2940]">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="pl-9 bg-slate-50 border-slate-200 text-sm focus-visible:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="signin-password" className="text-xs font-semibold text-[#1A2940]">
+                    Password
+                  </Label>
+                  <Link
+                    to={ROUTES.FORGOT_PASSWORD}
+                    className="text-xs text-blue-600 hover:underline font-medium"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    id="signin-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="pl-9 pr-9 bg-slate-50 border-slate-200 text-sm focus-visible:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
+                  />
+                  <label htmlFor="remember" className="text-xs text-slate-600 cursor-pointer select-none">
+                    Remember this device
+                  </label>
+                </div>
+
+                <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  SSL Protected
+                </span>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm h-10 gap-2 mt-2"
               >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Buyer (Elena)</span>
-              </button>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In as {selectedRole === 'buyer' ? 'Client' : 'Supplier'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
 
-              <button
-                type="button"
-                onClick={() => handleQuickFill('supplier')}
-                className={`py-1.5 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition-colors ${
-                  selectedRole === 'supplier'
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Supplier (Tariro)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Sign In Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#1A2940]">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-[#1A2940] focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
-                  placeholder="name@company.com"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[#1A2940]">Password</label>
-                <a href="#forgot" className="text-xs text-blue-600 hover:underline">
-                  Forgot?
-                </a>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-[#1A2940] focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all font-mono"
-                  placeholder="••••••••••••"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-600">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" defaultChecked className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                <span>Remember this session</span>
-              </label>
-              <span className="text-[11px] text-emerald-600 font-mono flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                SSL Protected
-              </span>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-10 mt-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 shadow-sm shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <span>Authenticating...</span>
-              ) : (
-                <>
-                  <span>Sign In as {selectedRole === 'buyer' ? 'Buyer' : 'Supplier'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Create Account link */}
-          <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-600">
+          <CardFooter className="pt-3 pb-6 border-t border-slate-100 flex justify-center text-xs text-slate-600">
             Don't have an account yet?{' '}
-            <Link to={ROUTES.SIGN_UP} className="text-blue-600 font-semibold hover:underline">
-              Register now
+            <Link to={ROUTES.SIGN_UP} className="text-blue-600 font-semibold hover:underline ml-1">
+              Create an account
             </Link>
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
       </div>
 
-      {/* Simplified Footer */}
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
         TrustBroker AI &bull; PayPal AI Hackathon Sandbox Prototype &bull; Secure Authentication
       </footer>
     </div>
   )
 }
+
+export default SignIn

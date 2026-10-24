@@ -1,5 +1,5 @@
 export const APP_NAME = 'TrustBroker AI'
-export const APP_TAGLINE = 'AI-Powered Cross-Border Work Verification & SOW Platform'
+export const APP_TAGLINE = 'Smart Contracts & Milestone Payments for Freelancers'
 export const PAYPAL_SANDBOX_DISCLAIMER = 'Prototype Sandbox: Conditional payment demonstration using PayPal Sandbox endpoints. Not a licensed banking or fiduciary escrow institution.'
 
 export const ROUTES = {
@@ -11,6 +11,9 @@ export const ROUTES = {
   DEVELOPER_PORTAL: '/developers',
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+  VERIFY_EMAIL: '/verify-email',
 
   // Authenticated Portal Pages (All contained inside DashboardLayout)
   DASHBOARD: '/dashboard',
@@ -37,23 +40,23 @@ export const STATUS_COLORS = {
 }
 
 export const STATUS_LABELS: Record<string, string> = {
-  draft: 'Draft SOW',
+  draft: 'Draft Contract',
   pending_acceptance: 'Pending Review',
-  active: 'Active Contract',
-  in_verification: 'Verification Active',
-  completed: 'Settled & Closed',
-  disputed: 'Flagged for Review',
+  active: 'Active',
+  in_verification: 'In Review',
+  completed: 'Completed',
+  disputed: 'In Dispute',
   cancelled: 'Cancelled',
   pending: 'Pending',
   in_progress: 'In Progress',
-  submitted: 'Evidence Submitted',
-  verifying: 'AI Verifying',
-  verified: 'Verified Pass',
-  settled: 'Funds Released',
-  revision_requested: 'Needs Revision',
+  submitted: 'Work Submitted',
+  verifying: 'Reviewing Work',
+  verified: 'Verification Passed',
+  settled: 'Payment Released',
+  revision_requested: 'Revision Requested',
   not_started: 'Not Funded',
-  checkout_created: 'PayPal Order Created',
-  staged_in_sandbox: 'Staged in Sandbox',
-  release_authorized: 'Release Authorized',
-  released: 'Released via PayPal',
+  checkout_created: 'Order Created',
+  staged_in_sandbox: 'Payment Staged',
+  release_authorized: 'Release Approved',
+  released: 'Payment Released',
 }

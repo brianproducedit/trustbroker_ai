@@ -5,11 +5,9 @@ import { ROUTES } from '@/constants'
 import { useContractStore } from '@/hooks/useContractStore'
 import { 
   LayoutGrid, 
-  FilePlus, 
+  PlusCircle, 
   FileText, 
-  CheckSquare, 
   History, 
-  Code2, 
   UserCircle2, 
   ArrowLeftRight,
   UploadCloud,
@@ -17,6 +15,7 @@ import {
   LogOut
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface SidebarProps {
   currentRole: 'buyer' | 'supplier'
@@ -26,30 +25,36 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut } = useContractStore()
+  const { signOut, activeContractId } = useContractStore()
+
+  const currentContractKey = activeContractId || 'contract-1'
 
   const handleSignOut = () => {
     signOut()
-    navigate(ROUTES.SIGN_IN)
+    toast.success('Signed out successfully')
+    navigate(ROUTES.HOME)
   }
 
-  // Distinct nav configurations tailored to the persona
+  const handleRoleToggle = () => {
+    onToggleRole()
+    const nextRole = currentRole === 'buyer' ? 'Supplier (Freelancer)' : 'Client (Hiring)'
+    toast.info(`Switched view to ${nextRole} Mode`)
+  }
+
+  // Clear, distinct persona navigation
   const buyerNavItems = [
-    { label: 'Active Procurements', icon: LayoutGrid, path: ROUTES.DASHBOARD },
-    { label: 'Create SOW & Hire', icon: FilePlus, path: ROUTES.NEW_PROJECT },
-    { label: 'Contracts & Escrow Reserves', icon: FileText, path: ROUTES.CONTRACT_DETAIL('contract-1') },
-    { label: 'Inspect Deliverables & Gate', icon: CheckSquare, path: ROUTES.DELIVERY_VERIFICATION('contract-1') },
-    { label: 'Audit Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY('contract-1') },
-    { label: 'Developer & API', icon: Code2, path: ROUTES.DEVELOPER_PORTAL },
+    { label: 'Your Contracts', icon: LayoutGrid, path: ROUTES.DASHBOARD },
+    { label: 'New Project', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
+    { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
+    { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
   ]
 
   const supplierNavItems = [
-    { label: 'Active Client Jobs', icon: LayoutGrid, path: ROUTES.DASHBOARD },
-    { label: 'Incoming SOWs to Accept', icon: FileText, path: ROUTES.CONTRACT_DETAIL('contract-1') },
-    { label: 'Submit Deliverable Evidence', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION('contract-1') },
-    { label: 'PayPal Payouts & Earnings', icon: Wallet, path: ROUTES.SUPPLIER_PAYOUTS },
-    { label: 'Audit Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY('contract-1') },
-    { label: 'Developer & API', icon: Code2, path: ROUTES.DEVELOPER_PORTAL },
+    { label: 'Your Projects', icon: LayoutGrid, path: ROUTES.DASHBOARD },
+    { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
+    { label: 'Submit Delivery', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },
+    { label: 'Earnings & Payouts', icon: Wallet, path: ROUTES.SUPPLIER_PAYOUTS },
+    { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
   ]
 
   const navItems = currentRole === 'buyer' ? buyerNavItems : supplierNavItems
@@ -59,14 +64,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
       {/* Top Header */}
       <div className="flex flex-col">
         <div className="h-16 px-4 flex items-center justify-between border-b border-[#222A3D] bg-[#060E20]">
-          <Logo isDark hideSubtitle={false} />
+          <Link to={ROUTES.DASHBOARD} className="flex items-center">
+            <Logo isDark hideSubtitle={false} />
+          </Link>
         </div>
 
         {/* Navigation Section */}
-        <div className="py-3 px-3">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold px-2 mb-2 block">
-            {currentRole === 'buyer' ? 'Client Procurement Portal' : 'Supplier Delivery Portal'}
-          </span>
+        <div className="py-4 px-3">
+          <div className="flex items-center justify-between px-2 mb-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold block">
+              {currentRole === 'buyer' ? 'Client Workspace' : 'Freelancer Workspace'}
+            </span>
+          </div>
+
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path
@@ -79,8 +89,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs transition-all',
                     isActive
                       ? currentRole === 'buyer'
-                        ? 'bg-blue-600/20 text-blue-400 font-semibold border-l-2 border-blue-500 shadow-sm'
-                        : 'bg-emerald-600/20 text-emerald-400 font-semibold border-l-2 border-emerald-500 shadow-sm'
+                        ? 'bg-blue-600/20 text-blue-400 font-semibold border-l-2 border-blue-500 shadow-xs'
+                        : 'bg-emerald-600/20 text-emerald-400 font-semibold border-l-2 border-emerald-500 shadow-xs'
                       : 'text-[#ACB9D2] hover:bg-[#171F33] hover:text-white'
                   )}
                 >
@@ -100,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
         </div>
       </div>
 
-      {/* Bottom Role & Sandbox Status */}
+      {/* Bottom Role Switcher & User Status */}
       <div className="p-3 border-t border-[#222A3D] flex flex-col gap-2.5 bg-[#060E20]">
         {/* Active Role Card */}
         <div
@@ -118,21 +128,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
                 currentRole === 'buyer' ? 'text-blue-400' : 'text-emerald-400'
               )}
             >
-              {currentRole === 'buyer' ? 'Buyer Mode' : 'Supplier Mode'}
+              {currentRole === 'buyer' ? 'Client Mode' : 'Supplier Mode'}
             </span>
             <button
-              onClick={onToggleRole}
+              onClick={handleRoleToggle}
               type="button"
               className={cn(
-                'inline-flex items-center gap-1 font-mono text-[10px] transition-colors uppercase font-medium px-2 py-0.5 rounded border',
+                'inline-flex items-center gap-1 font-mono text-[10px] transition-colors uppercase font-medium px-2 py-0.5 rounded border cursor-pointer',
                 currentRole === 'buyer'
                   ? 'bg-blue-950/80 text-blue-300 hover:text-white border-blue-800/60'
                   : 'bg-emerald-950/80 text-emerald-300 hover:text-white border-emerald-800/60'
               )}
-              title="Toggle between Buyer and Supplier portal views"
+              title="Toggle between Client and Supplier views"
             >
               <ArrowLeftRight className="w-2.5 h-2.5" />
-              <span>Switch Persona</span>
+              <span>Switch</span>
             </button>
           </div>
 
@@ -145,10 +155,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
             />
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-white truncate">
-                {currentRole === 'buyer' ? 'Elena Rostova (Client)' : 'Tariro Moyo (Freelancer)'}
+                {currentRole === 'buyer' ? 'Elena Rostova' : 'Tariro Moyo'}
               </span>
               <span className="text-[10px] text-slate-400 truncate">
-                {currentRole === 'buyer' ? 'Acme Global Org (USA)' : 'DevStudio Harare (ZW)'}
+                {currentRole === 'buyer' ? 'Acme Global Org' : 'DevStudio Harare'}
               </span>
             </div>
           </div>
@@ -161,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
             <span className="font-mono text-[11px] text-slate-300">PayPal Sandbox</span>
           </div>
           <span className="font-mono text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">
-            Connected
+            Live Demo
           </span>
         </div>
 
@@ -169,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
         <button
           onClick={handleSignOut}
           type="button"
-          className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-[#171F33] border border-[#222A3D] transition-all group"
+          className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-[#171F33] border border-[#222A3D] transition-all cursor-pointer group"
           title="Sign out of current account"
         >
           <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-400 transition-colors" />
@@ -179,3 +189,5 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
     </aside>
   )
 }
+
+export default Sidebar

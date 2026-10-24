@@ -8,22 +8,24 @@ import { useNavigate } from 'react-router-dom'
 import { AgGridReact } from 'ag-grid-react'
 import { ModuleRegistry, AllCommunityModule, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { ColDef, ICellRendererParams } from 'ag-grid-community'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { 
   FileText, 
   DollarSign, 
-  CheckCircle, 
+  CheckCircle2, 
   Layers, 
   Sparkles, 
-  ShieldCheck, 
   ArrowUpRight, 
   Plus, 
   Filter,
-  CheckCircle2,
   Clock,
   ExternalLink,
   UploadCloud,
   Briefcase
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -79,9 +81,9 @@ export const Dashboard: React.FC = () => {
   // AG Grid Column Definitions
   const columnDefs = useMemo<ColDef[]>(() => [
     {
-      headerName: 'Contract Code',
+      headerName: 'Contract',
       field: 'code',
-      width: 150,
+      width: 140,
       cellRenderer: (params: ICellRendererParams) => (
         <div className="flex items-center gap-2 h-full font-mono text-xs text-blue-400 font-semibold">
           <FileText className="w-3.5 h-3.5 text-blue-400" />
@@ -93,7 +95,7 @@ export const Dashboard: React.FC = () => {
       headerName: 'Project Title',
       field: 'title',
       flex: 1,
-      minWidth: 220,
+      minWidth: 200,
       cellRenderer: (params: ICellRendererParams) => (
         <div className="flex flex-col justify-center h-full">
           <span className="text-xs font-semibold text-white truncate">{params.data.title}</span>
@@ -102,9 +104,9 @@ export const Dashboard: React.FC = () => {
       ),
     },
     {
-      headerName: activeRole === 'buyer' ? 'Assigned Supplier' : 'Hiring Client',
+      headerName: activeRole === 'buyer' ? 'Supplier' : 'Client',
       field: activeRole === 'buyer' ? 'supplier.name' : 'buyer.name',
-      width: 180,
+      width: 170,
       cellRenderer: (params: ICellRendererParams) => {
         const party = activeRole === 'buyer' ? params.data.supplier : params.data.buyer
         return (
@@ -116,9 +118,9 @@ export const Dashboard: React.FC = () => {
       },
     },
     {
-      headerName: activeRole === 'buyer' ? 'Sandbox Reserve' : 'Guaranteed Escrow',
+      headerName: 'Payment Staged',
       field: 'stagedAmount',
-      width: 160,
+      width: 150,
       cellRenderer: (params: ICellRendererParams) => (
         <div className="flex flex-col justify-center h-full">
           <span className="font-mono text-xs text-emerald-400 font-semibold">
@@ -127,7 +129,7 @@ export const Dashboard: React.FC = () => {
           <span className="text-[10px] text-slate-400">
             {params.data.releasedAmount > 0 
               ? `${formatCurrency(params.data.releasedAmount)} released` 
-              : activeRole === 'buyer' ? 'Held in Sandbox' : 'Funds Guaranteed'}
+              : activeRole === 'buyer' ? 'Staged in Sandbox' : 'Funds Staged'}
           </span>
         </div>
       ),
@@ -135,7 +137,7 @@ export const Dashboard: React.FC = () => {
     {
       headerName: 'Status',
       field: 'status',
-      width: 160,
+      width: 150,
       cellRenderer: (params: ICellRendererParams) => (
         <div className="flex items-center h-full">
           <StatusBadge status={params.value} size="sm" />
@@ -143,17 +145,17 @@ export const Dashboard: React.FC = () => {
       ),
     },
     {
-      headerName: 'Actions',
-      width: 110,
+      headerName: 'Action',
+      width: 100,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams) => (
         <div className="flex items-center h-full">
           <button
             onClick={() => navigate(ROUTES.CONTRACT_DETAIL(params.data.id))}
-            className="px-2.5 py-1 text-xs bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white rounded transition-colors inline-flex items-center gap-1 font-medium"
+            className="px-2.5 py-1 text-xs bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white rounded transition-colors inline-flex items-center gap-1 font-medium cursor-pointer"
           >
-            <span>Inspect</span>
+            <span>Open</span>
             <ArrowUpRight className="w-3 h-3" />
           </button>
         </div>
@@ -173,122 +175,125 @@ export const Dashboard: React.FC = () => {
     }
   }
 
-  // Active milestone under review
   const activeMilestone = selectedContract?.milestones?.find((m) => m.status === 'verifying' || m.status === 'submitted') || selectedContract?.milestones?.[0]
+
+  const handleRelease = (milestoneId: string, amount: number) => {
+    releasePayment(selectedContract.id, milestoneId)
+    toast.success(`Payment released: ${formatCurrency(amount)} USD to supplier!`)
+  }
 
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6">
-        {/* Role-Sensitive Page Title & Controls */}
+        {/* Page Title & Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="uppercase tracking-wider">
-                {activeRole === 'buyer' ? 'Client Procurement Console' : 'Supplier Delivery Console'}
-              </span>
-              <span>•</span>
-              <span className="text-slate-400">PayPal Sandbox Escrow Engine</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              {activeRole === 'buyer'
-                ? 'Client Procurements & Contract Ledger'
-                : 'Active Client Jobs & Milestone Deliveries'}
+          <div className="space-y-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              {activeRole === 'buyer' ? 'Your Contracts & Procurements' : 'Your Projects & Deliverables'}
             </h1>
             <p className="text-xs text-slate-400">
               {activeRole === 'buyer'
-                ? 'Stage pre-authorized funds into PayPal Sandbox holding reserves. Payments release only when Gemini AI verifies deliverable criteria.'
-                : 'Review agreed SOW acceptance criteria, submit verification evidence, and receive guaranteed milestone disbursements.'}
+                ? 'Stage funds in PayPal Sandbox, monitor active milestones, and authorize payouts upon verified delivery.'
+                : 'Review contracted milestones, submit deliverable evidence for verification, and receive disbursements.'}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             {activeRole === 'buyer' ? (
-              <button
+              <Button
                 onClick={() => navigate(ROUTES.NEW_PROJECT)}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Create Project SOW</span>
-              </button>
+                <span>New Project</span>
+              </Button>
             ) : (
-              <button
-                onClick={() => navigate(ROUTES.DELIVERY_VERIFICATION(selectedContract.id))}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition-colors"
+              <Button
+                onClick={() => navigate(ROUTES.DELIVERY_VERIFICATION(selectedContract?.id || 'contract-1'))}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
               >
                 <UploadCloud className="w-4 h-4" />
-                <span>Submit Deliverable Evidence</span>
-              </button>
+                <span>Submit Work</span>
+              </Button>
             )}
           </div>
         </div>
 
-        {/* 4 Multi-Dimensional Metric Cards (Tailored per role) */}
+        {/* 4 Multi-Dimensional Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Metric 1 */}
-          <div className="bg-[#131B2E] p-4 rounded-xl border border-[#222A3D] flex flex-col justify-between">
-            <div className="flex items-start justify-between">
-              <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider">
-                {activeRole === 'buyer' ? 'Active Procurements' : 'Active Client Contracts'}
-              </span>
-              <Briefcase className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="mt-3">
-              <div className="text-2xl font-bold font-mono text-white">{roleMetrics.activeCount}</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">
-                {activeRole === 'buyer' ? 'Cross-border supplier contracts' : 'Guaranteed client engagements'}
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
+                  {activeRole === 'buyer' ? 'Active Contracts' : 'Active Projects'}
+                </span>
+                <Briefcase className="w-4 h-4 text-blue-400" />
               </div>
-            </div>
-          </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-white">{roleMetrics.activeCount}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {activeRole === 'buyer' ? 'Active supplier contracts' : 'Active client engagements'}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Metric 2 */}
-          <div className="bg-[#131B2E] p-4 rounded-xl border border-[#222A3D] flex flex-col justify-between">
-            <div className="flex items-start justify-between">
-              <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider">
-                {activeRole === 'buyer' ? 'Sandbox Reserve Staged' : 'Escrow Funds Guaranteed'}
-              </span>
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="mt-3">
-              <div className="text-2xl font-bold font-mono text-emerald-400">
-                {formatCurrency(roleMetrics.escrowAmount)}
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
+                  Staged Payments
+                </span>
+                <DollarSign className="w-4 h-4 text-emerald-400" />
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">
-                {activeRole === 'buyer' ? 'Committed in PayPal Sandbox' : 'Pre-authorized by client'}
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-emerald-400">
+                  {formatCurrency(roleMetrics.escrowAmount)}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {activeRole === 'buyer' ? 'Staged in PayPal Sandbox' : 'Guaranteed by client'}
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Metric 3 */}
-          <div className="bg-[#131B2E] p-4 rounded-xl border border-[#222A3D] flex flex-col justify-between">
-            <div className="flex items-start justify-between">
-              <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider">
-                {activeRole === 'buyer' ? 'Deliverables In Gate' : 'Pending Verification'}
-              </span>
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div className="mt-3">
-              <div className="text-2xl font-bold font-mono text-indigo-300">
-                {roleMetrics.pendingCount} Milestones
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
+                  Pending Actions
+                </span>
+                <Sparkles className="w-4 h-4 text-indigo-400" />
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Gemini 1.5 Pro assessment</div>
-            </div>
-          </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-indigo-300">
+                  {roleMetrics.pendingCount} Milestones
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Awaiting review or delivery</div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Metric 4 */}
-          <div className="bg-[#131B2E] p-4 rounded-xl border border-[#222A3D] flex flex-col justify-between">
-            <div className="flex items-start justify-between">
-              <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider">
-                {activeRole === 'buyer' ? 'Disbursed to Suppliers' : 'Total Earnings Released'}
-              </span>
-              <CheckCircle className="w-4 h-4 text-teal-400" />
-            </div>
-            <div className="mt-3">
-              <div className="text-2xl font-bold font-mono text-teal-300">
-                {formatCurrency(roleMetrics.settledAmount)}
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardContent className="p-4 flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
+                  Released Payments
+                </span>
+                <CheckCircle2 className="w-4 h-4 text-teal-400" />
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Released via PayPal Sandbox</div>
-            </div>
-          </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-teal-300">
+                  {formatCurrency(roleMetrics.settledAmount)}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Disbursed via PayPal</div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filter Bar */}
@@ -299,13 +304,13 @@ export const Dashboard: React.FC = () => {
               {[
                 { id: 'all', label: 'All Contracts' },
                 { id: 'needs_action', label: 'Needs Action' },
-                { id: 'in_verification', label: 'In Verification' },
-                { id: 'settled', label: 'Settled & Released' },
+                { id: 'in_verification', label: 'In Review' },
+                { id: 'settled', label: 'Completed & Released' },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveFilter(tab.id as any)}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                  className={`px-3 py-1 text-xs rounded-md transition-colors cursor-pointer ${
                     activeFilter === tab.id
                       ? activeRole === 'buyer' ? 'bg-blue-600 text-white font-medium shadow-xs' : 'bg-emerald-600 text-white font-medium shadow-xs'
                       : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
@@ -322,17 +327,17 @@ export const Dashboard: React.FC = () => {
           </span>
         </div>
 
-        {/* Main Grid & Inspection Bay Section */}
+        {/* Main Grid & Contract Details Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (8 cols): AG Grid Community Ledger */}
+          {/* Left Column (8 cols): AG Grid Ledger */}
           <div className="lg:col-span-8 bg-[#131B2E] rounded-xl border border-[#222A3D] p-4 shadow-sm flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-blue-400" />
-                <h3 className="text-sm font-semibold text-white">Live Transaction Ledger</h3>
+                <h3 className="text-sm font-semibold text-white">Contracts Ledger</h3>
               </div>
               <span className="text-[11px] font-mono text-slate-400">
-                Click any row to inspect in right panel
+                Click row to inspect details
               </span>
             </div>
 
@@ -341,22 +346,6 @@ export const Dashboard: React.FC = () => {
               className="w-full rounded-lg overflow-hidden border border-[#222A3D] bg-[#0E1528]"
               style={{ minHeight: '260px', height: '360px', width: '100%', backgroundColor: '#0E1528' }}
             >
-              <style>{`
-                .ag-root-wrapper,
-                .ag-root-wrapper-body,
-                .ag-root,
-                .ag-body,
-                .ag-body-viewport,
-                .ag-center-cols-viewport,
-                .ag-center-cols-clipper,
-                .ag-center-cols-container,
-                .ag-full-width-container,
-                .ag-scroller,
-                .ag-overlay-panel {
-                  background-color: #0E1528 !important;
-                  background: #0E1528 !important;
-                }
-              `}</style>
               <AgGridReact
                 theme={darkLedgerTheme}
                 rowData={filteredContracts}
@@ -371,13 +360,13 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column (4 cols): Inspection Bay Panel */}
-          <div className="lg:col-span-4 bg-[#131B2E] rounded-xl border border-[#222A3D] p-5 shadow-sm flex flex-col gap-5">
+          {/* Right Column (4 cols): Selected Contract Overview Panel */}
+          <div className="lg:col-span-4 bg-[#131B2E] rounded-xl border border-[#222A3D] p-5 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-400" />
                 <h3 className="text-xs font-mono uppercase tracking-wider text-slate-200 font-semibold">
-                  Inspection Bay
+                  Contract Overview
                 </h3>
               </div>
               <span className="font-mono text-[11px] text-blue-400 font-semibold">
@@ -385,65 +374,36 @@ export const Dashboard: React.FC = () => {
               </span>
             </div>
 
-            {/* Selected Contract Header */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-bold text-white leading-tight">
+            {/* Selected Contract Info */}
+            <div className="space-y-1.5">
+              <span className="text-sm font-bold text-white leading-tight block">
                 {selectedContract?.title}
               </span>
               <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                <span>{activeRole === 'buyer' ? 'Escrow Reserve:' : 'Committed Payment:'}</span>
+                <span>Staged Budget:</span>
                 <span className="font-mono text-emerald-400 font-bold">
                   {formatCurrency(selectedContract?.stagedAmount || 0, selectedContract?.currency)}
                 </span>
               </div>
             </div>
 
-            {/* Circular Verification Ring */}
-            <div className="bg-[#171F33] p-4 rounded-xl border border-[#222A3D] flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-mono text-slate-400 uppercase">
-                  AI Validation Gate
-                </span>
-                <span className="text-xs font-semibold text-white">
-                  Gemini 1.5 Pro Gate
-                </span>
-                <span className="text-[10px] text-emerald-400 font-mono">
-                  {activeMilestone?.assessment?.overallScore ? 'Passing Threshold (90+)' : 'Verification Ready'}
+            {/* AI Verification Score Bar */}
+            <div className="bg-[#171F33] p-3.5 rounded-xl border border-[#222A3D] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400">Delivery Status</span>
+                <span className="font-mono text-emerald-400 font-bold">
+                  {activeMilestone?.assessment?.overallScore ? `${activeMilestone.assessment.overallScore}% Passed` : 'Ready for Review'}
                 </span>
               </div>
-
-              {/* Circular Gauge */}
-              <div className="relative w-16 h-16 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-slate-800"
-                    strokeWidth="3.5"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    className="text-blue-500"
-                    strokeDasharray="94, 100"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-                <span className="absolute font-mono text-xs font-bold text-white">
-                  {activeMilestone?.assessment?.overallScore || 94}%
-                </span>
-              </div>
+              <Progress value={activeMilestone?.assessment?.overallScore || 94} className="h-2" />
             </div>
 
-            {/* Verification Milestones Checklist */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-slate-300">
-                Milestones &amp; Release Criteria
+            {/* Milestones Checklist */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-slate-300 block">
+                Milestones &amp; Payouts
               </span>
-              <div className="flex flex-col gap-2">
+              <div className="space-y-2">
                 {selectedContract?.milestones?.map((m) => (
                   <div
                     key={m.id}
@@ -451,15 +411,15 @@ export const Dashboard: React.FC = () => {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {m.status === 'settled' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       ) : m.status === 'verifying' ? (
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 animate-pulse" />
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" />
                       ) : (
-                        <Clock className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                        <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       )}
                       <span className="text-slate-200 font-medium truncate">{m.title}</span>
                     </div>
-                    <span className="font-mono text-emerald-400 text-[11px] font-semibold flex-shrink-0">
+                    <span className="font-mono text-emerald-400 text-[11px] font-semibold shrink-0">
                       {formatCurrency(m.amount)}
                     </span>
                   </div>
@@ -471,68 +431,66 @@ export const Dashboard: React.FC = () => {
             <div className="flex flex-col gap-2 pt-2 border-t border-[#222A3D]">
               {activeRole === 'buyer' ? (
                 <>
-                  {activeMilestone && activeMilestone.status === 'verifying' && (
-                    <button
-                      type="button"
-                      onClick={() => releasePayment(selectedContract.id, activeMilestone.id)}
-                      className="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors shadow-md shadow-emerald-900/30"
+                  {activeMilestone && activeMilestone.status === 'verified' && activeMilestone.paymentStatus !== 'released' && (
+                    <Button
+                      onClick={() => handleRelease(activeMilestone.id, activeMilestone.amount)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
                     >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Authorize Milestone Settlement ({formatCurrency(activeMilestone.amount)})</span>
-                    </button>
+                      <DollarSign className="w-4 h-4" />
+                      <span>Release Milestone Payment (${activeMilestone.amount})</span>
+                    </Button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.DELIVERY_VERIFICATION(selectedContract?.id || 'contract-1'))}
-                    className="w-full py-2 px-3 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-slate-200 font-medium text-xs flex items-center justify-center gap-2 border border-[#2D3449] transition-colors"
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(ROUTES.CONTRACT_DETAIL(selectedContract?.id || 'contract-1'))}
+                    className="w-full border-[#2D3449] bg-[#171F33] hover:bg-[#222A3D] text-slate-200 text-xs gap-1.5 h-9"
                   >
-                    <span>Inspect Delivery Evidence</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400" />
-                  </button>
+                    <span>View Contract Details</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => navigate(ROUTES.DELIVERY_VERIFICATION(selectedContract?.id || 'contract-1'))}
-                    className="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors shadow-md shadow-emerald-900/30"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9"
                   >
                     <UploadCloud className="w-4 h-4" />
                     <span>Submit Work for Verification</span>
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => navigate(ROUTES.CONTRACT_DETAIL(selectedContract?.id || 'contract-1'))}
-                    className="w-full py-2 px-3 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-slate-200 font-medium text-xs flex items-center justify-center gap-2 border border-[#2D3449] transition-colors"
+                    className="w-full border-[#2D3449] bg-[#171F33] hover:bg-[#222A3D] text-slate-200 text-xs gap-1.5 h-9"
                   >
                     <span>Review Acceptance Terms</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400" />
-                  </button>
+                    <ExternalLink className="w-3 h-3" />
+                  </Button>
                 </>
               )}
             </div>
           </div>
         </div>
 
-        {/* Bottom Ledger Execution Stream (Audit Feed) */}
-        <div className="bg-[#131B2E] rounded-xl border border-[#222A3D] p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[#222A3D] mb-4">
+        {/* Bottom Recent Activity Stream */}
+        <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-[#222A3D]">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
-                Ledger Execution Stream &bull; Live Audit Events
-              </h3>
+              <CardTitle className="text-xs font-mono uppercase tracking-wider text-slate-300">
+                Recent Contract Activity
+              </CardTitle>
             </div>
             <button
               onClick={() => navigate(ROUTES.ACTIVITY_HISTORY(selectedContract?.id || 'contract-1'))}
-              className="text-xs text-blue-400 hover:text-blue-300 font-mono inline-flex items-center gap-1"
+              className="text-xs text-blue-400 hover:text-blue-300 font-mono inline-flex items-center gap-1 cursor-pointer"
             >
               <span>View Full Audit Log</span>
               <ArrowUpRight className="w-3 h-3" />
             </button>
-          </div>
+          </CardHeader>
 
-          <div className="flex flex-col gap-2">
+          <CardContent className="p-4 space-y-2">
             {selectedContract?.auditLogs?.slice(0, 4).map((log) => (
               <div
                 key={log.id}
@@ -553,9 +511,11 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   )
 }
+
+export default Dashboard

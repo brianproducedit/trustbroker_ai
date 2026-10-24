@@ -2,344 +2,766 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
+import { useNotificationStore } from '@/hooks/useNotifications'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { 
-  Bot, 
   Sparkles, 
   ArrowRight, 
   ArrowLeft, 
   CheckCircle2, 
-  ShieldCheck, 
-  Calendar
+  Plus, 
+  Trash2, 
+  DollarSign, 
+  UserCheck, 
+  FileText, 
+  Loader2
 } from 'lucide-react'
+import { toast } from 'sonner'
+import type { Milestone } from '@/types/contract'
+
+interface EditableMilestone {
+  id: string
+  title: string
+  description: string
+  amount: number
+  deadline: string
+  criteria: string[]
+}
 
 export const CreateProject: React.FC = () => {
   const navigate = useNavigate()
   const { createContractDraft } = useContractStore()
+  const { addNotification } = useNotificationStore()
 
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+
+  // Step 1: Brief
   const [brief, setBrief] = useState(
-    'I need a high-converting React 18 landing page with Tailwind CSS, strict TypeScript checks, and automated Lighthouse performance verification (>95). Delivery in 14 days, split into 3 clear milestones.'
+    'Build a high-converting React 19 web application with Tailwind CSS, strict TypeScript checks, and PayPal Sandbox milestone payments. Delivery in 14 days, split into 3 clear milestones.'
   )
   const [isGenerating, setIsGenerating] = useState(false)
-  const [projectTitle, setProjectTitle] = useState('High-Converting React 18 Landing Page')
-  const [supplierEmail, setSupplierEmail] = useState('tariro@devstudio.co.zw')
-  const [totalBudget, setTotalBudget] = useState(3200)
 
-  // Synthesized milestones preview
-  const [milestones] = useState([
+  // Step 2: SOW & Milestones
+  const [projectTitle, setProjectTitle] = useState('React 19 Fintech Web Application')
+  const [projectDesc, setProjectDesc] = useState(
+    'A production-ready React 19 web application with modular components, TypeScript type verification, and PayPal Sandbox milestone disbursements.'
+  )
+
+  const [milestones, setMilestones] = useState<EditableMilestone[]>([
     {
-      id: 'm1',
-      title: 'M1: Architecture, Tokens & Responsive Wireframes',
-      description: 'Lexend font family tokens, Figma component hierarchy, and mobile/desktop wireframes.',
-      amount: 800,
+      id: 'm-1',
+      title: 'UI Design System & Architecture',
+      description: 'Lexend font family, dark mode tokens, and core responsive component architecture.',
+      amount: 900,
       deadline: '2026-11-02',
+      criteria: [
+        'Production build runs cleanly with zero TypeScript errors',
+        'Mobile (375px) and desktop (1440px) responsive layouts verified',
+      ],
     },
     {
-      id: 'm2',
-      title: 'M2: Core React Implementation & TypeScript Audit',
-      description: 'Clean React 19 + TypeScript components with zero errors and Lighthouse benchmark >95.',
-      amount: 1400,
+      id: 'm-2',
+      title: 'Core App Pages & PayPal Checkout Flow',
+      description: 'Implementation of interactive views with integrated PayPal sandbox checkout cards.',
+      amount: 1500,
       deadline: '2026-11-09',
+      criteria: [
+        'PayPal Sandbox staging button executes and captures test order',
+        'Contract detail tabs and milestones view update reactively',
+      ],
     },
     {
-      id: 'm3',
-      title: 'M3: PayPal Sandbox Integration & Deployment',
-      description: 'Working PayPal Orders API sandbox checkout and live cloud production deployment.',
+      id: 'm-3',
+      title: 'Automated Verification & Handover',
+      description: 'Milestone delivery evidence inspection and production deployment.',
       amount: 1000,
       deadline: '2026-11-16',
+      criteria: [
+        'Delivery submission form supports GitHub repository URL',
+        'AI criterion assessment gives pass score above 90%',
+      ],
     },
   ])
 
+  // Step 3: Supplier
+  const [supplierName, setSupplierName] = useState('Tariro Moyo')
+  const [supplierEmail, setSupplierEmail] = useState('tariro@devstudio.co.zw')
+  const [supplierOrg, setSupplierOrg] = useState('DevStudio Harare')
+
+  // Step 4: Confirm
+  const [confirmedAccuracy, setConfirmedAccuracy] = useState(true)
+
+  // Budget calculation
+  const totalBudget = milestones.reduce((sum, m) => sum + (Number(m.amount) || 0), 0)
+
+  // Quick prompt templates
   const quickTemplates = [
     {
-      title: 'React Web App',
+      title: 'React 19 Web App',
       text: 'Build a responsive React 19 web app with Tailwind CSS, TypeScript, and a working PayPal Sandbox checkout flow. Delivery in 14 days, 3 milestones.',
-      budget: 3200,
     },
     {
       title: 'Mobile UI Kit',
       text: 'Design a comprehensive mobile UI kit in Figma with light and dark mode tokens, 20 reusable screens, and exportable SVG assets.',
-      budget: 2400,
     },
     {
       title: 'FastAPI Backend',
       text: 'Build a Python FastAPI backend with Supabase database integration, JWT authentication, and automated OpenAPI documentation.',
-      budget: 1850,
     },
   ]
 
-  const handleSynthesize = () => {
+  // Handlers
+  const handleAIGenerate = () => {
     setIsGenerating(true)
     setTimeout(() => {
       setIsGenerating(false)
+      toast.success('AI drafted contract scope and milestones!')
       setStep(2)
-    }, 700)
+    }, 800)
   }
 
-  const handleFinalizeContract = () => {
-    const formattedMilestones = milestones.map((m) => ({
-      id: `ms-${Date.now()}-${m.id}`,
+  const handleAddMilestone = () => {
+    const newM: EditableMilestone = {
+      id: `m-${Date.now()}`,
+      title: `Milestone ${milestones.length + 1}: Additional Deliverable`,
+      description: 'Specify milestone deliverables and expectations.',
+      amount: 500,
+      deadline: '2026-11-20',
+      criteria: ['Code meets deliverables criteria', 'All tests pass'],
+    }
+    setMilestones([...milestones, newM])
+    toast.info('New milestone added')
+  }
+
+  const handleRemoveMilestone = (id: string) => {
+    if (milestones.length <= 1) {
+      toast.error('A contract must have at least one milestone.')
+      return
+    }
+    setMilestones(milestones.filter((m) => m.id !== id))
+    toast.info('Milestone removed')
+  }
+
+  const handleUpdateMilestone = (id: string, field: keyof EditableMilestone, value: any) => {
+    setMilestones(
+      milestones.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+    )
+  }
+
+  const handleAddCriterion = (milestoneId: string) => {
+    setMilestones(
+      milestones.map((m) => {
+        if (m.id === milestoneId) {
+          return {
+            ...m,
+            criteria: [...m.criteria, 'New measurable acceptance criterion'],
+          }
+        }
+        return m
+      })
+    )
+  }
+
+  const handleUpdateCriterion = (milestoneId: string, index: number, value: string) => {
+    setMilestones(
+      milestones.map((m) => {
+        if (m.id === milestoneId) {
+          const updated = [...m.criteria]
+          updated[index] = value
+          return { ...m, criteria: updated }
+        }
+        return m
+      })
+    )
+  }
+
+  const handleRemoveCriterion = (milestoneId: string, index: number) => {
+    setMilestones(
+      milestones.map((m) => {
+        if (m.id === milestoneId) {
+          const updated = m.criteria.filter((_, i) => i !== index)
+          return { ...m, criteria: updated }
+        }
+        return m
+      })
+    )
+  }
+
+  const handleCreateContract = () => {
+    const formattedMilestones: Milestone[] = milestones.map((m, idx) => ({
+      id: `ms-${idx + 1}-${Date.now()}`,
       title: m.title,
       description: m.description,
-      amount: m.amount,
+      amount: Number(m.amount) || 0,
       currency: 'USD',
       deadline: m.deadline,
       status: 'pending' as const,
       paymentStatus: 'not_started' as const,
-      acceptanceCriteria: [
-        {
-          id: `crit-${Date.now()}-1`,
-          title: 'Automated Build & Lint Check',
-          description: 'Code deliverables pass all build and static analysis tests.',
-          status: 'pending' as const,
-        },
-        {
-          id: `crit-${Date.now()}-2`,
-          title: 'Functional SOW Compliance',
-          description: 'Deliverables verified against agreed milestone specification.',
-          status: 'pending' as const,
-        },
-      ],
+      acceptanceCriteria: m.criteria.map((cText, cIdx) => ({
+        id: `crit-${cIdx + 1}-${Date.now()}`,
+        title: cText,
+        description: `Verified deliverable for: ${cText}`,
+        status: 'pending' as const,
+      })),
     }))
 
-    const contractId = createContractDraft(projectTitle, brief, formattedMilestones)
-    navigate(ROUTES.CONTRACT_DETAIL(contractId))
+    const newContractId = createContractDraft(projectTitle, projectDesc, formattedMilestones)
+
+    addNotification({
+      title: 'Contract Created',
+      description: `Draft contract "${projectTitle}" created with ${formattedMilestones.length} milestones.`,
+      type: 'contract',
+      link: `/dashboard/contracts/${newContractId}`,
+    })
+
+    toast.success('Contract created successfully!')
+    navigate(`/dashboard/contracts/${newContractId}`)
   }
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto flex flex-col gap-6">
-        {/* Wizard Stepper Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#222A3D]">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#222A3D]">
           <div>
-            <span className="text-[10px] font-mono uppercase text-blue-400 font-semibold tracking-wider">
-              Client SOW Creator
-            </span>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              Create a New Project Statement of Work
-            </h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">Create New Project</h1>
+            <p className="text-xs text-[#ACB9D2] mt-0.5">
+              AI-assisted contract drafting with staged milestone payments.
+            </p>
           </div>
-
-          {/* Steps Indicator */}
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className={`px-2.5 py-1 rounded-md ${step === 1 ? 'bg-blue-600 text-white font-bold' : 'bg-[#171F33] text-slate-400'}`}>
-              1. Brief
-            </span>
-            <span className="text-slate-600">&rarr;</span>
-            <span className={`px-2.5 py-1 rounded-md ${step === 2 ? 'bg-blue-600 text-white font-bold' : 'bg-[#171F33] text-slate-400'}`}>
-              2. SOW Scope
-            </span>
-            <span className="text-slate-600">&rarr;</span>
-            <span className={`px-2.5 py-1 rounded-md ${step === 3 ? 'bg-blue-600 text-white font-bold' : 'bg-[#171F33] text-slate-400'}`}>
-              3. Assign &amp; Reserve
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400">Total Budget:</span>
+            <span className="font-bold text-white font-mono text-sm bg-[#171F33] px-2.5 py-1 rounded-lg border border-[#2D3449]">
+              {formatCurrency(totalBudget)} USD
             </span>
           </div>
         </div>
 
-        {/* STEP 1: Natural Language Brief */}
-        {step === 1 && (
-          <div className="bg-[#131B2E] rounded-2xl border border-[#222A3D] p-6 flex flex-col gap-5">
-            <div className="flex items-center gap-2.5 text-blue-400">
-              <Bot className="w-5 h-5" />
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                Step 1: Describe What You Need Delivered
-              </h2>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Describe the project in plain English. Gemini 1.5 Pro will structure it into machine-testable milestones, criteria, and sandbox holding allocations.
-            </p>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-200">Project Title</label>
-              <input
-                type="text"
-                value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
-                className="w-full bg-[#0E1528] border border-[#222A3D] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-                placeholder="e.g. Next.js SaaS Landing Page"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-200">Project Requirements &amp; Scope</label>
-              <textarea
-                rows={5}
-                value={brief}
-                onChange={(e) => setBrief(e.target.value)}
-                className="w-full bg-[#0E1528] border border-[#222A3D] rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none font-sans"
-                placeholder="Explain the required stack, deliverable files, performance goals, and delivery timeframe..."
-              />
-            </div>
-
-            {/* Quick Templates */}
-            <div className="flex flex-col gap-2">
-              <span className="text-[11px] text-slate-400 font-mono font-medium">Quick prompt templates:</span>
-              <div className="flex flex-wrap gap-2">
-                {quickTemplates.map((t) => (
-                  <button
-                    key={t.title}
-                    type="button"
-                    onClick={() => {
-                      setBrief(t.text)
-                      setProjectTitle(t.title)
-                      setTotalBudget(t.budget)
-                    }}
-                    className="px-2.5 py-1 rounded bg-[#171F33] hover:bg-blue-900/40 text-slate-300 hover:text-blue-300 border border-slate-700/60 text-xs font-mono transition-colors"
-                  >
-                    + {t.title} ({formatCurrency(t.budget)})
-                  </button>
-                ))}
+        {/* 4-Step Stepper Header */}
+        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+          {[
+            { num: 1, label: '1. Project Brief' },
+            { num: 2, label: '2. Review & Edit SOW' },
+            { num: 3, label: '3. Assign Supplier' },
+            { num: 4, label: '4. Final Confirmation' },
+          ].map((s) => {
+            const isActive = step === s.num
+            const isCompleted = step > s.num
+            return (
+              <div
+                key={s.num}
+                onClick={() => {
+                  if (isCompleted) setStep(s.num as any)
+                }}
+                className={`py-2 px-1 rounded-lg border transition-all ${
+                  isActive
+                    ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-semibold shadow-xs'
+                    : isCompleted
+                    ? 'bg-[#171F33] border-[#2D3449] text-emerald-400 cursor-pointer hover:bg-[#222A3D]'
+                    : 'bg-[#131B2E] border-[#222A3D] text-slate-500 opacity-60'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  ) : null}
+                  <span className="truncate">{s.label}</span>
+                </div>
               </div>
-            </div>
+            )
+          })}
+        </div>
 
-            <div className="pt-3 border-t border-[#222A3D] flex justify-end">
-              <button
-                type="button"
-                onClick={handleSynthesize}
+        {/* STEP 1: BRIEF */}
+        {step === 1 && (
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardHeader>
+              <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
+                <Sparkles className="w-4 h-4" />
+                <span>Step 1: Describe What You Need</span>
+              </div>
+              <CardTitle className="text-lg font-bold mt-1 text-white">
+                Project Scope in Plain Language
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                Type your requirements naturally. AI will structure this into concrete milestones, acceptance criteria, and budget breakdowns.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="brief" className="text-xs text-slate-300">
+                  Project Description &amp; Requirements
+                </Label>
+                <Textarea
+                  id="brief"
+                  rows={5}
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                  placeholder="Describe your project, required deliverables, timeline, and goals..."
+                  className="bg-[#0B1326] border-[#2D3449] text-white placeholder:text-slate-500 text-xs leading-relaxed"
+                />
+              </div>
+
+              {/* Quick Template Chips */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-slate-400">Or pick an example brief:</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {quickTemplates.map((t) => (
+                    <button
+                      key={t.title}
+                      type="button"
+                      onClick={() => setBrief(t.text)}
+                      className="p-2.5 rounded-lg border border-[#2D3449] bg-[#171F33] hover:border-blue-500 text-left transition-colors cursor-pointer group"
+                    >
+                      <div className="font-semibold text-xs text-slate-200 group-hover:text-blue-400">
+                        {t.title}
+                      </div>
+                      <div className="text-[10px] text-slate-400 line-clamp-2 mt-0.5">
+                        {t.text}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex justify-between border-t border-[#222A3D] pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(ROUTES.DASHBOARD)}
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                size="sm"
                 disabled={isGenerating || !brief.trim()}
-                className="py-2.5 px-5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shadow-md shadow-blue-600/30 disabled:opacity-50"
+                onClick={handleAIGenerate}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2"
               >
                 {isGenerating ? (
                   <>
-                    <Sparkles className="w-4 h-4 animate-spin" />
-                    <span>Gemini AI Drafting SOW...</span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    AI is structuring milestones...
                   </>
                 ) : (
                   <>
-                    <span>Generate SOW Milestones</span>
-                    <ArrowRight className="w-4 h-4" />
+                    Generate Contract Scope
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
-              </button>
-            </div>
-          </div>
+              </Button>
+            </CardFooter>
+          </Card>
         )}
 
-        {/* STEP 2: SOW Review & Milestones */}
+        {/* STEP 2: EDITABLE SOW & MILESTONES (CRUD) */}
         {step === 2 && (
-          <div className="bg-[#131B2E] rounded-2xl border border-[#222A3D] p-6 flex flex-col gap-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
-              <div className="flex items-center gap-2 text-indigo-400">
-                <Sparkles className="w-5 h-5" />
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                  Step 2: Review AI-Synthesized Milestones
-                </h2>
-              </div>
-              <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-950/80 px-2.5 py-0.5 rounded border border-emerald-800/60">
-                Total: {formatCurrency(totalBudget)} USD
-              </span>
-            </div>
+          <div className="space-y-4">
+            <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
+                  <FileText className="w-4 h-4" />
+                  <span>Step 2: Review &amp; Customize Statement of Work</span>
+                </div>
+                <CardTitle className="text-lg font-bold mt-1 text-white">
+                  Editable Milestones &amp; Acceptance Criteria
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-400">
+                  Modify milestone scopes, payout amounts, deadlines, and criteria before committing.
+                </CardDescription>
+              </CardHeader>
 
-            <div className="flex flex-col gap-3">
-              {milestones.map((m, idx) => (
-                <div
-                  key={m.id}
-                  className="p-4 rounded-xl bg-[#0E1528] border border-[#222A3D] flex flex-col gap-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">
-                      0{idx + 1}. {m.title}
-                    </span>
-                    <span className="font-mono text-xs font-bold text-emerald-400">
-                      {formatCurrency(m.amount)}
-                    </span>
+              <CardContent className="space-y-4">
+                {/* Project Title & Description */}
+                <div className="grid grid-cols-1 gap-3 p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449]">
+                  <div className="space-y-1">
+                    <Label htmlFor="proj-title" className="text-xs text-slate-300">
+                      Project Title
+                    </Label>
+                    <Input
+                      id="proj-title"
+                      value={projectTitle}
+                      onChange={(e) => setProjectTitle(e.target.value)}
+                      className="bg-[#131B2E] border-[#2D3449] text-white text-xs"
+                    />
                   </div>
-                  <p className="text-xs text-slate-400">{m.description}</p>
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 pt-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Target Delivery: {m.deadline}</span>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="proj-desc" className="text-xs text-slate-300">
+                      Overall Contract Scope
+                    </Label>
+                    <Textarea
+                      id="proj-desc"
+                      rows={2}
+                      value={projectDesc}
+                      onChange={(e) => setProjectDesc(e.target.value)}
+                      className="bg-[#131B2E] border-[#2D3449] text-white text-xs leading-relaxed"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="pt-3 border-t border-[#222A3D] flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="py-2 px-4 rounded-lg bg-[#171F33] text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to Brief</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="py-2.5 px-5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-md shadow-blue-600/30"
-              >
-                <span>Proceed to Supplier Assignment</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+                {/* Milestones List */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-white">
+                      Contract Milestones ({milestones.length})
+                    </Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAddMilestone}
+                      className="border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-600/20 text-xs gap-1.5 h-7"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Milestone
+                    </Button>
+                  </div>
+
+                  {milestones.map((m, idx) => (
+                    <div
+                      key={m.id}
+                      className="p-4 rounded-xl border border-[#2D3449] bg-[#0E172E] space-y-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#222A3D] pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-blue-600/30 text-blue-400 text-[11px] font-bold flex items-center justify-center">
+                            {idx + 1}
+                          </span>
+                          <span className="font-semibold text-xs text-white">Milestone {idx + 1}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMilestone(m.id)}
+                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                            title="Remove milestone"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div className="sm:col-span-8 space-y-1">
+                          <Label className="text-[11px] text-slate-400">Milestone Title</Label>
+                          <Input
+                            value={m.title}
+                            onChange={(e) => handleUpdateMilestone(m.id, 'title', e.target.value)}
+                            className="bg-[#131B2E] border-[#2D3449] text-white text-xs"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2 space-y-1">
+                          <Label className="text-[11px] text-slate-400">Amount ($)</Label>
+                          <div className="relative">
+                            <DollarSign className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <Input
+                              type="number"
+                              value={m.amount}
+                              onChange={(e) => handleUpdateMilestone(m.id, 'amount', Number(e.target.value))}
+                              className="pl-7 bg-[#131B2E] border-[#2D3449] text-white text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="sm:col-span-2 space-y-1">
+                          <Label className="text-[11px] text-slate-400">Target Date</Label>
+                          <Input
+                            type="date"
+                            value={m.deadline}
+                            onChange={(e) => handleUpdateMilestone(m.id, 'deadline', e.target.value)}
+                            className="bg-[#131B2E] border-[#2D3449] text-white text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-slate-400">Description of Work</Label>
+                        <Input
+                          value={m.description}
+                          onChange={(e) => handleUpdateMilestone(m.id, 'description', e.target.value)}
+                          className="bg-[#131B2E] border-[#2D3449] text-white text-xs"
+                        />
+                      </div>
+
+                      {/* Acceptance Criteria Sub-list */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span>Acceptance Criteria (Measurable Checklist):</span>
+                          <button
+                            type="button"
+                            onClick={() => handleAddCriterion(m.id)}
+                            className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Criterion</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {m.criteria.map((c, cIdx) => (
+                            <div key={cIdx} className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                              <Input
+                                value={c}
+                                onChange={(e) => handleUpdateCriterion(m.id, cIdx, e.target.value)}
+                                className="bg-[#131B2E] border-[#2D3449] text-white text-xs h-7 flex-1"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCriterion(m.id, cIdx)}
+                                className="p-1 text-slate-500 hover:text-red-400 text-xs"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+
+              <CardFooter className="flex justify-between border-t border-[#222A3D] pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStep(1)}
+                  className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back to Brief
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={() => setStep(3)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2"
+                >
+                  Assign Supplier
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         )}
 
-        {/* STEP 3: Assign Supplier & Staging Notice */}
+        {/* STEP 3: ASSIGN SUPPLIER */}
         {step === 3 && (
-          <div className="bg-[#131B2E] rounded-2xl border border-[#222A3D] p-6 flex flex-col gap-5">
-            <div className="flex items-center gap-2 text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                Step 3: Assign Supplier &amp; Pre-Authorize Reserve
-              </h2>
-            </div>
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardHeader>
+              <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
+                <UserCheck className="w-4 h-4" />
+                <span>Step 3: Assign Freelancer / Supplier</span>
+              </div>
+              <CardTitle className="text-lg font-bold mt-1 text-white">
+                Who will be delivering this work?
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                The supplier will receive the contract, review milestones, and digitally accept terms before work begins.
+              </CardDescription>
+            </CardHeader>
 
-            <div className="bg-[#171F33] p-4 rounded-xl border border-blue-900/40 flex flex-col gap-3">
-              <span className="text-xs font-semibold text-slate-200">Target Supplier Profile</span>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-600/30 border border-emerald-500 text-emerald-300 flex items-center justify-center font-bold text-xs">
-                  TM
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="sup-name" className="text-xs text-slate-300">
+                    Supplier Full Name
+                  </Label>
+                  <Input
+                    id="sup-name"
+                    value={supplierName}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                    placeholder="e.g. Tariro Moyo"
+                    className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+                  />
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Tariro Moyo (DevStudio Harare)</h4>
-                  <span className="text-[11px] text-slate-400 font-mono">tariro@devstudio.co.zw &bull; Zimbabwe</span>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="sup-email" className="text-xs text-slate-300">
+                    Supplier Email Address
+                  </Label>
+                  <Input
+                    id="sup-email"
+                    type="email"
+                    value={supplierEmail}
+                    onChange={(e) => setSupplierEmail(e.target.value)}
+                    placeholder="e.g. tariro@devstudio.co.zw"
+                    className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+                  />
                 </div>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-200">Confirm Supplier Email</label>
-              <input
-                type="email"
-                value={supplierEmail}
-                onChange={(e) => setSupplierEmail(e.target.value)}
-                className="w-full bg-[#0E1528] border border-[#222A3D] rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-800/40 text-xs text-slate-300 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <strong className="text-blue-300 font-semibold">How Conditional Payment Works:</strong>
-                <span>
-                  Once created, you will stage <strong>{formatCurrency(totalBudget)} USD</strong> into the PayPal Sandbox holding reserve. The supplier will review and accept the SOW. When they submit work, Gemini AI verifies the criteria before any disbursement is released.
-                </span>
+              <div className="space-y-1.5">
+                <Label htmlFor="sup-org" className="text-xs text-slate-300">
+                  Studio / Organization <span className="text-slate-500 font-normal">(Optional)</span>
+                </Label>
+                <Input
+                  id="sup-org"
+                  value={supplierOrg}
+                  onChange={(e) => setSupplierOrg(e.target.value)}
+                  placeholder="e.g. DevStudio Harare"
+                  className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+                />
               </div>
-            </div>
 
-            <div className="pt-3 border-t border-[#222A3D] flex items-center justify-between">
-              <button
-                type="button"
+              {/* Summary of Contract Parties */}
+              <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-2 text-xs">
+                <span className="font-semibold text-slate-300 block">Contract Parties Summary:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-400">
+                  <div className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D]">
+                    <span className="text-[10px] text-blue-400 font-mono font-semibold uppercase block">Client (Hiring)</span>
+                    <span className="font-semibold text-white">Elena Rostova</span>
+                    <span className="text-[11px] text-slate-400 block">elena@acmeglobal.com</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D]">
+                    <span className="text-[10px] text-emerald-400 font-mono font-semibold uppercase block">Supplier (Delivering)</span>
+                    <span className="font-semibold text-white">{supplierName || 'Not specified'}</span>
+                    <span className="text-[11px] text-slate-400 block">{supplierEmail || 'Not specified'}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex justify-between border-t border-[#222A3D] pt-4">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setStep(2)}
-                className="py-2 px-4 rounded-lg bg-[#171F33] text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5"
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs gap-1.5"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to Scope</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleFinalizeContract}
-                className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-md shadow-emerald-900/40"
+                Back to SOW
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => setStep(4)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2"
               >
+                Review &amp; Confirm
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
+
+        {/* STEP 4: FINAL CONFIRMATION */}
+        {step === 4 && (
+          <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+            <CardHeader>
+              <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Create SOW &amp; Open Escrow Checkout</span>
-              </button>
-            </div>
-          </div>
+                <span>Step 4: Final Contract Confirmation</span>
+              </div>
+              <CardTitle className="text-lg font-bold mt-1 text-white">
+                Ready to Create Draft Contract
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                Please review the finalized contract scope and milestones before creating the agreement.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {/* Overview Box */}
+              <div className="p-4 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#222A3D] pb-3">
+                  <div>
+                    <h3 className="font-bold text-sm text-white">{projectTitle}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">{projectDesc}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[11px] text-slate-400 block">Total Budget</span>
+                    <span className="font-bold text-emerald-400 font-mono text-base">
+                      {formatCurrency(totalBudget)} USD
+                    </span>
+                  </div>
+                </div>
+
+                {/* Milestone summary list */}
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-slate-300 block">
+                    Milestones to be Staged:
+                  </span>
+                  {milestones.map((m, idx) => (
+                    <div
+                      key={m.id}
+                      className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D] flex items-center justify-between text-xs gap-3"
+                    >
+                      <div className="space-y-0.5">
+                        <span className="font-medium text-white">
+                          M{idx + 1}: {m.title}
+                        </span>
+                        <span className="text-[11px] text-slate-400 block">
+                          Due {m.deadline} &bull; {m.criteria.length} acceptance criteria
+                        </span>
+                      </div>
+                      <span className="font-mono font-semibold text-white">
+                        {formatCurrency(m.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Confirmation Checkbox */}
+              <div className="flex items-start space-x-2.5 p-3 rounded-lg bg-blue-950/20 border border-blue-900/40">
+                <Checkbox
+                  id="confirm-sow"
+                  checked={confirmedAccuracy}
+                  onCheckedChange={(checked) => setConfirmedAccuracy(Boolean(checked))}
+                  className="mt-0.5"
+                />
+                <label
+                  htmlFor="confirm-sow"
+                  className="text-xs text-slate-300 leading-snug cursor-pointer select-none"
+                >
+                  I confirm this Statement of Work is accurate. Upon creation, this agreement will be recorded and ready for PayPal Sandbox staging.
+                </label>
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex justify-between border-t border-[#222A3D] pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStep(3)}
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back
+              </Button>
+
+              <Button
+                size="sm"
+                disabled={!confirmedAccuracy || totalBudget <= 0}
+                onClick={handleCreateContract}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-2"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Create Contract
+              </Button>
+            </CardFooter>
+          </Card>
         )}
       </div>
     </DashboardLayout>
   )
 }
+
+export default CreateProject
