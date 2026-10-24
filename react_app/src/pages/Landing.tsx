@@ -29,7 +29,7 @@ export const Landing: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="font-medium text-blue-300">PayPal AI Hackathon 2026</span>
               <span className="text-slate-500">•</span>
-              <span className="text-slate-300">PayPal Sandbox + Gemini AI</span>
+              <span className="text-slate-300">PayPal Sandbox + Groq LPU AI</span>
             </div>
             <div className="flex items-center gap-3 text-slate-400 text-[11px]">
               <span className="flex items-center gap-1">
@@ -154,7 +154,7 @@ export const Landing: React.FC = () => {
                   Objective verification replaces endless debates.
                 </h2>
                 <p className="text-xs sm:text-sm text-[#5D6B82] leading-relaxed">
-                  Every milestone has explicit acceptance criteria. When Tariro submits code, Gemini AI assesses test passes, responsiveness, and file deliverables, giving Elena a clear pass/fail breakdown before funds release.
+                  Every milestone has explicit acceptance criteria. When Tariro submits code, Groq LPU AI assesses test passes, responsiveness, and file deliverables, giving Elena a clear pass/fail breakdown before funds release.
                 </p>
 
                 <div className="pt-2 flex flex-col sm:flex-row gap-3">
@@ -250,7 +250,7 @@ export const Landing: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span>Google Gemini AI</span>
+                <span>Groq LPU & OpenRouter AI</span>
               </div>
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-emerald-600" />

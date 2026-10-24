@@ -4,7 +4,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 from app.models.contract import ContractStatus
-from app.schemas.milestone import MilestoneCreate, MilestoneRead
+from app.schemas.milestone import MilestoneCreate, MilestoneRead, AcceptanceCriterionRead, AcceptanceCriterionCreate
+
 
 
 class ContractCreateRequest(BaseModel):

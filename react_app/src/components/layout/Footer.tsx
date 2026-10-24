@@ -70,12 +70,12 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="https://ai.google.dev/gemini-api/docs"
+                  href="https://console.groq.com/docs"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors inline-flex items-center gap-1"
                 >
-                  <span>Gemini API Docs</span>
+                  <span>Groq Cloud Docs</span>
                   <ExternalLink className="w-3 h-3 text-slate-500" />
                 </a>
               </li>
@@ -129,7 +129,7 @@ export const Footer: React.FC = () => {
           </p>
           <div className="flex items-center gap-6 text-slate-400">
             <span>PayPal Sandbox Integration</span>
-            <span>Gemini AI Engine</span>
+            <span>Groq LPU &amp; OpenRouter AI</span>
             <span>Lexend &amp; React 19</span>
           </div>
         </div>

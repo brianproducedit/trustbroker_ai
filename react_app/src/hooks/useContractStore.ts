@@ -353,7 +353,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   submitEvidence: async (contractId, milestoneId, submission) => {
     set({ isLoading: true })
 
-    // Simulate AI Verification evaluation (Gemini 1.5 Pro)
+    // Simulate AI Verification evaluation (Groq LPU llama-3.3-70b)
     await new Promise((r) => setTimeout(r, 1200))
 
     const assessment: VerificationAssessment = {
@@ -383,7 +383,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       ],
       summaryAnalysis: 'AI Verification complete. All acceptance criteria evaluated. Deliverables meet requirements for milestone payment release.',
       assessedAt: new Date().toISOString(),
-      modelUsed: 'Gemini 1.5 Pro',
+      modelUsed: 'Groq LPU (llama-3.3-70b)',
       requiresHumanReview: false,
     }
 
@@ -408,7 +408,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               {
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
-                actor: 'Gemini AI Verifier',
+                actor: 'Groq AI Verifier',
                 action: 'AI_VERIFICATION_PASSED',
                 details: `Evidence for milestone "${milestoneId}" verified. Score: ${assessment.overallScore}%.`,
               },

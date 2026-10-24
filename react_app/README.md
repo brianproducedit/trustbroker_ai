@@ -9,7 +9,7 @@ TrustBroker AI decouples cross-border digital payments from subjective disputes 
 ## 🚀 Key Features
 
 1. **AI Natural Language to Statement of Work (SOW)**
-   - Input loose, unstructured project briefs and synthesize machine-testable milestone criteria via Gemini 1.5 Pro.
+   - Input loose, unstructured project briefs and synthesize machine-testable milestone criteria via Groq LPU (`llama-3.3-70b-versatile`).
    - Dual-sided acceptance workflow for buyers and international suppliers.
 
 2. **PayPal Sandbox Conditional Holding Reserves**
@@ -18,7 +18,7 @@ TrustBroker AI decouples cross-border digital payments from subjective disputes 
 
 3. **Inspection Bay & Automated Verification**
    - Suppliers submit deliverable evidence (GitHub repository URLs, preview deployments, test logs).
-   - Gemini evaluates submitted evidence against agreed criteria and outputs a structured confidence assessment (0-100%).
+   - Groq LPU evaluates submitted evidence against agreed criteria and outputs a structured confidence assessment (0-100%).
    - Automatic authorization of conditional PayPal disbursement once threshold is satisfied.
 
 4. **Institutional Contract Ledger (AG Grid Community)**
@@ -37,7 +37,7 @@ TrustBroker AI decouples cross-border digital payments from subjective disputes 
 - **Data Grid**: AG Grid Community v36
 - **State Management**: Zustand
 - **Payment Processing**: PayPal JS SDK Sandbox (`@paypal/react-paypal-js`)
-- **AI Assessment**: Google Gemini 1.5 Pro structured JSON schemas
+- **AI Assessment**: Groq LPU (`llama-3.3-70b-versatile`) + OpenRouter fallback (`gemma-4-27b`)
 
 ---
 
@@ -78,6 +78,6 @@ npm run preview
 | `/sign-up` | Registration with role selection (Buyer / Supplier) |
 | `/dashboard` | Dark-themed contract ledger, metrics cards, AG Grid table & inspection bay |
 | `/contract/:id` | SOW review, milestones breakdown, digital acceptance, and PayPal Sandbox checkout |
-| `/deliver/:id` | Evidence submission form, Gemini AI verification evaluation, and release authorization |
+| `/deliver/:id` | Evidence submission form, Groq LPU AI verification evaluation, and release authorization |
 | `/contract/:id/activity` | Tamper-proof audit activity timeline with record hashes |
 | `/developers` | API reference, cURL / Python client snippets, and REST endpoints |

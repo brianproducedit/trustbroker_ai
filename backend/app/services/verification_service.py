@@ -48,7 +48,7 @@ def orchestrate_delivery_verification(
     )
     file_names = [f.file_name for f in delivery_files]
 
-    # Prepare input for Gemini
+    # Prepare input for AI evaluation
     criteria_payload = [
         {
             "id": str(c.id),
@@ -64,7 +64,7 @@ def orchestrate_delivery_verification(
     session.add(milestone)
     session.commit()
 
-    # Call Gemini AI model
+    # Call AI verification model (Groq -> OpenRouter -> Deterministic Fallback)
     eval_result = ai_provider.evaluate_delivery_against_criteria(
         milestone_title=milestone.title,
         milestone_description=milestone.description,
@@ -79,6 +79,7 @@ def orchestrate_delivery_verification(
     passed = bool(eval_result.get("passed", False)) and (overall_score >= 80)
     summary_analysis = str(eval_result.get("summary_analysis", ""))
     requires_human_review = bool(eval_result.get("requires_human_review", False))
+    provider_used = str(eval_result.get("provider_used", ai_provider.settings.groq_model))
 
     # Create VerificationReport
     report = VerificationReport(
@@ -88,7 +89,7 @@ def orchestrate_delivery_verification(
         overall_score=overall_score,
         passed=passed,
         summary_analysis=summary_analysis,
-        model_used=ai_provider.settings.gemini_model,
+        model_used=provider_used,
         requires_human_review=requires_human_review,
     )
     session.add(report)

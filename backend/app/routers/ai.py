@@ -13,8 +13,11 @@ router = APIRouter(prefix="/ai", tags=["AI Verification & Drafting"])
 def ai_status():
     """Return model status and readiness."""
     return {
-        "service": "Google Gemini 2.5 Flash",
-        "model": ai_provider.settings.gemini_model,
+        "service": "Groq LPU (Primary) + OpenRouter (Fallback)",
+        "primary_model": ai_provider.settings.groq_model,
+        "fallback_model": ai_provider.settings.openrouter_model,
+        "groq_configured": bool(ai_provider.settings.groq_api_key),
+        "openrouter_configured": bool(ai_provider.settings.openrouter_api_key),
         "status": "ready",
     }
 
@@ -24,7 +27,7 @@ def draft_sow(
     req: SOWDraftRequest,
     current_user: UserProfile = Depends(get_current_user),
 ):
-    """Call Gemini 2.5 Flash to automatically decompose a natural language description into milestones & criteria."""
+    """Call AI (Groq LPU with OpenRouter fallback) to decompose natural language brief into milestones & criteria."""
     result = ai_provider.generate_sow_draft(
         project_prompt=req.prompt,
         category=req.category,
@@ -40,7 +43,7 @@ def verify_delivery(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Verify submitted deliverable evidence against acceptance criteria with Gemini 2.5 Flash."""
+    """Verify submitted deliverable evidence against acceptance criteria using Groq LPU with OpenRouter fallback."""
     return verification_service.orchestrate_delivery_verification(
         session=session,
         contract_id=req.contract_id,

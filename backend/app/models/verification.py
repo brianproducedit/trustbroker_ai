@@ -17,7 +17,7 @@ class VerificationReport(SQLModel, table=True):
     overall_score: int = Field(default=0, nullable=False)  # 0 to 100
     passed: bool = Field(default=False, nullable=False)
     summary_analysis: str = Field(default="", nullable=False)
-    model_used: str = Field(default="gemini-2.5-flash", nullable=False)
+    model_used: str = Field(default="llama-3.3-70b-versatile", nullable=False)
     requires_human_review: bool = Field(default=False, nullable=False)
     assessed_at: datetime = Field(default_factory=utc_now, nullable=False)
 

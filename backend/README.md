@@ -1,6 +1,6 @@
 # TrustBroker AI — Backend Service
 
-FastAPI-powered backend engine for **TrustBroker AI**, providing deterministic contract lifecycle management, milestone escrow staging with PayPal, automated AI delivery verification via Gemini, and immutable audit logging.
+FastAPI-powered backend engine for **TrustBroker AI**, providing deterministic contract lifecycle management, milestone escrow staging with PayPal, high-speed AI delivery verification via Groq LPU (with OpenRouter fallback), and immutable audit logging.
 
 ---
 
@@ -11,7 +11,7 @@ FastAPI-powered backend engine for **TrustBroker AI**, providing deterministic c
 - **Migrations:** Alembic
 - **Identity & Auth:** Supabase Auth (JWT validation)
 - **Storage:** Supabase Storage (Deliverables bucket)
-- **AI Verification:** Google Gemini 2.5 Flash (`google-genai` SDK)
+- **AI Verification & Drafting:** Groq LPU (`llama-3.3-70b-versatile`) with OpenRouter fallback
 - **Payments:** PayPal Orders v2 Sandbox API
 - **Deployment:** Render (Python Web Service / Docker)
 

@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="TrustBroker AI API",
+    title="TrustBroker AI Engine",
     description="Deterministic cross-border work verification, milestone escrow staging, and AI verification engine.",
     version="1.0.0",
     docs_url="/docs",

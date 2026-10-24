@@ -57,10 +57,14 @@ services:
         value: sandbox
       - key: PAYPAL_WEBHOOK_ID
         sync: false
-      - key: GEMINI_API_KEY
+      - key: GROQ_API_KEY
         sync: false
-      - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: google/gemma-4-27b-it:free
       - key: FRONTEND_URL
         value: https://trustbroker-ai-frontend.onrender.com
       - key: ALLOWED_ORIGINS
