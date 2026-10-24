@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -54,9 +54,16 @@ export const ContractDetail: React.FC = () => {
     requestRevision,
     stagePayment,
     addMilestone,
-    removeMilestone
+    removeMilestone,
+    fetchContractById
   } = useContractStore()
   const { addNotification } = useNotificationStore()
+
+  useEffect(() => {
+    if (id) {
+      fetchContractById(id)
+    }
+  }, [id, fetchContractById])
 
   const contract = contracts.find((c) => c.id === id || c.code === id) || contracts[0]
 

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
 import { useContractStore } from '@/hooks/useContractStore'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { 
   LayoutGrid, 
   PlusCircle, 
@@ -37,14 +38,15 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, activeContractId } = useContractStore()
+  const { activeContractId } = useContractStore()
+  const authSignOut = useAuthStore((state) => state.signOut)
   const [signOutOpen, setSignOutOpen] = useState(false)
 
   const currentContractKey = activeContractId || 'contract-1'
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setSignOutOpen(false)
-    signOut()
+    await authSignOut()
     toast.success('Signed out successfully')
     navigate(ROUTES.HOME)
   }

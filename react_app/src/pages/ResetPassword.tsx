@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Lock, Eye, EyeOff, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/hooks/useAuthStore'
 
 export const ResetPassword: React.FC = () => {
   const navigate = useNavigate()
@@ -39,7 +40,9 @@ export const ResetPassword: React.FC = () => {
     return { label: 'Strong', color: 'text-emerald-500' }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { updatePassword } = useAuthStore()
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -54,14 +57,18 @@ export const ResetPassword: React.FC = () => {
     }
 
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
+    const result = await updatePassword(password)
+    setIsLoading(false)
+
+    if (result.success) {
       setIsSuccess(true)
       toast.success('Your password has been reset successfully!')
       setTimeout(() => {
         navigate(ROUTES.SIGN_IN)
       }, 1500)
-    }, 750)
+    } else {
+      setError(result.error || 'Failed to update password.')
+    }
   }
 
   return (

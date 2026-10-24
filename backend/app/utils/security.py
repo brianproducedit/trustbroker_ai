@@ -24,10 +24,15 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
         # Development fallback for test tokens
         if settings.environment == "development" and token.startswith("dev-user-"):
             user_role = token.replace("dev-user-", "")
+            is_client = user_role == "client"
             return {
-                "sub": "00000000-0000-0000-0000-000000000001" if user_role == "client" else "00000000-0000-0000-0000-000000000002",
-                "email": f"{user_role}@trustbroker.local",
-                "user_metadata": {"full_name": f"Dev {user_role.capitalize()}"},
+                "sub": "00000000-0000-0000-0000-000000000001" if is_client else "00000000-0000-0000-0000-000000000002",
+                "email": "elena@acmeglobal.com" if is_client else "tariro@devstudio.co.zw",
+                "user_metadata": {
+                    "full_name": "Elena Rostova" if is_client else "Tariro Moyo",
+                    "organization": "Acme Global Ventures LLC" if is_client else "DevStudio Zimbabwe",
+                    "role": user_role,
+                },
             }
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,6 +94,15 @@ def get_current_user(
         session.add(profile)
         session.commit()
         session.refresh(profile)
+    elif profile.email != email or (full_name and profile.full_name != full_name):
+        profile.email = email
+        if full_name:
+            profile.full_name = full_name
+        if metadata.get("organization"):
+            profile.organization = metadata.get("organization")
+        session.add(profile)
+        session.commit()
+        session.refresh(profile)
 
     return profile
 
@@ -113,7 +127,10 @@ def get_optional_current_user(
 def require_contract_party(user: UserProfile, contract: Contract) -> None:
     """Ensure the user is either the client or the assigned freelancer on this contract."""
     is_client = contract.client_id == user.id
-    is_freelancer = contract.freelancer_id is not None and contract.freelancer_id == user.id
+    is_freelancer = (
+        (contract.freelancer_id is not None and contract.freelancer_id == user.id)
+        or (contract.freelancer_email is not None and contract.freelancer_email == user.email)
+    )
     if not (is_client or is_freelancer):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

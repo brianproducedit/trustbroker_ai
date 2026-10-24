@@ -94,3 +94,24 @@ def accept_contract(
         contract_id=contract_id,
         user=current_user,
     )
+
+
+@router.post("/{contract_id}/cancel", response_model=ContractRead, summary="Cancel a contract")
+def cancel_contract(
+    contract_id: uuid.UUID,
+    reason: Optional[str] = Query(None, description="Optional cancellation reason"),
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Cancel a contract draft or active contract."""
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    require_contract_party(current_user, contract)
+    return contract_service.cancel_contract(
+        session=session,
+        contract_id=contract_id,
+        user=current_user,
+        reason=reason,
+    )
+

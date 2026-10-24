@@ -9,22 +9,28 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Mail, ArrowLeft, CheckCircle2, Loader2, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/hooks/useAuthStore'
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const { resetPasswordForEmail } = useAuthStore()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email) return
 
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
+    const result = await resetPasswordForEmail(email)
+    setIsLoading(false)
+
+    if (result.success) {
       setIsSubmitted(true)
       toast.success('Password reset link sent! Please check your inbox.')
-    }, 750)
+    } else {
+      toast.error(result.error || 'Failed to send reset link.')
+    }
   }
 
   return (

@@ -1,0 +1,188 @@
+import { useAuthStore } from '@/hooks/useAuthStore'
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+
+export class ApiError extends Error {
+  status: number
+  detail: string
+
+  constructor(status: number, detail: string) {
+    super(`API Error ${status}: ${detail}`)
+    this.name = 'ApiError'
+    this.status = status
+    this.detail = detail
+  }
+}
+
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = useAuthStore.getState().getAccessToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options?.headers as Record<string, string>),
+  }
+
+  const url = `${API_BASE}${path}`
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  })
+
+  if (response.status === 401) {
+    // If not a dev token, prompt sign out
+    if (token && !token.startsWith('dev-user-')) {
+      useAuthStore.getState().signOut()
+    }
+    throw new ApiError(401, 'Unauthorized or session expired')
+  }
+
+  if (!response.ok) {
+    let errorDetail = response.statusText
+    try {
+      const errJson = await response.json()
+      errorDetail = errJson.detail || errJson.message || JSON.stringify(errJson)
+    } catch {
+      // Keep statusText
+    }
+    throw new ApiError(response.status, errorDetail)
+  }
+
+  return response.json()
+}
+
+export const api = {
+  // Health
+  health: () => apiFetch<{ status: string }>('/health'),
+
+  // Contracts
+  contracts: {
+    list: (params?: { role?: string; status?: string; page?: number; per_page?: number }) => {
+      const query = new URLSearchParams()
+      if (params?.role) query.set('role', params.role)
+      if (params?.status) query.set('status', params.status)
+      if (params?.page) query.set('page', String(params.page))
+      if (params?.per_page) query.set('per_page', String(params.per_page))
+      const qs = query.toString() ? `?${query.toString()}` : ''
+      return apiFetch<{ contracts: any[]; total: number }>(`/contracts${qs}`)
+    },
+    get: (id: string) => apiFetch<any>(`/contracts/${id}`),
+    create: (data: {
+      title: string
+      description?: string
+      category?: string
+      freelancer_email?: string
+      currency?: string
+      milestones: Array<{
+        title: string
+        description?: string
+        amount: number
+        currency?: string
+        deadline?: string
+        sort_order?: number
+        acceptance_criteria?: Array<{
+          title: string
+          description?: string
+          evidence_type?: string
+        }>
+      }>
+    }) =>
+      apiFetch<any>('/contracts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      apiFetch<any>(`/contracts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    accept: (id: string) =>
+      apiFetch<any>(`/contracts/${id}/accept`, {
+        method: 'POST',
+      }),
+    cancel: (id: string, reason?: string) => {
+      const qs = reason ? `?reason=${encodeURIComponent(reason)}` : ''
+      return apiFetch<any>(`/contracts/${id}/cancel${qs}`, {
+        method: 'POST',
+      })
+    },
+  },
+
+  // AI Orchestration
+  ai: {
+    status: () => apiFetch<any>('/ai/status'),
+    draftSOW: (data: {
+      prompt: string
+      category?: string
+      total_budget: number
+      currency?: string
+    }) =>
+      apiFetch<any>('/ai/draft-sow', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    verifyDelivery: (data: {
+      contract_id: string
+      milestone_id: string
+      delivery_id: string
+    }) =>
+      apiFetch<any>('/ai/verify-delivery', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  // Deliveries
+  deliveries: {
+    submit: (data: {
+      contract_id: string
+      milestone_id: string
+      description: string
+      repo_url?: string
+      live_url?: string
+      file_attachments?: any[]
+    }) =>
+      apiFetch<any>('/deliveries', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    get: (id: string) => apiFetch<any>(`/deliveries/${id}`),
+    listMilestoneDeliveries: (milestoneId: string) =>
+      apiFetch<any[]>(`/deliveries/milestone/${milestoneId}`),
+    requestRevision: (contractId: string, milestoneId: string, notes?: string) =>
+      apiFetch<any>(`/deliveries/${contractId}/${milestoneId}/request-revision`, {
+        method: 'POST',
+        body: JSON.stringify({ notes: notes || '' }),
+      }),
+  },
+
+  // Payments & Escrow
+  payments: {
+    createOrder: (data: { contract_id: string; milestone_id: string }) =>
+      apiFetch<any>('/payments/create-order', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    captureOrder: (data: {
+      contract_id: string
+      milestone_id: string
+      paypal_order_id: string
+    }) =>
+      apiFetch<any>('/payments/capture-order', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    releasePayout: (data: { contract_id: string; milestone_id: string }) =>
+      apiFetch<any>('/payments/release', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    getHistory: (contractId: string) =>
+      apiFetch<any[]>(`/payments/history/${contractId}`),
+  },
+
+  // Audit Logs
+  audit: {
+    getAuditTrail: (contractId: string) =>
+      apiFetch<any[]>(`/audit/${contractId}`),
+  },
+}

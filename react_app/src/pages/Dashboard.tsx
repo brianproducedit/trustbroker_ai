@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { formatCurrency } from '@/lib/utils'
@@ -59,12 +59,16 @@ const darkLedgerTheme = themeQuartz.withPart(colorSchemeDark).withParams({
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate()
-  const { contracts, activeRole, toggleActiveRole, getRoleContracts, getRoleMetrics, releasePayment } = useContractStore()
+  const { contracts, activeRole, toggleActiveRole, getRoleContracts, getRoleMetrics, releasePayment, fetchContracts } = useContractStore()
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'needs_action' | 'in_verification' | 'settled'>('all')
   const [selectedContractId, setSelectedContractId] = useState<string>('contract-1')
   const [releaseDialogOpen, setReleaseDialogOpen] = useState(false)
   const [pendingReleaseMilestone, setPendingReleaseMilestone] = useState<{ id: string; amount: number; title: string } | null>(null)
+
+  useEffect(() => {
+    fetchContracts()
+  }, [fetchContracts, activeRole])
 
   const roleContracts = useMemo(() => {
     return getRoleContracts()

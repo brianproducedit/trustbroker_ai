@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
-import { useContractStore } from '@/hooks/useContractStore'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 export const SignIn: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { login } = useContractStore()
+  const { signIn, setActiveRole } = useAuthStore()
 
   const roleParam = searchParams.get('role')
   const redirectParam = searchParams.get('redirect')
@@ -41,25 +41,32 @@ export const SignIn: React.FC = () => {
     }
   }, [roleParam])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    setTimeout(() => {
-      login(selectedRole)
-      setIsLoading(false)
+    setActiveRole(selectedRole)
+    const result = await signIn(email, password)
+    setIsLoading(false)
+
+    if (result.success) {
       const roleName = selectedRole === 'client' ? 'Client' : 'Freelancer'
       toast.success(`Signed in successfully as ${roleName}!`)
       navigate(redirectParam ? decodeURIComponent(redirectParam) : ROUTES.DASHBOARD)
-    }, 450)
+    } else {
+      toast.error(result.error || 'Failed to sign in. Please check your credentials.')
+    }
   }
 
   const handleQuickFill = (role: 'client' | 'freelancer') => {
     setSelectedRole(role)
+    setActiveRole(role)
     if (role === 'client') {
       setEmail('elena@acmeglobal.com')
+      setPassword('password123')
     } else {
       setEmail('tariro@devstudio.co.zw')
+      setPassword('password123')
     }
   }
 

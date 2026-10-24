@@ -433,3 +433,35 @@ def accept_contract(
 
     session.commit()
     return get_contract_full(session, contract.id)
+
+
+def cancel_contract(
+    session: Session,
+    contract_id: uuid.UUID,
+    user: UserProfile,
+    reason: Optional[str] = None,
+) -> ContractRead:
+    """Cancel a contract and record the cancellation in the audit trail."""
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contract {contract_id} not found",
+        )
+
+    contract.status = ContractStatus.CANCELLED
+    contract.updated_at = datetime.now(timezone.utc)
+    session.add(contract)
+
+    log_audit_event(
+        session=session,
+        action="contract_cancelled",
+        details=f"Contract '{contract.title}' was cancelled by {user.full_name or user.email}. Reason: {reason or 'No reason specified'}",
+        contract_id=contract.id,
+        actor_id=user.id,
+        actor_name=user.full_name or user.email,
+    )
+
+    session.commit()
+    return get_contract_full(session, contract.id)
+

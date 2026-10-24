@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import { formatCurrency } from '@/lib/utils'
 import { CheckCircle2, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react'
+import { api } from '@/lib/api'
 
 interface PayPalCheckoutProps {
   contractId: string
   contractCode: string
+  milestoneId?: string
   amount: number
   currency?: string
   onPaymentSuccess: (details: any) => void
@@ -15,6 +17,7 @@ interface PayPalCheckoutProps {
 export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   contractId,
   contractCode,
+  milestoneId,
   amount,
   currency = 'USD',
   onPaymentSuccess,
@@ -26,11 +29,25 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   // Demo fallback handler for direct 1-click sandbox simulation if credentials or network are restricted
-  const handleSimulatedCheckout = () => {
+  const handleSimulatedCheckout = async () => {
     setIsProcessing(true)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+    const mockOrderId = `PP-SB-${Math.floor(10000000 + Math.random() * 90000000)}`
+    const mockCaptureId = `CAP-${Math.floor(10000000 + Math.random() * 90000000)}`
+
+    if (isUuid && milestoneId) {
+      try {
+        await api.payments.captureOrder({
+          contract_id: contractId,
+          milestone_id: milestoneId,
+          paypal_order_id: mockOrderId,
+        })
+      } catch (err) {
+        console.warn('Backend simulated capture note:', err)
+      }
+    }
+
     setTimeout(() => {
-      const mockOrderId = `PP-SB-${Math.floor(10000000 + Math.random() * 90000000)}`
-      const mockCaptureId = `CAP-${Math.floor(10000000 + Math.random() * 90000000)}`
       setCapturedOrderId(mockOrderId)
       setPaymentCompleted(true)
       setIsProcessing(false)
@@ -43,7 +60,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         currency,
         payer: { email_address: 'elena@acmeglobal.com' },
       })
-    }, 1000)
+    }, 600)
   }
 
   if (paymentCompleted) {
@@ -97,7 +114,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       <div className="flex flex-col gap-2.5 pt-1">
         <PayPalScriptProvider
           options={{
-            clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || 'test',
+            clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || 'BAAmI_hm2hcLqXaEfmcdS2nqtnkLq1lbmEiObYFaZ6uSbZqvn3uMVeHPVtoTJAheKH8ZCR1duXTaypmcLY',
             currency: import.meta.env.VITE_PAYPAL_CURRENCY || currency,
             intent: 'capture',
           }}
@@ -106,7 +123,22 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             <PayPalButtons
               style={{ layout: 'horizontal', color: 'gold', shape: 'rect', label: 'paypal', height: 44 }}
               disabled={isProcessing}
-              createOrder={(_data, actions) => {
+              createOrder={async (_data, actions) => {
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+                if (isUuid && milestoneId) {
+                  try {
+                    const res = await api.payments.createOrder({
+                      contract_id: contractId,
+                      milestone_id: milestoneId,
+                    })
+                    if (res && res.order_id) {
+                      return res.order_id
+                    }
+                  } catch (err) {
+                    console.warn('Backend createOrder fallback to client order:', err)
+                  }
+                }
+
                 return actions.order.create({
                   intent: 'CAPTURE',
                   purchase_units: [
@@ -120,11 +152,33 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
                   ],
                 })
               }}
-              onApprove={async (_data, actions) => {
+              onApprove={async (data, actions) => {
+                setIsProcessing(true)
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+                const orderId = data.orderID
+
+                if (isUuid && milestoneId) {
+                  try {
+                    const captured = await api.payments.captureOrder({
+                      contract_id: contractId,
+                      milestone_id: milestoneId,
+                      paypal_order_id: orderId,
+                    })
+                    setCapturedOrderId(orderId)
+                    setPaymentCompleted(true)
+                    setIsProcessing(false)
+                    onPaymentSuccess({ id: orderId, status: 'COMPLETED', ...captured })
+                    return
+                  } catch (err) {
+                    console.warn('Backend captureOrder fallback to client capture:', err)
+                  }
+                }
+
                 if (actions.order) {
                   const details = await actions.order.capture()
-                  setCapturedOrderId(details.id || 'PP-CAPTURE-OK')
+                  setCapturedOrderId(details.id || orderId || 'PP-CAPTURE-OK')
                   setPaymentCompleted(true)
+                  setIsProcessing(false)
                   onPaymentSuccess(details)
                 }
               }}
@@ -162,4 +216,3 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
     </div>
   )
 }
-

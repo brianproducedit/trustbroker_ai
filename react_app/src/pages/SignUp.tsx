@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,7 @@ import { toast } from 'sonner'
 export const SignUp: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { signUp } = useAuthStore()
   const roleParam = searchParams.get('role')
 
   const [name, setName] = useState('')
@@ -49,7 +51,7 @@ export const SignUp: React.FC = () => {
 
   const strength = getStrength(password)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -69,11 +71,24 @@ export const SignUp: React.FC = () => {
     }
 
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      toast.success('Account created! Please check your email to verify.')
-      navigate(`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(email)}`)
-    }, 600)
+    const result = await signUp(email, password, {
+      full_name: name,
+      organization,
+      role,
+    })
+    setIsLoading(false)
+
+    if (result.success) {
+      if (result.requiresConfirmation) {
+        toast.success('Account created! Please check your email to verify.')
+        navigate(`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(email)}`)
+      } else {
+        toast.success('Account created and signed in successfully!')
+        navigate(ROUTES.DASHBOARD)
+      }
+    } else {
+      setError(result.error || 'Failed to create account. Please check your details.')
+    }
   }
 
   return (

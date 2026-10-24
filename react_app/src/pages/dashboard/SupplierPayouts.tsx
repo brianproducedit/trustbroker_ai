@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
@@ -19,9 +19,13 @@ import {
 } from 'lucide-react'
 
 export const SupplierPayouts: React.FC = () => {
-  const { contracts, activeRole, toggleActiveRole } = useContractStore()
+  const { contracts, activeRole, toggleActiveRole, fetchContracts } = useContractStore()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showWebhookModal, setShowWebhookModal] = useState(false)
+
+  useEffect(() => {
+    fetchContracts()
+  }, [fetchContracts])
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text)

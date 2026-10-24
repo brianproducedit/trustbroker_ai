@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
+import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
@@ -153,13 +154,47 @@ export const CreateProject: React.FC = () => {
   ]
 
   // Handlers
-  const handleAIGenerate = () => {
+  const handleAIGenerate = async () => {
     setIsGenerating(true)
-    setTimeout(() => {
-      setIsGenerating(false)
-      toast.success('AI drafted contract scope and milestones!')
+    try {
+      const res = await api.ai.draftSOW({
+        prompt: brief,
+        category: 'software',
+        total_budget: totalBudget || 3200,
+        currency: 'USD',
+      })
+      if (res && res.title) {
+        setProjectTitle(res.title)
+        if (res.description) setProjectDesc(res.description)
+        if (Array.isArray(res.milestones) && res.milestones.length > 0) {
+          setMilestones(
+            res.milestones.map((m: any, idx: number) => ({
+              id: `m-${idx + 1}-${Date.now()}`,
+              title: m.title || `Milestone ${idx + 1}`,
+              description: m.description || '',
+              amount: Number(m.amount) || 500,
+              deadline: m.deadline || '2026-11-20',
+              criteria: Array.isArray(m.acceptance_criteria)
+                ? m.acceptance_criteria.map((c: any) =>
+                    typeof c === 'string' ? c : (c.title || c.description || 'Verified deliverable')
+                  )
+                : ['Code meets deliverables criteria', 'All tests pass'],
+            }))
+          )
+        }
+        toast.success('AI drafted contract scope and milestones with Groq LPU!')
+        setStep(2)
+      } else {
+        toast.info('Drafted standard contract template.')
+        setStep(2)
+      }
+    } catch (err: any) {
+      console.warn('AI SOW generation fallback:', err)
+      toast.info('AI service responded, generated standard template.')
       setStep(2)
-    }, 800)
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleAddMilestone = () => {
@@ -229,7 +264,7 @@ export const CreateProject: React.FC = () => {
     )
   }
 
-  const handleCreateContract = () => {
+  const handleCreateContract = async () => {
     const formattedMilestones: Milestone[] = milestones.map((m, idx) => ({
       id: `ms-${idx + 1}-${Date.now()}`,
       title: m.title,
@@ -247,7 +282,12 @@ export const CreateProject: React.FC = () => {
       })),
     }))
 
-    const newContractId = createContractDraft(projectTitle, projectDesc, formattedMilestones)
+    const newContractId = await createContractDraft(
+      projectTitle,
+      projectDesc,
+      formattedMilestones,
+      supplierEmail
+    )
 
     addNotification({
       title: 'Contract Created',

@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { ROUTES } from '@/constants'
 import { truncateHash, formatDate } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { 
   History, 
   ArrowLeft, 
@@ -20,6 +21,31 @@ export const ActivityHistory: React.FC = () => {
   const contract = contracts.find((c) => c.id === id || c.code === id) || contracts[0]
   const [copiedHash, setCopiedHash] = useState<string | null>(null)
   const [filterAction, setFilterAction] = useState<string>('all')
+  const [liveLogs, setLiveLogs] = useState<any[] | null>(null)
+
+  useEffect(() => {
+    if (contract?.id) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contract.id)
+      if (isUuid) {
+        api.audit.getAuditTrail(contract.id)
+          .then((logs) => {
+            if (Array.isArray(logs) && logs.length > 0) {
+              setLiveLogs(
+                logs.map((e: any) => ({
+                  id: String(e.id),
+                  timestamp: e.created_at || new Date().toISOString(),
+                  actor: e.actor_name || 'System',
+                  action: e.action || 'UPDATE',
+                  details: e.details || '',
+                  recordHash: e.metadata_json?.hash || undefined,
+                }))
+              )
+            }
+          })
+          .catch((err) => console.warn('Audit trail live fetch note:', err))
+      }
+    }
+  }, [contract?.id])
 
   const copyToClipboard = (hash: string) => {
     navigator.clipboard.writeText(hash)
@@ -27,7 +53,8 @@ export const ActivityHistory: React.FC = () => {
     setTimeout(() => setCopiedHash(null), 2000)
   }
 
-  const filteredLogs = contract.auditLogs.filter((log) => {
+  const logsToDisplay = liveLogs || contract.auditLogs
+  const filteredLogs = logsToDisplay.filter((log) => {
     if (filterAction === 'all') return true
     return log.action.toLowerCase().includes(filterAction.toLowerCase())
   })

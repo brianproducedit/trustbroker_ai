@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { useContractStore } from '@/hooks/useContractStore'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
 import { 
   Search, 
@@ -35,7 +36,8 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { activeRole, toggleActiveRole, signOut, activeContractId, contracts } = useContractStore()
+  const { activeContractId, contracts } = useContractStore()
+  const { user, activeRole, toggleActiveRole, signOut: authSignOut } = useAuthStore()
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore()
   
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -46,10 +48,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   const activeContract = contracts.find((c) => c.id === activeContractId || c.code === activeContractId) || contracts[0]
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setProfileOpen(false)
     setSignOutOpen(false)
-    signOut()
+    await authSignOut()
     toast.success('Signed out successfully')
     navigate(ROUTES.HOME)
   }
@@ -273,11 +275,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     ? 'bg-gradient-to-tr from-blue-600 to-indigo-500'
                     : 'bg-gradient-to-tr from-emerald-600 to-teal-500'
                 }`}>
-                  {activeRole === 'client' ? 'ER' : 'TM'}
+                  {user?.name
+                    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                    : activeRole === 'client'
+                    ? 'ER'
+                    : 'TM'}
                 </div>
                 <div className="hidden xl:flex flex-col text-left">
                   <span className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors leading-none flex items-center gap-1.5">
-                    <span>{activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo'}</span>
+                    <span>{user?.name || (activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo')}</span>
                     <UserCheck className={`w-3 h-3 ${activeRole === 'client' ? 'text-blue-400' : 'text-emerald-400'}`} />
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 uppercase font-mono leading-none">
@@ -292,10 +298,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#131B2E] border border-[#222A3D] shadow-2xl p-3 z-50 flex flex-col gap-2">
                   <div className="p-2 border-b border-[#222A3D] flex flex-col gap-0.5">
                     <span className="text-xs font-bold text-white">
-                      {activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo'}
+                      {user?.name || (activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo')}
                     </span>
                     <span className="text-[11px] font-mono text-slate-400 truncate">
-                      {activeRole === 'client' ? 'elena@acmeglobal.com' : 'tariro@devstudio.co.zw'}
+                      {user?.email || (activeRole === 'client' ? 'elena@acmeglobal.com' : 'tariro@devstudio.co.zw')}
                     </span>
                     <span className="text-[10px] text-blue-400 font-mono mt-1">
                       Mode: {activeRole === 'client' ? 'Client' : 'Freelancer'}

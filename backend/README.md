@@ -11,7 +11,7 @@ FastAPI-powered backend engine for **TrustBroker AI**, providing deterministic c
 - **Migrations:** Alembic
 - **Identity & Auth:** Supabase Auth (JWT validation)
 - **Storage:** Supabase Storage (Deliverables bucket)
-- **AI Verification & Drafting:** Groq LPU (`llama-3.3-70b-versatile`) with OpenRouter fallback
+- **AI Verification & Drafting:** Groq LPU (`openai/gpt-oss-120b`) with OpenRouter fallback
 - **Payments:** PayPal Orders v2 Sandbox API
 - **Deployment:** Render (Python Web Service / Docker)
 
@@ -41,7 +41,7 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Fill in your credentials from Supabase, PayPal Developer, and Google AI Studio.
+Fill in your credentials from Supabase, PayPal Developer, and Groq Console (or OpenRouter).
 
 ### 3. Run the Development Server
 

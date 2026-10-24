@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button'
 import { Mail, RefreshCw, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/hooks/useAuthStore'
 
 export const VerifyEmail: React.FC = () => {
   const [searchParams] = useSearchParams()
@@ -13,6 +14,7 @@ export const VerifyEmail: React.FC = () => {
   const [countdown, setCountdown] = useState(30)
   const [canResend, setCanResend] = useState(false)
   const [isResending, setIsResending] = useState(false)
+  const { resendVerification } = useAuthStore()
 
   useEffect(() => {
     if (countdown > 0) {
@@ -23,14 +25,18 @@ export const VerifyEmail: React.FC = () => {
     }
   }, [countdown])
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (emailParam === 'your email address') return
     setIsResending(true)
-    setTimeout(() => {
-      setIsResending(false)
+    const result = await resendVerification(emailParam)
+    setIsResending(false)
+    if (result.success) {
       setCanResend(false)
       setCountdown(30)
       toast.success('Verification email resent! Please check your inbox.')
-    }, 600)
+    } else {
+      toast.error(result.error || 'Failed to resend verification email.')
+    }
   }
 
   return (
