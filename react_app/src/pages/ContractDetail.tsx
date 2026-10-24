@@ -7,7 +7,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ROUTES } from '@/constants'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,10 +40,7 @@ import {
   Lock,
   Share2,
   Download,
-  Layers,
-  Award,
-  FileCode,
-  Info
+  FileCode
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -78,7 +75,7 @@ export const ContractDetail: React.FC = () => {
   const [revisionNotes, setRevisionNotes] = useState('')
   const [activityFilter, setActivityFilter] = useState<'all' | 'contract' | 'payment' | 'verification'>('all')
 
-  // Add Milestone Form State
+  // Add Milestone Form State (Client Only)
   const [newTitle, setNewTitle] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [newAmount, setNewAmount] = useState<string>('600')
@@ -133,40 +130,50 @@ export const ContractDetail: React.FC = () => {
   const isWorkVerified = contract.milestones.some((m) => m.status === 'verified' || m.status === 'settled')
   const isSettled = releasedAmount > 0 && releasedAmount >= totalAmount
 
+  // Find next milestone needing work
+  const nextWorkMilestone = contract.milestones.find(
+    (m) => m.status === 'in_progress' || m.status === 'pending' || m.status === 'revision_requested'
+  )
+
+  // Find milestone pending release approval
+  const pendingReleaseMilestone = contract.milestones.find(
+    (m) => m.status === 'verified' && m.paymentStatus !== 'released'
+  )
+
   // Lifecycle Progression Steps
   const lifecycleSteps = [
     {
       id: 1,
-      title: 'SOW Drafted',
-      desc: 'Scope & milestones locked',
+      title: 'SOW Created',
+      desc: 'Scope locked',
       status: 'completed',
       icon: FileText,
     },
     {
       id: 2,
       title: 'Dual Acceptance',
-      desc: isBothAccepted ? 'Both parties signed' : 'Pending signature',
+      desc: isBothAccepted ? 'Both signed' : 'Pending',
       status: isBothAccepted ? 'completed' : 'current',
       icon: CheckCircle2,
     },
     {
       id: 3,
       title: 'Escrow Staged',
-      desc: isEscrowStaged ? `${formatCurrency(stagedAmount)} in sandbox` : 'Awaiting client funding',
+      desc: isEscrowStaged ? 'Funds locked' : 'Unfunded',
       status: isEscrowStaged ? 'completed' : isBothAccepted ? 'current' : 'upcoming',
       icon: ShieldCheck,
     },
     {
       id: 4,
-      title: 'Work & AI Verification',
-      desc: isWorkVerified ? 'Criteria verified' : 'In review / progress',
+      title: 'AI Verification',
+      desc: isWorkVerified ? 'Criteria met' : 'In review',
       status: isWorkVerified ? 'completed' : isEscrowStaged ? 'current' : 'upcoming',
       icon: Sparkles,
     },
     {
       id: 5,
       title: 'Disbursement',
-      desc: isSettled ? '100% disbursed' : `${formatCurrency(releasedAmount)} released`,
+      desc: isSettled ? '100% released' : `${formatCurrency(releasedAmount)} paid`,
       status: isSettled ? 'completed' : isWorkVerified ? 'current' : 'upcoming',
       icon: DollarSign,
     },
@@ -296,7 +303,6 @@ export const ContractDetail: React.FC = () => {
     })
   }
 
-  // Preset Template loader for Milestone Dialog
   const handleApplyPreset = (preset: { title: string; amount: string; criteria: string[] }) => {
     setNewTitle(preset.title)
     setNewAmount(preset.amount)
@@ -402,964 +408,625 @@ export const ContractDetail: React.FC = () => {
     return true
   })
 
-  // Contextual Primary Action Button
-  const primaryAction = (() => {
-    if (!isUserAccepted) {
-      return {
-        label: 'Accept Contract Terms',
-        icon: CheckCircle2,
-        onClick: () => setAcceptDialogOpen(true),
-        badge: 'Action Required',
-      }
-    }
-    if (isClient && stagedAmount < totalAmount) {
-      return {
-        label: `Stage Escrow (${formatCurrency(totalAmount - stagedAmount)})`,
-        icon: CreditCard,
-        onClick: () => setActiveTab('payments'),
-        badge: 'PayPal Sandbox',
-      }
-    }
-    const pendingRelease = contract.milestones.find(
-      (m) => m.status === 'verified' && m.paymentStatus !== 'released'
-    )
-    if (isClient && pendingRelease) {
-      return {
-        label: `Approve Release (${formatCurrency(pendingRelease.amount)})`,
-        icon: DollarSign,
-        onClick: () => handleOpenReleaseModal(pendingRelease),
-        badge: 'Verified Pass',
-      }
-    }
-    const activeDeliverable = contract.milestones.find(
-      (m) => m.status === 'in_progress' || m.status === 'pending' || m.status === 'revision_requested'
-    )
-    if (isFreelancer && activeDeliverable) {
-      return {
-        label: 'Submit Deliverable Evidence',
-        icon: UploadCloud,
-        onClick: () => (window.location.href = ROUTES.DELIVERY_VERIFICATION(contract.id)),
-        badge: 'Work in Progress',
-      }
-    }
-    return null
-  })()
-
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Top Breadcrumb & Metadata Action Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[#222A3D]">
           <div className="flex items-center gap-2 text-xs">
             <Link
               to={ROUTES.DASHBOARD}
-              className="inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Contracts</span>
             </Link>
             <span className="text-slate-600">/</span>
             <span className="text-blue-400 font-mono font-medium">{contract.code}</span>
+            <span className="text-slate-600">&bull;</span>
+            <StatusBadge status={contract.status} />
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleCopyCode}
+              className="group inline-flex items-center gap-1.5 font-mono text-xs font-bold text-blue-400 bg-[#0E1528] hover:bg-blue-950/40 px-2.5 py-1 rounded border border-[#222A3D] transition-colors"
+              title="Click to copy contract code"
+            >
+              <span>{contract.code}</span>
+              {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-500 group-hover:text-blue-400" />}
+            </button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleShareLink}
-              className="border-[#222A3D] bg-[#101726] text-slate-300 hover:text-white text-xs h-8 gap-1.5"
+              className="border-[#222A3D] bg-[#0E1528] text-slate-300 hover:text-white text-xs h-7 gap-1"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <Share2 className="w-3 h-3" />
               <span>Share</span>
             </Button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleExportSOW}
-              className="border-[#222A3D] bg-[#101726] text-slate-300 hover:text-white text-xs h-8 gap-1.5"
+              className="border-[#222A3D] bg-[#0E1528] text-slate-300 hover:text-white text-xs h-7 gap-1"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export SOW (JSON)</span>
+              <Download className="w-3 h-3" />
+              <span>Export</span>
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setAddMilestoneOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 gap-1.5 shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Milestone</span>
-            </Button>
+
+            {/* ONLY Clients can add milestones */}
+            {isClient && (
+              <Button
+                size="sm"
+                onClick={() => setAddMilestoneOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7 gap-1 shadow-sm font-medium"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add Milestone</span>
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* 1. ENTERPRISE HERO & COUNTERPARTY HEADER */}
-        <Card className="border-[#222A3D] bg-[#131B2E] text-white shadow-xl overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+        {/* COMPACT LIFECYCLE PROGRESSION STRIP */}
+        <div className="p-3.5 rounded-xl bg-[#0E1528] border border-[#222A3D]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 text-xs">
+            <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-blue-400" />
+              Contract Lifecycle &amp; Settlement Pipeline
+            </span>
+            <span className="text-slate-400 font-mono text-[11px]">
+              Viewing as: <strong className="text-blue-400 capitalize">{activeRole}</strong>
+            </span>
+          </div>
 
-          <CardContent className="p-6 space-y-6 relative">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 pb-6 border-b border-[#222A3D]">
-              <div className="space-y-3 flex-1">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <button
-                    onClick={handleCopyCode}
-                    className="group inline-flex items-center gap-1.5 font-mono text-xs font-bold text-blue-400 bg-blue-950/70 hover:bg-blue-900/60 px-2.5 py-1 rounded border border-blue-800/60 transition-colors"
-                    title="Click to copy contract code"
-                  >
-                    <span>{contract.code}</span>
-                    {copiedCode ? (
-                      <Check className="w-3 h-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="w-3 h-3 text-blue-400 opacity-60 group-hover:opacity-100" />
-                    )}
-                  </button>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {lifecycleSteps.map((step) => {
+              const isCompleted = step.status === 'completed'
+              const isCurrent = step.status === 'current'
+              const Icon = step.icon
 
-                  <StatusBadge status={contract.status} />
+              return (
+                <div
+                  key={step.id}
+                  className={`p-2.5 rounded-lg border text-xs transition-all ${
+                    isCompleted
+                      ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                      : isCurrent
+                      ? 'bg-blue-950/30 border-blue-500/60 text-white ring-1 ring-blue-500/20 shadow-sm'
+                      : 'bg-[#0B1326] border-[#222A3D] text-slate-500'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                      isCompleted ? 'bg-emerald-500/20 text-emerald-400' : isCurrent ? 'bg-blue-500/30 text-blue-400' : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {step.id}
+                    </span>
+                    <Icon className={`w-3.5 h-3.5 ${
+                      isCompleted ? 'text-emerald-400' : isCurrent ? 'text-blue-400' : 'text-slate-600'
+                    }`} />
+                  </div>
+                  <div className="font-semibold text-[11px] truncate leading-tight">{step.title}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{step.desc}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
-                  <Badge variant="outline" className="text-slate-300 border-slate-700 bg-slate-800/50 text-[11px]">
+        {/* ASYMMETRIC 70/30 MASTER WORKSPACE LAYOUT (Deel & Stripe Benchmark) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* MAIN WORKSPACE CANVAS (Left 70% / 8 columns) */}
+          <div className="lg:col-span-8 space-y-6">
+
+            {/* Contract Title & Description Card */}
+            <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 shadow-lg">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="outline" className="text-slate-300 border-slate-700 bg-slate-800/60 font-mono text-[10px]">
                     v{contract.version}.0 SOW
                   </Badge>
-
-                  <span className="text-xs text-slate-400">
-                    Created {formatDate(contract.createdAt)}
+                  <span className="text-slate-400 text-xs">
+                    Created {formatDate(contract.createdAt)} &bull; Currency: <strong className="text-white">{contract.currency || 'USD'}</strong>
                   </span>
                 </div>
-
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   {contract.title}
                 </h1>
-
-                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
                   {contract.description}
                 </p>
               </div>
 
-              {/* Primary Contextual Action Hero */}
-              {primaryAction && (
-                <div className="bg-[#0B1326] p-4 rounded-xl border border-blue-500/30 flex flex-col items-stretch sm:items-end gap-2.5 shrink-0 min-w-[240px]">
-                  <div className="flex items-center gap-1.5 text-[11px] font-mono text-blue-400">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span>{primaryAction.badge}</span>
+              {/* Pending Digital Acceptance Callout */}
+              {!isUserAccepted && (
+                <div className="mt-4 p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span className="text-slate-200">
+                      You have not yet signed this contract version as <strong className="text-white capitalize">{activeRole}</strong>.
+                    </span>
                   </div>
                   <Button
-                    onClick={primaryAction.onClick}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5 shadow-md w-full sm:w-auto"
+                    size="sm"
+                    onClick={() => setAcceptDialogOpen(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 shrink-0"
                   >
-                    <primaryAction.icon className="w-3.5 h-3.5" />
-                    <span>{primaryAction.label}</span>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Accept Terms
                   </Button>
                 </div>
               )}
-            </div>
+            </Card>
 
-            {/* Counterparty Duality Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Client Card */}
-              <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-blue-600/20 text-blue-400 font-bold text-xs flex items-center justify-center border border-blue-500/30 shrink-0">
-                    {clientParty.name.split(' ').map((n: string) => n[0]).join('')}
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white text-xs truncate">
-                        {clientParty.name}
-                      </span>
-                      <Badge className="bg-blue-500/10 text-blue-300 border-blue-500/30 text-[9px] px-1.5 py-0 uppercase">
-                        Client
-                      </Badge>
-                    </div>
-                    <div className="text-slate-400 text-[11px] truncate">
-                      {clientParty.email}
-                    </div>
-                  </div>
-                </div>
+            {/* Main Tabs Navigation */}
+            <Tabs defaultValue="contract" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4 w-full">
+              <TabsList className="bg-[#101726] border border-[#222A3D] p-1 h-auto flex flex-wrap gap-1">
+                <TabsTrigger 
+                  value="contract" 
+                  className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                >
+                  Milestones &amp; Deliverables ({contract.milestones.length})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="sow" 
+                  className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                >
+                  Legal SOW &amp; Terms
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="payments" 
+                  className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                >
+                  PayPal Sandbox
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="activity" 
+                  className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                >
+                  Audit Activity Trail ({(contract.auditLogs || []).length})
+                </TabsTrigger>
+              </TabsList>
 
-                <div className="shrink-0 text-right">
-                  {clientParty.accepted ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 py-0.5">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      <span>Accepted Terms</span>
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-[10px] py-0.5">
-                      Pending Signature
-                    </Badge>
+              {/* TAB 1: MILESTONES & DELIVERABLES */}
+              <TabsContent value="contract" className="space-y-4 outline-none">
+                {/* Filter Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#101726] p-2.5 rounded-xl border border-[#222A3D]">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-slate-400 mr-1.5 font-medium">Filter:</span>
+                    {[
+                      { key: 'all', label: `All (${contract.milestones.length})` },
+                      { key: 'in_progress', label: 'In Progress' },
+                      { key: 'review', label: 'Under Review' },
+                      { key: 'settled', label: 'Verified & Settled' },
+                    ].map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => setMilestoneFilter(f.key as any)}
+                        className={`px-2.5 py-1 rounded text-xs transition-colors ${
+                          milestoneFilter === f.key
+                            ? 'bg-blue-600 text-white font-medium shadow-sm'
+                            : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* ONLY Clients can add milestones */}
+                  {isClient && (
+                    <Button
+                      size="sm"
+                      onClick={() => setAddMilestoneOpen(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1 h-7 font-medium"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Milestone</span>
+                    </Button>
                   )}
                 </div>
-              </div>
 
-              {/* Freelancer Card */}
-              <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-emerald-600/20 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/30 shrink-0">
-                    {freelancerParty.name.split(' ').map((n: string) => n[0]).join('')}
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white text-xs truncate">
-                        {freelancerParty.name}
-                      </span>
-                      <Badge className="bg-emerald-500/10 text-emerald-300 border-emerald-500/30 text-[9px] px-1.5 py-0 uppercase">
-                        Freelancer
-                      </Badge>
+                {/* Milestone Cards List */}
+                {filteredMilestones.length === 0 ? (
+                  <Card className="border-[#222A3D] bg-[#131B2E] text-white p-8 text-center space-y-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
+                      <FileCode className="w-5 h-5" />
                     </div>
-                    <div className="text-slate-400 text-[11px] truncate">
-                      {freelancerParty.email}
-                    </div>
-                  </div>
-                </div>
+                    <h3 className="text-sm font-bold text-white">No Milestones Match Filter</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Select another filter chip above to view all contract milestones.
+                    </p>
+                    <Button
+                      onClick={() => setMilestoneFilter('all')}
+                      variant="outline"
+                      size="sm"
+                      className="border-[#222A3D] text-slate-300 text-xs"
+                    >
+                      View All Milestones
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredMilestones.map((m, idx) => {
+                      const isVerified = m.status === 'verified' || m.status === 'settled'
+                      const isReleased = m.paymentStatus === 'released' || m.paymentStatus === 'release_authorized'
+                      const isStaged = m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged'
 
-                <div className="shrink-0 text-right">
-                  {freelancerParty.accepted ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 py-0.5">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      <span>Accepted Terms</span>
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-[10px] py-0.5">
-                      Pending Signature
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Pending Acceptance Callout */}
-            {!isUserAccepted && (
-              <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="text-slate-200">
-                    You have not yet signed this contract version as <strong className="text-white capitalize">{activeRole}</strong>. Review deliverables and confirm digital acceptance.
-                  </span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => setAcceptDialogOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 shrink-0"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Accept Contract Terms
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 2. VISUAL 5-STAGE CONTRACT LIFECYCLE STEPPER */}
-        <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-blue-400" />
-                Contract Lifecycle &amp; Settlement Pipeline
-              </span>
-              <span className="text-slate-400 font-mono text-[11px]">
-                Status: <strong className="text-emerald-400 uppercase">{contract.status.replace('_', ' ')}</strong>
-              </span>
-            </div>
-
-            {/* Responsive Stepper Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-1">
-              {lifecycleSteps.map((step) => {
-                const isCompleted = step.status === 'completed'
-                const isCurrent = step.status === 'current'
-                const Icon = step.icon
-
-                return (
-                  <div
-                    key={step.id}
-                    className={`p-3 rounded-xl border transition-all text-xs relative ${
-                      isCompleted
-                        ? 'bg-emerald-950/15 border-emerald-500/30 text-emerald-200'
-                        : isCurrent
-                        ? 'bg-blue-950/30 border-blue-500/60 text-white shadow-sm ring-1 ring-blue-500/20'
-                        : 'bg-[#0B1326] border-[#222A3D] text-slate-500'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1 mb-1.5">
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        isCompleted
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : isCurrent
-                          ? 'bg-blue-500/30 text-blue-400 animate-pulse'
-                          : 'bg-slate-800 text-slate-500'
-                      }`}>
-                        {step.id}
-                      </span>
-                      <Icon className={`w-3.5 h-3.5 ${
-                        isCompleted ? 'text-emerald-400' : isCurrent ? 'text-blue-400' : 'text-slate-600'
-                      }`} />
-                    </div>
-
-                    <div className="font-semibold text-xs leading-tight">
-                      {step.title}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 truncate" title={step.desc}>
-                      {step.desc}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Card>
-
-        {/* 3. HIGH-TRUST FINANCIAL ESCROW BENTO */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Tile 1: Total Agreed Budget */}
-          <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-              <span className="uppercase tracking-wider font-semibold text-[10px]">Total Contract Value</span>
-              <DollarSign className="w-3.5 h-3.5 text-slate-400" />
-            </div>
-            <div className="text-2xl font-black font-mono text-white">
-              {formatCurrency(totalAmount, contract.currency)}
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Agreed across {contract.milestones.length} milestones
-            </p>
-          </Card>
-
-          {/* Tile 2: Staged in Escrow */}
-          <Card className="border-blue-500/30 bg-[#131B2E] text-white p-4 relative overflow-hidden">
-            <div className="flex items-center justify-between text-xs text-blue-400 mb-1">
-              <span className="uppercase tracking-wider font-semibold text-[10px] flex items-center gap-1">
-                <Lock className="w-3 h-3 text-blue-400" />
-                Staged in Escrow
-              </span>
-              <span className="text-[10px] font-mono text-blue-300">Sandbox</span>
-            </div>
-            <div className="text-2xl font-black font-mono text-blue-400">
-              {formatCurrency(stagedAmount, contract.currency)}
-            </div>
-            <p className="text-[11px] text-slate-300 mt-1">
-              {stagedAmount >= totalAmount ? '100% Fully Funded' : `Awaiting ${formatCurrency(totalAmount - stagedAmount)}`}
-            </p>
-          </Card>
-
-          {/* Tile 3: Released to Freelancer */}
-          <Card className="border-emerald-500/30 bg-[#131B2E] text-white p-4">
-            <div className="flex items-center justify-between text-xs text-emerald-400 mb-1">
-              <span className="uppercase tracking-wider font-semibold text-[10px] flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                Released to Freelancer
-              </span>
-              <span className="text-[10px] font-mono text-emerald-300">{completionPercentage}%</span>
-            </div>
-            <div className="text-2xl font-black font-mono text-emerald-400">
-              {formatCurrency(releasedAmount, contract.currency)}
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Disbursed upon verified deliverables
-            </p>
-          </Card>
-
-          {/* Tile 4: Settlement Progress */}
-          <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                <span className="uppercase tracking-wider font-semibold text-[10px]">Settlement Progress</span>
-                <Award className="w-3.5 h-3.5 text-purple-400" />
-              </div>
-              <div className="text-xl font-black font-mono text-slate-200">
-                {completionPercentage}% Complete
-              </div>
-            </div>
-            <div className="space-y-1 mt-2">
-              <Progress value={completionPercentage} className="h-1.5 bg-[#0B1326]" />
-              <div className="text-[10px] text-slate-400 text-right">
-                {contract.milestones.filter(m => m.status === 'verified' || m.status === 'settled').length} of {contract.milestones.length} milestones cleared
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* 4. WORKSPACE TABS */}
-        <Tabs defaultValue="contract" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6 w-full">
-          <TabsList className="bg-[#131B2E] border border-[#222A3D] p-1 h-auto flex flex-wrap gap-1">
-            <TabsTrigger 
-              value="contract" 
-              className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
-            >
-              Milestones &amp; Deliverables ({contract.milestones.length})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="sow" 
-              className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
-            >
-              Legal SOW &amp; Terms
-            </TabsTrigger>
-            <TabsTrigger 
-              value="payments" 
-              className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
-            >
-              PayPal Escrow &amp; Staging
-            </TabsTrigger>
-            <TabsTrigger 
-              value="activity" 
-              className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
-            >
-              Audit Activity Trail ({(contract.auditLogs || []).length})
-            </TabsTrigger>
-          </TabsList>
-
-          {/* TAB 1: MILESTONES WORKSTATION */}
-          <TabsContent value="contract" className="space-y-4 outline-none">
-            {/* Filter Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#101726] p-3 rounded-xl border border-[#222A3D]">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs text-slate-400 mr-2 font-medium">Filter Milestones:</span>
-                {[
-                  { key: 'all', label: `All (${contract.milestones.length})` },
-                  { key: 'in_progress', label: 'In Progress' },
-                  { key: 'review', label: 'Under Review' },
-                  { key: 'settled', label: 'Verified & Settled' },
-                ].map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setMilestoneFilter(f.key as any)}
-                    className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                      milestoneFilter === f.key
-                        ? 'bg-blue-600 text-white font-medium shadow-sm'
-                        : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-
-              <Button
-                size="sm"
-                onClick={() => setAddMilestoneOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-8 shrink-0 shadow-sm"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Milestone</span>
-              </Button>
-            </div>
-
-            {/* Milestones List */}
-            {filteredMilestones.length === 0 ? (
-              <Card className="border-[#222A3D] bg-[#131B2E] text-white p-8 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
-                  <Layers className="w-6 h-6" />
-                </div>
-                <h3 className="text-sm font-bold text-white">No Milestones Match This Filter</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Select another filter above or add a new milestone deliverable.
-                </p>
-                <Button
-                  onClick={() => setMilestoneFilter('all')}
-                  variant="outline"
-                  size="sm"
-                  className="border-[#222A3D] text-slate-300 text-xs"
-                >
-                  View All Milestones
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredMilestones.map((m, idx) => {
-                  const isVerified = m.status === 'verified' || m.status === 'settled'
-                  const isReleased = m.paymentStatus === 'released' || m.paymentStatus === 'release_authorized'
-                  const isStaged = m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged'
-
-                  return (
-                    <Card key={m.id} className="border-[#222A3D] bg-[#131B2E] text-white overflow-hidden shadow-sm hover:border-slate-700 transition-colors">
-                      {/* Milestone Header */}
-                      <CardHeader className="pb-3 border-b border-[#222A3D] bg-[#0E1528]">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <span className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 text-xs font-bold flex items-center justify-center border border-blue-500/30 shrink-0">
-                              M{idx + 1}
-                            </span>
-                            <div>
-                              <CardTitle className="text-sm sm:text-base font-bold text-white leading-tight">
-                                {m.title}
-                              </CardTitle>
-                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3 text-slate-400" />
-                                  Target: {formatDate(m.deadline)}
+                      return (
+                        <Card key={m.id} className="border-[#222A3D] bg-[#131B2E] text-white overflow-hidden shadow-sm hover:border-slate-700 transition-colors">
+                          {/* Card Header */}
+                          <CardHeader className="pb-3 border-b border-[#222A3D] bg-[#0E1528]">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <span className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 text-xs font-bold flex items-center justify-center border border-blue-500/30 shrink-0">
+                                  M{idx + 1}
                                 </span>
-                                <span>&bull;</span>
-                                <span className="text-emerald-400 font-semibold font-mono">
-                                  {formatCurrency(m.amount, contract.currency)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 self-start sm:self-auto">
-                            <StatusBadge status={m.status} />
-                            <span className="text-xs font-mono font-bold text-emerald-400 bg-[#0B1326] px-2.5 py-1 rounded border border-[#2D3449]">
-                              {formatCurrency(m.amount, contract.currency)}
-                            </span>
-                            {/* Delete Button for pending milestones */}
-                            {contract.milestones.length > 1 && (m.status === 'pending' || contract.status === 'draft' || contract.status === 'pending_acceptance') && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteMilestone(m.id, m.title)}
-                                className="h-8 w-8 p-0 text-slate-500 hover:text-rose-400 hover:bg-rose-950/20"
-                                title="Delete Milestone"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardHeader>
-
-                      {/* Milestone Body */}
-                      <CardContent className="p-4 sm:p-5 space-y-4">
-                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                          {m.description}
-                        </p>
-
-                        {/* Acceptance Criteria 2-Column Grid */}
-                        <div className="space-y-2 pt-1">
-                          <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                              Acceptance Criteria Matrix ({m.acceptanceCriteria.length})
-                            </span>
-                            <span className="text-[11px] font-mono text-slate-400">
-                              {m.acceptanceCriteria.filter((c) => c.status === 'pass').length}/{m.acceptanceCriteria.length} Satisfied
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                            {m.acceptanceCriteria.map((c) => {
-                              const isPass = c.status === 'pass'
-                              const isFail = c.status === 'fail'
-                              return (
-                                <div
-                                  key={c.id}
-                                  className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] flex items-center justify-between gap-3 text-xs"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    {isPass ? (
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                                    ) : isFail ? (
-                                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                                    ) : (
-                                      <Clock className="w-4 h-4 text-slate-500 shrink-0" />
-                                    )}
-                                    <span className="text-slate-200 truncate font-medium">
-                                      {c.title}
+                                <div>
+                                  <CardTitle className="text-sm sm:text-base font-bold text-white leading-tight">
+                                    {m.title}
+                                  </CardTitle>
+                                  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3 text-slate-400" />
+                                      Target: {formatDate(m.deadline)}
+                                    </span>
+                                    <span>&bull;</span>
+                                    <span className="text-emerald-400 font-semibold font-mono">
+                                      {formatCurrency(m.amount, contract.currency)}
                                     </span>
                                   </div>
-                                  <Badge
-                                    variant="outline"
-                                    className={`text-[10px] font-mono uppercase px-2 py-0.5 shrink-0 ${
-                                      isPass
-                                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                                        : isFail
-                                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                        : 'bg-slate-800 text-slate-400 border-slate-700'
-                                    }`}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-start sm:self-auto">
+                                <StatusBadge status={m.status} />
+                                <span className="text-xs font-mono font-bold text-emerald-400 bg-[#0B1326] px-2.5 py-1 rounded border border-[#2D3449]">
+                                  {formatCurrency(m.amount, contract.currency)}
+                                </span>
+                                {/* Client-only Milestone Delete */}
+                                {isClient && contract.milestones.length > 1 && (m.status === 'pending' || contract.status === 'draft' || contract.status === 'pending_acceptance') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteMilestone(m.id, m.title)}
+                                    className="h-8 w-8 p-0 text-slate-500 hover:text-rose-400 hover:bg-rose-950/20"
+                                    title="Delete Milestone"
                                   >
-                                    {c.status || 'pending'}
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+
+                          {/* Card Content */}
+                          <CardContent className="p-4 sm:p-5 space-y-4">
+                            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                              {m.description}
+                            </p>
+
+                            {/* Acceptance Criteria 2-Column Matrix */}
+                            <div className="space-y-2 pt-1">
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                  Acceptance Criteria Matrix ({m.acceptanceCriteria.length})
+                                </span>
+                                <span className="text-[11px] font-mono text-slate-400">
+                                  {m.acceptanceCriteria.filter((c) => c.status === 'pass').length}/{m.acceptanceCriteria.length} Satisfied
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                {m.acceptanceCriteria.map((c) => {
+                                  const isPass = c.status === 'pass'
+                                  const isFail = c.status === 'fail'
+                                  return (
+                                    <div
+                                      key={c.id}
+                                      className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] flex items-center justify-between gap-3 text-xs"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        {isPass ? (
+                                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                        ) : isFail ? (
+                                          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                                        ) : (
+                                          <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+                                        )}
+                                        <span className="text-slate-200 truncate font-medium">
+                                          {c.title}
+                                        </span>
+                                      </div>
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] font-mono uppercase px-2 py-0.5 shrink-0 ${
+                                          isPass
+                                            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                            : isFail
+                                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                                        }`}
+                                      >
+                                        {c.status || 'pending'}
+                                      </Badge>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Submitted Evidence preview */}
+                            {(m.status === 'submitted' || m.status === 'verified' || m.status === 'settled') && (
+                              <div className="p-3 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                                    <FileCode className="w-3.5 h-3.5 text-blue-400" />
+                                    Submitted Deliverable Evidence
+                                  </span>
+                                  <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">
+                                    v1.0 Submission
                                   </Badge>
                                 </div>
-                              )
-                            })}
-                          </div>
-                        </div>
 
-                        {/* Evidence Submission Box if Submitted/Verified */}
-                        {(m.status === 'submitted' || m.status === 'verified' || m.status === 'settled') && (
-                          <div className="p-3 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                                <FileCode className="w-3.5 h-3.5 text-blue-400" />
-                                Submitted Deliverable Evidence
-                              </span>
-                              <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">
-                                v1.0 Submission
+                                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                                  <a
+                                    href="https://github.com/elena/trustbroker-deliverable"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#131B2E] border border-slate-700 text-blue-400 hover:text-blue-300 text-[11px] font-mono"
+                                  >
+                                    <span>github.com/trustbroker/deliverable</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <a
+                                    href="https://trustbroker-demo.vercel.app"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#131B2E] border border-slate-700 text-emerald-400 hover:text-emerald-300 text-[11px] font-mono"
+                                  >
+                                    <span>trustbroker-demo.vercel.app</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* AI Verification Assessment */}
+                            {m.assessment && (
+                              <div className="p-3.5 rounded-lg bg-blue-950/20 border border-blue-900/40 space-y-2 text-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="font-semibold text-blue-300 flex items-center gap-1.5">
+                                    <Sparkles className="w-4 h-4 text-blue-400" />
+                                    AI Work Verification Assessment
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs text-blue-200 font-bold bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700/50">
+                                      Score: {m.assessment.overallScore}/100
+                                    </span>
+                                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
+                                      Verified Pass
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <p className="text-slate-300 text-xs leading-relaxed">
+                                  {m.assessment.summaryAnalysis}
+                                </p>
+                              </div>
+                            )}
+                          </CardContent>
+
+                          {/* Milestone Footer */}
+                          <CardFooter className="bg-[#0E1528] border-t border-[#222A3D] p-3.5 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-slate-400">Escrow:</span>
+                              <Badge
+                                variant="outline"
+                                className={`text-[11px] font-mono capitalize ${
+                                  isReleased
+                                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                    : isStaged
+                                    ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                                }`}
+                              >
+                                {isReleased 
+                                  ? 'Disbursed to Freelancer' 
+                                  : isStaged 
+                                  ? 'Staged in Escrow' 
+                                  : 'Pending Funding'}
                               </Badge>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                              <a
-                                href="https://github.com/elena/trustbroker-deliverable"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#131B2E] border border-slate-700 text-blue-400 hover:text-blue-300 text-[11px] font-mono"
+                            <div className="flex flex-wrap items-center gap-2">
+                              {/* FREELANCER: Submit Work Action */}
+                              {isFreelancer && (m.status === 'in_progress' || m.status === 'pending' || m.status === 'revision_requested') && (
+                                <Button
+                                  size="sm"
+                                  asChild
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
+                                >
+                                  <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                                    <UploadCloud className="w-3.5 h-3.5" />
+                                    Submit Work Evidence
+                                  </Link>
+                                </Button>
+                              )}
+
+                              {/* CLIENT: Approve Release */}
+                              {isClient && isVerified && !isReleased && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleOpenReleaseModal(m)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
+                                >
+                                  <DollarSign className="w-3.5 h-3.5" />
+                                  Approve Release ({formatCurrency(m.amount, contract.currency)})
+                                </Button>
+                              )}
+
+                              {/* CLIENT: Request Revision */}
+                              {isClient && (m.status === 'submitted' || m.status === 'verified') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenRevision(m)}
+                                  className="border-amber-500/30 text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  Request Revision
+                                </Button>
+                              )}
+
+                              {/* Delivery Details Link */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                asChild
+                                className="border-[#2D3449] text-slate-300 hover:text-white hover:bg-[#171F33] text-xs h-8"
                               >
-                                <span>github.com/trustbroker/deliverable</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href="https://trustbroker-demo.vercel.app"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#131B2E] border border-slate-700 text-emerald-400 hover:text-emerald-300 text-[11px] font-mono"
-                              >
-                                <span>trustbroker-demo.vercel.app</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
+                                <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                                  Delivery Details
+                                </Link>
+                              </Button>
                             </div>
-                          </div>
-                        )}
-
-                        {/* AI Verification Assessment Result if Present */}
-                        {m.assessment && (
-                          <div className="p-3.5 rounded-lg bg-blue-950/20 border border-blue-900/40 space-y-2 text-xs">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="font-semibold text-blue-300 flex items-center gap-1.5">
-                                <Sparkles className="w-4 h-4 text-blue-400" />
-                                AI Work Verification Assessment
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs text-blue-200 font-bold bg-blue-900/60 px-2 py-0.5 rounded border border-blue-700/50">
-                                  Score: {m.assessment.overallScore}/100
-                                </span>
-                                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
-                                  Verified Pass
-                                </Badge>
-                              </div>
-                            </div>
-                            <p className="text-slate-300 text-xs leading-relaxed">
-                              {m.assessment.summaryAnalysis}
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-
-                      {/* Milestone Footer */}
-                      <CardFooter className="bg-[#0E1528] border-t border-[#222A3D] p-3.5 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-slate-400">Escrow Status:</span>
-                          <Badge
-                            variant="outline"
-                            className={`text-[11px] font-mono capitalize ${
-                              isReleased
-                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                                : isStaged
-                                ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                                : 'bg-slate-800 text-slate-400 border-slate-700'
-                            }`}
-                          >
-                            {isReleased 
-                              ? 'Disbursed to Freelancer' 
-                              : isStaged 
-                              ? 'Staged in Escrow' 
-                              : 'Pending Funding'}
-                          </Badge>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* Freelancer Work Submission */}
-                          {isFreelancer && (m.status === 'in_progress' || m.status === 'pending' || m.status === 'revision_requested') && (
-                            <Button
-                              size="sm"
-                              asChild
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-medium shadow-sm"
-                            >
-                              <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
-                                <UploadCloud className="w-3.5 h-3.5" />
-                                Submit Work
-                              </Link>
-                            </Button>
-                          )}
-
-                          {/* Client Approve Release */}
-                          {isClient && isVerified && !isReleased && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleOpenReleaseModal(m)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-medium shadow-sm"
-                            >
-                              <DollarSign className="w-3.5 h-3.5" />
-                              Approve Release ({formatCurrency(m.amount, contract.currency)})
-                            </Button>
-                          )}
-
-                          {/* Client Request Revision */}
-                          {isClient && (m.status === 'submitted' || m.status === 'verified') && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenRevision(m)}
-                              className="border-amber-500/30 text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              Request Revision
-                            </Button>
-                          )}
-
-                          {/* Delivery Details Link */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            asChild
-                            className="border-[#2D3449] text-slate-300 hover:text-white hover:bg-[#171F33] text-xs h-8"
-                          >
-                            <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
-                              Delivery Details
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* TAB 2: LEGAL SOW & DIGITAL TERMS */}
-          <TabsContent value="sow" className="space-y-6 outline-none">
-            <Card className="border-[#222A3D] bg-[#131B2E] text-white">
-              <CardHeader className="border-b border-[#222A3D] pb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-400" />
-                      Statement of Work (SOW) Specification
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-400 mt-0.5">
-                      Formal legal agreement specification for contract {contract.code} (Version {contract.version}.0)
-                    </CardDescription>
+                          </CardFooter>
+                        </Card>
+                      )
+                    })}
                   </div>
+                )}
+              </TabsContent>
 
-                  <div className="flex items-center gap-2">
+              {/* TAB 2: LEGAL SOW & TERMS */}
+              <TabsContent value="sow" className="space-y-4 outline-none">
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-5 text-xs text-slate-300">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-400" />
+                        Statement of Work (SOW) Specification
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Governed agreement version {contract.version}.0 for {contract.code}
+                      </p>
+                    </div>
+
                     <button
                       onClick={handleCopyHash}
-                      className="inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-white bg-[#0B1326] px-2.5 py-1 rounded border border-[#222A3D]"
-                      title="SHA-256 SOW integrity fingerprint"
+                      className="inline-flex items-center gap-1.5 font-mono text-[10px] text-slate-400 hover:text-white bg-[#0B1326] px-2 py-1 rounded border border-[#222A3D]"
                     >
                       <span>sha256-tb2026-{contract.id.slice(-8)}</span>
                       {copiedHash ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                     </button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleExportSOW}
-                      className="border-[#222A3D] text-xs h-8 gap-1 text-slate-300"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Export
-                    </Button>
                   </div>
-                </div>
-              </CardHeader>
 
-              <CardContent className="p-6 space-y-6 text-xs text-slate-300">
-                {/* Clause 1: Project Scope */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    1. Scope of Digital Work &amp; Deliverables
-                  </h4>
-                  <p className="leading-relaxed text-slate-300">
-                    The Freelancer agrees to deliver the milestones detailed herein strictly in accordance with agreed acceptance criteria. Total agreed compensation is <strong>{formatCurrency(totalAmount, contract.currency)} USD</strong> staged conditionally via TrustBroker AI coordination.
-                  </p>
-                </div>
-
-                {/* Clause 2: Exclusions */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    2. Exclusions &amp; Out of Scope
-                  </h4>
-                  <p className="leading-relaxed text-slate-300">
-                    Third-party API subscription costs, custom domain registration, ongoing cloud infrastructure hosting beyond initial launch, and unsolicited feature additions are expressly excluded from this SOW. Any material scope addition requires a version increment.
-                  </p>
-                </div>
-
-                {/* Clause 3: Revisions Policy */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    3. Revisions &amp; Acceptance Window
-                  </h4>
-                  <p className="leading-relaxed text-slate-300">
-                    Client may request up to two (2) documented revision cycles per milestone based on objective acceptance criteria. Once verified by AI confidence assessment and client approval, funds are eligible for immediate disbursement.
-                  </p>
-                </div>
-
-                {/* Clause 4: IP Rights */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    4. Intellectual Property Assignment
-                  </h4>
-                  <p className="leading-relaxed text-slate-300">
-                    All source code, digital assets, documentation, and deliverables produced under this agreement transfer irrevocably and unconditionally to Client upon disbursement of staged milestone funds.
-                  </p>
-                </div>
-
-                {/* Digital Signatures Box */}
-                <div className="pt-4 border-t border-[#222A3D] space-y-3">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-                    Digital Signature Certificates
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Client Signature */}
-                    <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">{clientParty.name}</span>
-                        {clientParty.accepted ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-300 text-[10px]">Digitally Signed</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-amber-400 text-[10px]">Awaiting Signature</Badge>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        Role: Client &bull; {clientParty.email}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        Timestamp: {clientParty.acceptedAt ? new Date(clientParty.acceptedAt).toLocaleString() : 'Pending'}
-                      </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-bold text-white uppercase text-[10px] tracking-wider mb-1">
+                        1. Scope of Digital Services
+                      </h4>
+                      <p className="leading-relaxed">
+                        The Freelancer agrees to execute all milestone deliverables according to agreed technical acceptance criteria. Total agreed budget: <strong>{formatCurrency(totalAmount, contract.currency)} USD</strong>.
+                      </p>
                     </div>
 
-                    {/* Freelancer Signature */}
-                    <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white">{freelancerParty.name}</span>
-                        {freelancerParty.accepted ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-300 text-[10px]">Digitally Signed</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-amber-400 text-[10px]">Awaiting Signature</Badge>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        Role: Freelancer &bull; {freelancerParty.email}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        Timestamp: {freelancerParty.acceptedAt ? new Date(freelancerParty.acceptedAt).toLocaleString() : 'Pending'}
-                      </div>
+                    <div>
+                      <h4 className="font-bold text-white uppercase text-[10px] tracking-wider mb-1">
+                        2. Exclusions &amp; Scope Boundaries
+                      </h4>
+                      <p className="leading-relaxed">
+                        Third-party API subscriptions, production domain hosting, and out-of-scope features are excluded. Material amendments require a version increment.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-white uppercase text-[10px] tracking-wider mb-1">
+                        3. Revisions &amp; Payout Release
+                      </h4>
+                      <p className="leading-relaxed">
+                        Up to two (2) revision cycles per deliverable based on objective acceptance criteria. Once verified by automated AI assessment and approved by Client, funds are released to the Freelancer.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-white uppercase text-[10px] tracking-wider mb-1">
+                        4. Intellectual Property
+                      </h4>
+                      <p className="leading-relaxed">
+                        All source code, design assets, and deliverables transfer irrevocably to Client upon final payout release.
+                      </p>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* TAB 3: PAYPAL ESCROW & PAYMENTS */}
-          <TabsContent value="payments" className="space-y-6 outline-none">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: PayPal Checkout */}
-              <div className="lg:col-span-7 space-y-4">
-                <Card className="border-[#222A3D] bg-[#131B2E] text-white">
-                  <CardHeader>
-                    <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
-                      <CreditCard className="w-4 h-4" />
-                      <span>PayPal Orders v2 Integration</span>
-                    </div>
-                    <CardTitle className="text-base font-bold text-white mt-1">
-                      Stage Milestone Payments in Sandbox
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-400">
-                      Client stages funds using PayPal Sandbox. Payments remain safely locked until deliverables are verified.
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <PayPalCheckout
-                      contractId={contract.id}
-                      contractCode={contract.code}
-                      amount={contract.totalAmount}
-                      currency={contract.currency}
-                      onPaymentSuccess={handlePaymentSuccess}
-                    />
-                  </CardContent>
                 </Card>
-              </div>
+              </TabsContent>
 
-              {/* Right Column: Protection Guarantee */}
-              <div className="lg:col-span-5 space-y-4">
-                <Card className="border-[#222A3D] bg-[#131B2E] text-white">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-bold text-white">
-                      Payment Protection Lifecycle
-                    </CardTitle>
-                    <CardDescription className="text-xs text-slate-400">
-                      Standard conditional protection rules for this agreement.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-xs">
-                    {[
-                      { step: '1', title: 'Order Created', desc: 'SOW milestones locked and agreed upon.', done: true },
-                      { step: '2', title: 'Payment Staged', desc: 'Reserved via PayPal Sandbox.', done: stagedAmount > 0 },
-                      { step: '3', title: 'Work Verified', desc: 'AI confirms acceptance criteria.', done: isWorkVerified },
-                      { step: '4', title: 'Disbursement Executed', desc: 'Released to freelancer PayPal account.', done: releasedAmount > 0 },
-                    ].map((s) => (
-                      <div key={s.step} className="flex items-start gap-3 p-2.5 rounded-lg bg-[#0E1528] border border-[#222A3D]">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                          s.done ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-500'
-                        }`}>
-                          {s.done ? <CheckCircle2 className="w-3 h-3" /> : s.step}
-                        </div>
-                        <div className="space-y-0.5">
-                          <span className={`font-semibold ${s.done ? 'text-white' : 'text-slate-400'}`}>
-                            {s.title}
-                          </span>
-                          <p className="text-[11px] text-slate-400">{s.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                {/* Honest Payout Disclosure Notice */}
-                <Card className="border-blue-900/40 bg-blue-950/20 text-slate-300 p-4 space-y-2 text-xs">
-                  <div className="flex items-center gap-1.5 font-semibold text-blue-300">
-                    <Info className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Cross-Border Settlement Disclosure</span>
+              {/* TAB 3: PAYPAL SANDBOX */}
+              <TabsContent value="payments" className="space-y-4 outline-none">
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
+                    <CreditCard className="w-4 h-4" />
+                    <span>PayPal Orders v2 Sandbox Integration</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    This prototype coordinates conditional payments through PayPal Sandbox. Disbursements are executed only when supported by the payment provider for the recipient's country and currency account.
-                  </p>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Stage Escrow Payments</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Client stages funds conditionally into PayPal Sandbox. Funds remain held until milestones are verified.
+                    </p>
+                  </div>
+
+                  <PayPalCheckout
+                    contractId={contract.id}
+                    contractCode={contract.code}
+                    amount={contract.totalAmount}
+                    currency={contract.currency}
+                    onPaymentSuccess={handlePaymentSuccess}
+                  />
                 </Card>
-              </div>
-            </div>
-          </TabsContent>
+              </TabsContent>
 
-          {/* TAB 4: AUDIT ACTIVITY STREAM */}
-          <TabsContent value="activity" className="space-y-4 outline-none">
-            <Card className="border-[#222A3D] bg-[#131B2E] text-white">
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#222A3D]">
-                <div>
-                  <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-                    <History className="w-4 h-4 text-blue-400" />
-                    Audit Activity Trail
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-400">
-                    Chronological immutable events recorded for agreement {contract.code}.
-                  </CardDescription>
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {(['all', 'contract', 'payment', 'verification'] as const).map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setActivityFilter(filter)}
-                      className={`px-2.5 py-1 rounded text-xs capitalize transition-colors ${
-                        activityFilter === filter
-                          ? 'bg-blue-600 text-white font-medium'
-                          : 'bg-[#0E1528] text-slate-400 hover:text-white border border-[#222A3D]'
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {filteredLogs.length === 0 ? (
-                    <div className="text-center py-8 text-xs text-slate-500">
-                      No audit events recorded under this filter.
+              {/* TAB 4: AUDIT ACTIVITY STREAM */}
+              <TabsContent value="activity" className="space-y-4 outline-none">
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#222A3D]">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <History className="w-4 h-4 text-blue-400" />
+                        Audit Activity Trail
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Ordered immutable events recorded for this contract.
+                      </p>
                     </div>
-                  ) : (
-                    filteredLogs.map((log) => (
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(['all', 'contract', 'payment', 'verification'] as const).map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setActivityFilter(filter)}
+                          className={`px-2 py-0.5 rounded text-xs capitalize transition-colors ${
+                            activityFilter === filter
+                              ? 'bg-blue-600 text-white font-medium'
+                              : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {filteredLogs.map((log) => (
                       <div
                         key={log.id}
-                        className="p-3.5 rounded-lg bg-[#0E1528] border border-[#222A3D] space-y-1.5 text-xs"
+                        className="p-3 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-xs"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="font-semibold text-blue-400 font-mono text-[11px]">
@@ -1369,7 +1036,7 @@ export const ContractDetail: React.FC = () => {
                             {new Date(log.timestamp).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-slate-300 leading-relaxed text-[11px]">
+                        <p className="text-slate-300 text-[11px] leading-relaxed">
                           {log.details}
                         </p>
                         <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
@@ -1377,15 +1044,226 @@ export const ContractDetail: React.FC = () => {
                           <span className="font-mono">hash: 9f8a...{log.id.slice(-4)}</span>
                         </div>
                       </div>
-                    ))
+                    ))}
+                  </div>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* ACTION & CONTEXT SIDEBAR (Right 30% / 4 columns) */}
+          <div className="lg:col-span-4 space-y-4">
+            
+            {/* 1. Next Required Action Card (Dynamic CTA) */}
+            <Card className="border-blue-500/40 bg-[#131B2E] text-white p-4 shadow-md space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-blue-400 font-mono flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  Next Required Step
+                </span>
+                <span className="text-[10px] text-slate-400 capitalize">{activeRole} Mode</span>
+              </div>
+
+              {/* FREELANCER NEXT ACTION */}
+              {isFreelancer && (
+                <div className="space-y-2">
+                  <div className="text-sm font-bold text-white">
+                    {nextWorkMilestone ? `Submit Work for ${nextWorkMilestone.title}` : 'All Deliverables Submitted'}
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    {nextWorkMilestone 
+                      ? 'Upload repository links or deployment evidence for AI automated verification.'
+                      : 'All milestones have been delivered and are currently in review or completed.'}
+                  </p>
+                  {nextWorkMilestone && (
+                    <Button
+                      asChild
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 gap-1.5 shadow-sm"
+                    >
+                      <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                        <UploadCloud className="w-4 h-4" />
+                        <span>Submit Work Evidence</span>
+                      </Link>
+                    </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              )}
 
-        {/* DIALOG 1: ADD MILESTONE WITH PRESETS */}
+              {/* CLIENT NEXT ACTION */}
+              {isClient && (
+                <div className="space-y-2">
+                  {!isUserAccepted ? (
+                    <>
+                      <div className="text-sm font-bold text-white">Sign Contract Agreement</div>
+                      <p className="text-xs text-slate-300">Review terms and provide your digital signature.</p>
+                      <Button
+                        onClick={() => setAcceptDialogOpen(true)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Sign Contract</span>
+                      </Button>
+                    </>
+                  ) : pendingReleaseMilestone ? (
+                    <>
+                      <div className="text-sm font-bold text-white">Approve Verified Payout</div>
+                      <p className="text-xs text-slate-300">
+                        {pendingReleaseMilestone.title} passed verification ({formatCurrency(pendingReleaseMilestone.amount)}).
+                      </p>
+                      <Button
+                        onClick={() => handleOpenReleaseModal(pendingReleaseMilestone)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 gap-1.5"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        <span>Disburse Payout</span>
+                      </Button>
+                    </>
+                  ) : stagedAmount < totalAmount ? (
+                    <>
+                      <div className="text-sm font-bold text-white">Stage Escrow Funds</div>
+                      <p className="text-xs text-slate-300">
+                        Remaining unreserved: {formatCurrency(totalAmount - stagedAmount)} USD.
+                      </p>
+                      <Button
+                        onClick={() => setActiveTab('payments')}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>Stage via PayPal</span>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm font-bold text-white">Escrow 100% Funded</div>
+                      <p className="text-xs text-slate-300">Freelancer is working on active deliverables.</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </Card>
+
+            {/* 2. Financial Escrow Summary Card */}
+            <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[10px]">Escrow Financials</span>
+                <Lock className="w-3.5 h-3.5 text-blue-400" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Total SOW Value:</span>
+                  <span className="font-bold text-white font-mono text-sm">{formatCurrency(totalAmount, contract.currency)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-blue-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    Staged in Escrow:
+                  </span>
+                  <span className="font-bold text-blue-400 font-mono text-sm">{formatCurrency(stagedAmount, contract.currency)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Released Payouts:
+                  </span>
+                  <span className="font-bold text-emerald-400 font-mono text-sm">{formatCurrency(releasedAmount, contract.currency)}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[#222A3D] space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>Settlement:</span>
+                  <span className="font-mono text-white">{completionPercentage}%</span>
+                </div>
+                <Progress value={completionPercentage} className="h-1.5 bg-[#0B1326]" />
+              </div>
+            </Card>
+
+            {/* 3. Stakeholders & Counterparties Card */}
+            <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[10px]">Stakeholders</span>
+                <span className="text-[10px] text-slate-500 font-mono">2 Parties</span>
+              </div>
+
+              {/* Client Profile */}
+              <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-blue-600/20 text-blue-400 font-bold text-[10px] flex items-center justify-center border border-blue-500/30 shrink-0">
+                    CL
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-white truncate text-[11px]">{clientParty.name}</div>
+                    <div className="text-slate-400 text-[10px] truncate">{clientParty.email}</div>
+                  </div>
+                </div>
+                <Badge className={`text-[9px] px-1.5 py-0 ${clientParty.accepted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>
+                  {clientParty.accepted ? 'Signed' : 'Pending'}
+                </Badge>
+              </div>
+
+              {/* Freelancer Profile */}
+              <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-emerald-600/20 text-emerald-400 font-bold text-[10px] flex items-center justify-center border border-emerald-500/30 shrink-0">
+                    FR
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-white truncate text-[11px]">{freelancerParty.name}</div>
+                    <div className="text-slate-400 text-[10px] truncate">{freelancerParty.email}</div>
+                  </div>
+                </div>
+                <Badge className={`text-[9px] px-1.5 py-0 ${freelancerParty.accepted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>
+                  {freelancerParty.accepted ? 'Signed' : 'Pending'}
+                </Badge>
+              </div>
+            </Card>
+
+            {/* 4. Quick Actions / Tools Card */}
+            <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4 space-y-2.5 text-xs">
+              <span className="font-semibold uppercase tracking-wider text-[10px] text-slate-400 block">
+                Contract Actions
+              </span>
+
+              {isClient && (
+                <Button
+                  onClick={() => setAddMilestoneOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-[#222A3D] bg-[#0B1326] text-slate-200 hover:text-white justify-start text-xs h-8 gap-2"
+                >
+                  <Plus className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Add New Milestone</span>
+                </Button>
+              )}
+
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="w-full border-[#222A3D] bg-[#0B1326] text-slate-200 hover:text-white justify-start text-xs h-8 gap-2"
+              >
+                <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                  <FileCode className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Work Verification Center</span>
+                </Link>
+              </Button>
+
+              <Button
+                onClick={handleExportSOW}
+                variant="outline"
+                size="sm"
+                className="w-full border-[#222A3D] bg-[#0B1326] text-slate-200 hover:text-white justify-start text-xs h-8 gap-2"
+              >
+                <Download className="w-3.5 h-3.5 text-purple-400" />
+                <span>Export SOW Spec (JSON)</span>
+              </Button>
+            </Card>
+
+          </div>
+        </div>
+
+        {/* DIALOG 1: ADD MILESTONE (CLIENT ONLY) */}
         <Dialog open={addMilestoneOpen} onOpenChange={setAddMilestoneOpen}>
           <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>

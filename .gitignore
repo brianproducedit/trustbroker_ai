@@ -1,2 +1,6 @@
 docs/
 html_version/
+.env
+.env.local
+.env.*.local
+!.env.example

@@ -97,8 +97,8 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       <div className="flex flex-col gap-2.5 pt-1">
         <PayPalScriptProvider
           options={{
-            clientId: 'test', // PayPal Sandbox client-id placeholder or sandbox key
-            currency: currency,
+            clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || 'test',
+            currency: import.meta.env.VITE_PAYPAL_CURRENCY || currency,
             intent: 'capture',
           }}
         >
