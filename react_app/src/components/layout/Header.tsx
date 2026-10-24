@@ -9,9 +9,10 @@ export const Header: React.FC = () => {
   const location = useLocation()
 
   const navLinks = [
-    { label: 'How it works', href: '#how-it-works' },
-    { label: 'For Buyers', href: '#for-buyers' },
-    { label: 'For Suppliers', href: '#for-suppliers' },
+    { label: 'Home', to: ROUTES.HOME },
+    { label: 'How it works', to: ROUTES.HOW_IT_WORKS },
+    { label: 'For Buyers', to: ROUTES.FOR_BUYERS },
+    { label: 'For Suppliers', to: ROUTES.FOR_SUPPLIERS },
     { label: 'Developers', to: ROUTES.DEVELOPER_PORTAL },
   ]
 
@@ -24,28 +25,17 @@ export const Header: React.FC = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-7">
           {navLinks.map((link) => {
-            if (link.to) {
-              const isActive = location.pathname === link.to
-              return (
-                <Link
-                  key={link.label}
-                  to={link.to}
-                  className={`text-sm font-medium transition-colors ${
-                    isActive ? 'text-blue-600 font-semibold' : 'text-[#5D6B82] hover:text-[#1A2940]'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              )
-            }
+            const isActive = location.pathname === link.to
             return (
-              <a
+              <Link
                 key={link.label}
-                href={link.href}
-                className="text-sm font-medium text-[#5D6B82] hover:text-[#1A2940] transition-colors"
+                to={link.to}
+                className={`text-sm font-medium transition-colors ${
+                  isActive ? 'text-blue-600 font-semibold' : 'text-[#5D6B82] hover:text-[#1A2940]'
+                }`}
               >
                 {link.label}
-              </a>
+              </Link>
             )
           })}
         </nav>
@@ -90,16 +80,21 @@ export const Header: React.FC = () => {
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-[#DDE4EF] bg-white px-4 pt-3 pb-6 flex flex-col gap-3 shadow-lg">
           <div className="flex flex-col gap-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href || link.to}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-medium text-slate-700 py-2 hover:text-blue-600"
-              >
-                {link.label}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.to
+              return (
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`text-sm font-medium py-2 transition-colors ${
+                    isActive ? 'text-blue-600 font-semibold' : 'text-slate-700 hover:text-blue-600'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              )
+            })}
           </div>
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             <Link

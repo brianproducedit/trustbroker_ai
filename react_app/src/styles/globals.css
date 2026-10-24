@@ -71,3 +71,160 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #334155;
 }
+
+/* AG Grid Dark Theme Overrides for TrustBroker Ledger */
+.ag-theme-quartz,
+.ag-theme-quartz-dark,
+.ag-theme-alpine,
+.ag-theme-alpine-dark {
+  --ag-background-color: #0E1528 !important;
+  --ag-data-color: #F8FAFC !important;
+  --ag-foreground-color: #F8FAFC !important;
+  --ag-header-background-color: #090E1A !important;
+  --ag-header-foreground-color: #94A3B8 !important;
+  --ag-border-color: #222A3D !important;
+  --ag-row-border-color: #1F283E !important;
+  --ag-odd-row-background-color: #0E1528 !important;
+  --ag-row-hover-color: #172036 !important;
+  --ag-selected-row-background-color: #1A2645 !important;
+  --ag-input-focus-border-color: #3B82F6 !important;
+  --ag-font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --ag-font-size: 12px !important;
+  color: #F8FAFC !important;
+  background-color: #0E1528 !important;
+}
+
+.ag-theme-quartz .ag-root-wrapper,
+.ag-theme-quartz-dark .ag-root-wrapper {
+  background-color: #0E1528 !important;
+  border-color: #222A3D !important;
+  color: #F8FAFC !important;
+}
+
+.ag-theme-quartz .ag-header,
+.ag-theme-quartz-dark .ag-header {
+  background-color: #090E1A !important;
+  border-bottom: 1px solid #222A3D !important;
+}
+
+.ag-theme-quartz .ag-header-cell,
+.ag-theme-quartz-dark .ag-header-cell {
+  color: #94A3B8 !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.ag-theme-quartz .ag-header-cell-text,
+.ag-theme-quartz-dark .ag-header-cell-text {
+  color: #94A3B8 !important;
+}
+
+.ag-theme-quartz .ag-row,
+.ag-theme-quartz-dark .ag-row {
+  background-color: #0E1528 !important;
+  color: #F8FAFC !important;
+  border-bottom: 1px solid #1A243B !important;
+}
+
+.ag-theme-quartz .ag-row:hover,
+.ag-theme-quartz-dark .ag-row:hover {
+  background-color: #172036 !important;
+}
+
+.ag-theme-quartz .ag-row-selected,
+.ag-theme-quartz-dark .ag-row-selected {
+  background-color: #1A2748 !important;
+}
+
+.ag-theme-quartz .ag-cell,
+.ag-theme-quartz-dark .ag-cell {
+  display: flex !important;
+  align-items: center !important;
+  color: #E2E8F0 !important;
+}
+
+/* Eliminate ANY white background in empty space, viewports, or scroll areas */
+.ag-root,
+.ag-root-wrapper,
+.ag-root-wrapper-body,
+.ag-body,
+.ag-body-viewport,
+.ag-center-cols-clipper,
+.ag-center-cols-viewport,
+.ag-center-cols-container,
+.ag-full-width-container,
+.ag-floating-bottom,
+.ag-floating-top,
+.ag-pinned-left-cols-container,
+.ag-pinned-right-cols-container,
+.ag-body-horizontal-scroll,
+.ag-body-horizontal-scroll-viewport,
+.ag-horizontal-left-spacer,
+.ag-horizontal-right-spacer,
+.ag-scroller,
+.ag-overlay-panel,
+.ag-theme-quartz .ag-root,
+.ag-theme-quartz-dark .ag-root,
+.ag-theme-quartz .ag-root-wrapper-body,
+.ag-theme-quartz-dark .ag-root-wrapper-body,
+.ag-theme-quartz .ag-body,
+.ag-theme-quartz-dark .ag-body,
+.ag-theme-quartz .ag-body-viewport,
+.ag-theme-quartz-dark .ag-body-viewport,
+.ag-theme-quartz .ag-center-cols-clipper,
+.ag-theme-quartz-dark .ag-center-cols-clipper,
+.ag-theme-quartz .ag-center-cols-viewport,
+.ag-theme-quartz-dark .ag-center-cols-viewport,
+.ag-theme-quartz .ag-center-cols-container,
+.ag-theme-quartz-dark .ag-center-cols-container,
+.ag-theme-quartz .ag-full-width-container,
+.ag-theme-quartz-dark .ag-full-width-container,
+.ag-theme-quartz .ag-floating-bottom,
+.ag-theme-quartz-dark .ag-floating-bottom,
+.ag-theme-quartz .ag-floating-top,
+.ag-theme-quartz-dark .ag-floating-top,
+.ag-theme-quartz .ag-pinned-left-cols-container,
+.ag-theme-quartz-dark .ag-pinned-left-cols-container,
+.ag-theme-quartz .ag-pinned-right-cols-container,
+.ag-theme-quartz-dark .ag-pinned-right-cols-container,
+.ag-theme-quartz .ag-body-horizontal-scroll,
+.ag-theme-quartz-dark .ag-body-horizontal-scroll,
+.ag-theme-quartz .ag-body-horizontal-scroll-viewport,
+.ag-theme-quartz-dark .ag-body-horizontal-scroll-viewport,
+.ag-theme-quartz .ag-horizontal-left-spacer,
+.ag-theme-quartz-dark .ag-horizontal-left-spacer,
+.ag-theme-quartz .ag-horizontal-right-spacer,
+.ag-theme-quartz-dark .ag-horizontal-right-spacer,
+.ag-theme-quartz .ag-scroller,
+.ag-theme-quartz-dark .ag-scroller,
+.ag-theme-quartz .ag-overlay-panel,
+.ag-theme-quartz-dark .ag-overlay-panel {
+  background-color: #0E1528 !important;
+  background: #0E1528 !important;
+}
+
+/* Dark scrollbars for AG Grid */
+.ag-theme-quartz ::-webkit-scrollbar,
+.ag-theme-quartz-dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: #090E1A !important;
+}
+
+.ag-theme-quartz ::-webkit-scrollbar-track,
+.ag-theme-quartz-dark ::-webkit-scrollbar-track {
+  background-color: #090E1A !important;
+}
+
+.ag-theme-quartz ::-webkit-scrollbar-thumb,
+.ag-theme-quartz-dark ::-webkit-scrollbar-thumb {
+  background-color: #222A3D !important;
+  border-radius: 4px;
+}
+
+.ag-theme-quartz ::-webkit-scrollbar-thumb:hover,
+.ag-theme-quartz-dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #3B82F6 !important;
+}

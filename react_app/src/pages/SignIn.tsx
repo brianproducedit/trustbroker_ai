@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
 import { useContractStore } from '@/hooks/useContractStore'
@@ -7,22 +7,40 @@ import { Lock, Mail, ArrowRight, ShieldCheck, UserCheck } from 'lucide-react'
 
 export const SignIn: React.FC = () => {
   const navigate = useNavigate()
-  const { setActiveRole } = useContractStore()
+  const [searchParams] = useSearchParams()
+  const { login } = useContractStore()
 
-  const [email, setEmail] = useState('elena@acmeglobal.com')
+  const roleParam = searchParams.get('role') as 'buyer' | 'supplier' | null
+  const redirectParam = searchParams.get('redirect')
+
+  const [selectedRole, setSelectedRole] = useState<'buyer' | 'supplier'>(
+    roleParam === 'supplier' ? 'supplier' : 'buyer'
+  )
+  const [email, setEmail] = useState(
+    roleParam === 'supplier' ? 'tariro@devstudio.co.zw' : 'elena@acmeglobal.com'
+  )
   const [password, setPassword] = useState('••••••••••••')
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<'buyer' | 'supplier'>('buyer')
+
+  useEffect(() => {
+    if (roleParam === 'supplier') {
+      setSelectedRole('supplier')
+      setEmail('tariro@devstudio.co.zw')
+    } else if (roleParam === 'buyer') {
+      setSelectedRole('buyer')
+      setEmail('elena@acmeglobal.com')
+    }
+  }, [roleParam])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     setTimeout(() => {
-      setActiveRole(selectedRole)
+      login(selectedRole)
       setIsLoading(false)
-      navigate(ROUTES.DASHBOARD)
-    }, 600)
+      navigate(redirectParam || ROUTES.DASHBOARD)
+    }, 400)
   }
 
   const handleQuickFill = (role: 'buyer' | 'supplier') => {

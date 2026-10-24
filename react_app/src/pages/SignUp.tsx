@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
 import { useContractStore } from '@/hooks/useContractStore'
@@ -7,19 +7,31 @@ import { Mail, Lock, User, Building2, ArrowRight } from 'lucide-react'
 
 export const SignUp: React.FC = () => {
   const navigate = useNavigate()
-  const { setActiveRole } = useContractStore()
+  const [searchParams] = useSearchParams()
+  const { login } = useContractStore()
+
+  const roleParam = searchParams.get('role') as 'buyer' | 'supplier' | null
+  const redirectParam = searchParams.get('redirect')
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [organization, setOrganization] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'buyer' | 'supplier'>('buyer')
+  const [role, setRole] = useState<'buyer' | 'supplier'>(
+    roleParam === 'supplier' ? 'supplier' : 'buyer'
+  )
   const [agreed, setAgreed] = useState(true)
+
+  useEffect(() => {
+    if (roleParam === 'supplier' || roleParam === 'buyer') {
+      setRole(roleParam)
+    }
+  }, [roleParam])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setActiveRole(role)
-    navigate(ROUTES.DASHBOARD)
+    login(role)
+    navigate(redirectParam || ROUTES.DASHBOARD)
   }
 
   return (

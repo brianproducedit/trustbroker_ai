@@ -48,22 +48,22 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
 
   if (paymentCompleted) {
     return (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 flex flex-col gap-3">
-        <div className="flex items-center gap-2 text-emerald-800">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+      <div className="bg-[#0D221D] border border-emerald-800/60 rounded-xl p-5 flex flex-col gap-3 text-emerald-200">
+        <div className="flex items-center gap-2 text-emerald-400">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           <span className="font-semibold text-sm">PayPal Sandbox Reserve Staged Successfully</span>
         </div>
-        <p className="text-xs text-emerald-700 leading-relaxed">
-          The funds of <strong>{formatCurrency(amount, currency)}</strong> are secured in the PayPal Sandbox conditional holding reserve for contract <strong>{contractCode}</strong>. Payment release is now bound to AI deliverable verification.
+        <p className="text-xs text-slate-300 leading-relaxed">
+          The funds of <strong className="text-white">{formatCurrency(amount, currency)}</strong> are secured in the PayPal Sandbox conditional holding reserve for contract <strong className="text-white">{contractCode}</strong>. Payment release is now bound to AI deliverable verification.
         </p>
-        <div className="bg-white/80 p-3 rounded-lg border border-emerald-200/60 font-mono text-xs flex flex-col gap-1 text-emerald-900">
+        <div className="bg-[#0B1326] p-3 rounded-lg border border-[#222A3D] font-mono text-xs flex flex-col gap-1.5 text-slate-300">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">PayPal Order ID:</span>
-            <span className="font-bold">{capturedOrderId}</span>
+            <span className="text-slate-400">PayPal Order ID:</span>
+            <span className="font-bold text-emerald-400">{capturedOrderId}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Reserve Mode:</span>
-            <span>Conditional Milestone Gate</span>
+            <span className="text-slate-400">Reserve Mode:</span>
+            <span className="text-blue-300">Conditional Milestone Gate</span>
           </div>
         </div>
       </div>
@@ -71,24 +71,24 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4 shadow-sm">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div className="bg-[#131B2E] rounded-xl border border-[#222A3D] p-5 flex flex-col gap-4 shadow-sm text-white">
+      <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-blue-600" />
-          <h3 className="text-sm font-bold text-slate-900">PayPal Sandbox Checkout</h3>
+          <ShieldCheck className="w-5 h-5 text-blue-400" />
+          <h3 className="text-sm font-bold text-white">PayPal Sandbox Checkout</h3>
         </div>
-        <span className="text-xs font-mono bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200 font-semibold">
+        <span className="text-xs font-mono bg-blue-950/80 text-blue-400 px-2.5 py-0.5 rounded-full border border-blue-800/60 font-semibold">
           {formatCurrency(amount, currency)}
         </span>
       </div>
 
-      <p className="text-xs text-slate-600 leading-relaxed">
+      <p className="text-xs text-slate-300 leading-relaxed">
         Stage contract funds into PayPal Sandbox reserve. The payment will be held until the supplier submits deliverables and Gemini AI verifies that all acceptance criteria are met.
       </p>
 
       {errorMsg && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="p-3 bg-blue-950/40 border border-blue-800/50 text-blue-300 text-xs rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -130,7 +130,6 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
               }}
               onError={(err) => {
                 console.warn('PayPal script notice (standard in test sandbox):', err)
-                // Offer seamless simulated fallback
                 setErrorMsg('Notice: Sandbox client ID is in mock sandbox mode. You can use 1-Click Sandbox Stage below.')
                 if (onPaymentError) onPaymentError(err)
               }}
@@ -139,12 +138,12 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         </PayPalScriptProvider>
 
         {/* 1-Click Sandbox Test Fallback Button */}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+        <div className="flex items-center gap-2 pt-2 border-t border-[#222A3D]">
           <button
             type="button"
             onClick={handleSimulatedCheckout}
             disabled={isProcessing}
-            className="w-full py-2.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
+            className="w-full py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/20"
           >
             {isProcessing ? (
               <>
@@ -153,7 +152,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
               </>
             ) : (
               <>
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <ShieldCheck className="w-4 h-4 text-emerald-300" />
                 <span>Instant 1-Click Sandbox Stage ({formatCurrency(amount, currency)})</span>
               </>
             )}
@@ -163,3 +162,4 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
     </div>
   )
 }
+

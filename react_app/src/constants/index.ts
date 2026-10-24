@@ -3,15 +3,24 @@ export const APP_TAGLINE = 'AI-Powered Cross-Border Work Verification & SOW Plat
 export const PAYPAL_SANDBOX_DISCLAIMER = 'Prototype Sandbox: Conditional payment demonstration using PayPal Sandbox endpoints. Not a licensed banking or fiduciary escrow institution.'
 
 export const ROUTES = {
+  // Public Pages
   HOME: '/',
+  HOW_IT_WORKS: '/how-it-works',
+  FOR_BUYERS: '/for-buyers',
+  FOR_SUPPLIERS: '/for-suppliers',
+  DEVELOPER_PORTAL: '/developers',
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',
+
+  // Authenticated Portal Pages (All contained inside DashboardLayout)
   DASHBOARD: '/dashboard',
-  NEW_PROJECT: '/create-project',
-  CONTRACT_DETAIL: (id: string = ':id') => `/contract/${id}`,
-  DELIVERY_VERIFICATION: (id: string = ':id') => `/deliver/${id}`,
-  ACTIVITY_HISTORY: (id: string = ':id') => `/contract/${id}/activity`,
-  DEVELOPER_PORTAL: '/developers',
+  NEW_PROJECT: '/dashboard/create-project',
+  CONTRACTS: '/dashboard/contracts',
+  CONTRACT_DETAIL: (id: string = ':id') => `/dashboard/contracts/${id}`,
+  DELIVERIES: '/dashboard/deliveries',
+  DELIVERY_VERIFICATION: (id: string = ':id') => `/dashboard/deliveries/${id}`,
+  ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
+  SUPPLIER_PAYOUTS: '/dashboard/payouts',
 }
 
 export const STATUS_COLORS = {

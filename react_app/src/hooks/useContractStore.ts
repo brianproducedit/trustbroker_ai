@@ -8,13 +8,27 @@ interface ContractStore {
   contracts: Contract[]
   activeContractId: string
   activeRole: 'buyer' | 'supplier'
+  isAuthenticated: boolean
   isLoading: boolean
   
+  // Auth Actions
+  login: (role: 'buyer' | 'supplier') => void
+  signOut: () => void
+
   // Actions
   setActiveRole: (role: 'buyer' | 'supplier') => void
   toggleActiveRole: () => void
   setActiveContract: (id: string) => void
   getActiveContract: () => Contract | undefined
+  
+  // Role-aware queries
+  getRoleContracts: () => Contract[]
+  getRoleMetrics: () => {
+    activeCount: number
+    escrowAmount: number
+    pendingCount: number
+    settledAmount: number
+  }
   
   // SOW Actions
   createContractDraft: (title: string, description: string, milestones: Milestone[]) => string
@@ -33,7 +47,11 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   contracts: INITIAL_CONTRACTS,
   activeContractId: 'contract-1',
   activeRole: 'buyer',
+  isAuthenticated: true,
   isLoading: false,
+
+  login: (role) => set({ isAuthenticated: true, activeRole: role }),
+  signOut: () => set({ isAuthenticated: false }),
 
   setActiveRole: (role) => set({ activeRole: role }),
 
@@ -45,6 +63,41 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   getActiveContract: () => {
     const { contracts, activeContractId } = get()
     return contracts.find((c) => c.id === activeContractId || c.code === activeContractId) || contracts[0]
+  },
+
+  getRoleContracts: () => {
+    const { contracts, activeRole } = get()
+    if (activeRole === 'buyer') {
+      return contracts.filter((c) => c.buyer.email === 'elena@acmeglobal.com')
+    }
+    return contracts.filter((c) => c.supplier.email === 'tariro@devstudio.co.zw')
+  },
+
+  getRoleMetrics: () => {
+    const { getRoleContracts, activeRole } = get()
+    const roleContracts = getRoleContracts()
+    const activeCount = roleContracts.filter((c) => c.status !== 'completed' && c.status !== 'cancelled').length
+    const escrowAmount = roleContracts.reduce((sum, c) => sum + c.stagedAmount, 0)
+    const settledAmount = roleContracts.reduce((sum, c) => sum + c.releasedAmount, 0)
+    
+    // Count pending milestones
+    let pendingCount = 0
+    roleContracts.forEach((c) => {
+      c.milestones.forEach((m) => {
+        if (activeRole === 'buyer' && (m.status === 'verifying' || m.status === 'submitted')) {
+          pendingCount += 1
+        } else if (activeRole === 'supplier' && (m.status === 'in_progress' || m.status === 'pending')) {
+          pendingCount += 1
+        }
+      })
+    })
+
+    return {
+      activeCount: activeCount || roleContracts.length,
+      escrowAmount,
+      pendingCount,
+      settledAmount,
+    }
   },
 
   createContractDraft: (title, description, milestones) => {
