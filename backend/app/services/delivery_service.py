@@ -156,3 +156,46 @@ def list_milestone_deliveries(
     )
 
     return [get_delivery_full(session, d.id) for d in deliveries]
+
+
+def request_revision(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    client: UserProfile,
+    notes: str = "",
+) -> Dict[str, Any]:
+    """Request revisions on a milestone delivery from the client."""
+    from app.services.policy_engine import PolicyEngine
+
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    milestone = session.get(Milestone, milestone_id)
+    if not milestone or milestone.contract_id != contract.id:
+        raise HTTPException(status_code=404, detail="Milestone not found for this contract")
+
+    policy = PolicyEngine.can_request_revision(client, contract, milestone)
+    if not policy:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=policy.reason)
+
+    milestone.status = MilestoneStatus.REVISION_REQUESTED
+    session.add(milestone)
+    session.commit()
+
+    log_audit_event(
+        session=session,
+        action="revision_requested",
+        details=f"Revision requested for milestone '{milestone.title}' by {client.full_name or client.email}. Notes: {notes or 'No additional notes provided.'}",
+        contract_id=contract.id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"milestone_id": str(milestone.id), "notes": notes},
+    )
+
+    return {
+        "status": "revision_requested",
+        "milestone_id": str(milestone.id),
+        "milestone_status": milestone.status.value,
+        "notes": notes,
+    }

@@ -1,6 +1,6 @@
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models.user import UserProfile
@@ -82,3 +82,19 @@ def get_payment_history(
         ).all()
     )
     return [PaymentAttemptRead.model_validate(a) for a in attempts]
+
+
+@router.post("/webhook", summary="Receive asynchronous PayPal webhook notifications")
+async def paypal_webhook(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """Receive, verify, and idempotently process PayPal webhooks."""
+    headers = dict(request.headers)
+    payload = await request.json()
+    return await payment_service.process_paypal_webhook(
+        session=session,
+        headers=headers,
+        payload=payload,
+    )
+

@@ -90,3 +90,44 @@ async def capture_paypal_order(order_id: str) -> Dict[str, Any]:
         if res.status_code not in (200, 201):
             raise Exception(f"PayPal capture failed: {res.text}")
         return res.json()
+
+
+async def verify_webhook_signature(
+    headers: Dict[str, str],
+    webhook_payload: Dict[str, Any],
+) -> bool:
+    """Verify PayPal webhook transmission signature. Permissive in sandbox without configured webhook ID."""
+    if not settings.paypal_webhook_id:
+        return True
+
+    auth_algo = headers.get("paypal-auth-algo") or headers.get("PAYPAL-AUTH-ALGO")
+    cert_url = headers.get("paypal-cert-url") or headers.get("PAYPAL-CERT-URL")
+    transmission_id = headers.get("paypal-transmission-id") or headers.get("PAYPAL-TRANSMISSION-ID")
+    transmission_sig = headers.get("paypal-transmission-sig") or headers.get("PAYPAL-TRANSMISSION-SIG")
+    transmission_time = headers.get("paypal-transmission-time") or headers.get("PAYPAL-TRANSMISSION-TIME")
+
+    if not all([auth_algo, cert_url, transmission_id, transmission_sig, transmission_time]):
+        return False
+
+    token = await get_paypal_access_token()
+    base_url = get_base_url()
+    verify_payload = {
+        "auth_algo": auth_algo,
+        "cert_url": cert_url,
+        "transmission_id": transmission_id,
+        "transmission_sig": transmission_sig,
+        "transmission_time": transmission_time,
+        "webhook_id": settings.paypal_webhook_id,
+        "webhook_event": webhook_payload,
+    }
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        res = await client.post(
+            f"{base_url}/v1/notifications/verify-webhook-signature",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=verify_payload,
+        )
+        if res.status_code == 200:
+            return res.json().get("verification_status") == "SUCCESS"
+        return False
+

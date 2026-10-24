@@ -6,7 +6,7 @@ from app.database import get_session
 from app.models.user import UserProfile
 from app.models.contract import Contract
 from app.models.delivery import Delivery
-from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead
+from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, RevisionRequest
 from app.services import delivery_service
 from app.utils.security import get_current_user, require_contract_party
 
@@ -54,3 +54,22 @@ def list_milestone_deliveries(
         milestone_id=milestone_id,
         user=current_user,
     )
+
+
+@router.post("/{contract_id}/{milestone_id}/request-revision", summary="Client requests revision on milestone delivery")
+def request_milestone_revision(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    req: RevisionRequest = RevisionRequest(),
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Client rejects current delivery evidence and requests changes with notes."""
+    return delivery_service.request_revision(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        client=current_user,
+        notes=req.notes,
+    )
+

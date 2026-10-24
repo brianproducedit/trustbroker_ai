@@ -46,3 +46,7 @@ class DeliveryRead(BaseModel):
     files: List[DeliveryFileRead] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RevisionRequest(BaseModel):
+    notes: str = ""

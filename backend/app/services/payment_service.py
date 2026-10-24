@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
-from app.models.contract import Contract
+from app.models.contract import Contract, ContractStatus
 from app.models.milestone import Milestone, MilestoneStatus, PaymentStatus
 from app.models.payment import PaymentAttempt, ProviderEvent
 from app.models.user import UserProfile
@@ -220,3 +220,77 @@ def release_milestone_payout(
         "contract_staged_amount": str(contract.staged_amount),
         "contract_released_amount": str(contract.released_amount),
     }
+
+
+async def process_paypal_webhook(
+    session: Session,
+    headers: Dict[str, str],
+    payload: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Process incoming PayPal webhooks idempotently with signature verification."""
+    from datetime import datetime, timezone
+    
+    # 1. Verify webhook signature
+    is_valid = await paypal_client.verify_webhook_signature(headers, payload)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid PayPal webhook signature",
+        )
+
+    event_id = payload.get("id")
+    event_type = payload.get("event_type", "UNKNOWN")
+    resource = payload.get("resource", {})
+    resource_id = resource.get("id")
+
+    if not event_id:
+        raise HTTPException(status_code=400, detail="Missing webhook event ID")
+
+    # 2. Idempotency Check in ProviderEvent table
+    existing = session.exec(select(ProviderEvent).where(ProviderEvent.event_id == event_id)).first()
+    if existing:
+        return {"status": "already_processed", "event_id": event_id}
+
+    provider_event = ProviderEvent(
+        event_id=event_id,
+        event_type=event_type,
+        resource_id=resource_id,
+        payload=payload,
+        processed=False,
+    )
+    session.add(provider_event)
+    session.flush()
+
+    # 3. Handle specific lifecycle events
+    if event_type in ("PAYMENT.CAPTURE.COMPLETED", "CHECKOUT.ORDER.COMPLETED"):
+        order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id") or resource_id
+        attempt = session.exec(
+            select(PaymentAttempt).where(
+                (PaymentAttempt.paypal_capture_id == resource_id) | (PaymentAttempt.paypal_order_id == order_id)
+            )
+        ).first()
+        if attempt and attempt.status != PaymentStatus.STAGED_IN_SANDBOX:
+            attempt.status = PaymentStatus.STAGED_IN_SANDBOX
+            session.add(attempt)
+    elif event_type == "PAYMENT.CAPTURE.DENIED":
+        attempt = session.exec(
+            select(PaymentAttempt).where(PaymentAttempt.paypal_capture_id == resource_id)
+        ).first()
+        if attempt:
+            attempt.status = PaymentStatus.CANCELLED
+            session.add(attempt)
+    elif event_type == "PAYMENT.CAPTURE.REFUNDED":
+        attempt = session.exec(
+            select(PaymentAttempt).where(PaymentAttempt.paypal_capture_id == resource_id)
+        ).first()
+        if attempt:
+            attempt.status = PaymentStatus.REFUNDED
+            session.add(attempt)
+
+    provider_event.processed = True
+    provider_event.processed_at = datetime.now(timezone.utc)
+    session.add(provider_event)
+    session.commit()
+
+    return {"status": "processed", "event_id": event_id, "event_type": event_type}
+
