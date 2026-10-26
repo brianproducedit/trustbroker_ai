@@ -26,7 +26,7 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
             user_role = token.replace("dev-user-", "")
             is_client = user_role == "client"
             return {
-                "sub": "00000000-0000-0000-0000-000000000001" if is_client else "00000000-0000-0000-0000-000000000002",
+                "sub": "35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2" if is_client else "f907f77b-c340-4abe-8c12-a4606b8c2b15",
                 "email": "elena@acmeglobal.com" if is_client else "tariro@devstudio.co.zw",
                 "user_metadata": {
                     "full_name": "Elena Rostova" if is_client else "Tariro Moyo",

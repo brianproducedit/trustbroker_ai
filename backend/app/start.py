@@ -31,28 +31,40 @@ def main():
         print("3. Click 'Save Changes' to trigger an automatic redeploy.")
         print("!" * 70 + "\n")
 
-    # Run database migrations
+    # Run database schema initialization & migrations
     print(f"[STARTUP] Executing database migrations (Target: {'Localhost' if is_localhost else 'Remote DB'})...")
     try:
         res = subprocess.run(["alembic", "upgrade", "head"], capture_output=True, text=True)
         if res.returncode == 0:
             print("[STARTUP] [OK] Alembic migrations completed successfully.")
-            # Optionally seed demo contracts if database is fresh
-            try:
-                from app.seed import seed_database
-                seed_database()
-            except Exception as se:
-                print(f"[STARTUP] Notice: Seeding skipped ({se})")
         else:
             print(f"[STARTUP] [WARNING] Alembic migration exited with code {res.returncode}")
             if res.stderr:
                 print(f"Details: {res.stderr.strip()[:300]}")
-            if is_render and is_localhost:
-                print("[STARTUP] Continuing startup so FastAPI can boot and serve status...")
-            else:
-                print("[STARTUP] Continuing startup with existing schema...")
     except Exception as e:
-        print(f"[STARTUP] Warning running alembic: {e}")
+        print(f"[STARTUP] Notice: Alembic run skipped ({e})")
+
+    # Direct SQLModel table verification & showcase seeding
+    try:
+        from sqlmodel import SQLModel
+        from app.database import engine
+        from app.models.user import UserProfile
+        from app.models.contract import Contract, ContractVersion
+        from app.models.acceptance import ContractAcceptance
+        from app.models.milestone import Milestone, AcceptanceCriterion
+        from app.models.delivery import Delivery
+        from app.models.verification import VerificationReport, CriterionResult
+        from app.models.audit import AuditEvent
+        from app.models.payment import PaymentAttempt
+
+        SQLModel.metadata.create_all(engine)
+        print("[STARTUP] [OK] SQLModel tables verified/created successfully.")
+
+        from app.seed import seed_database
+        seed_database()
+        print("[STARTUP] [OK] Showcase database seeded successfully.")
+    except Exception as dbe:
+        print(f"[STARTUP] Notice: Table creation or seeding deferred ({dbe})")
 
     # Determine Port & Host
     port = int(os.environ.get("PORT", settings.port))

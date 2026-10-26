@@ -25,9 +25,9 @@ def seed_database():
     print("[SEED] Seeding TrustBroker AI showcase database...")
 
     with Session(engine) as session:
-        # 1. User Profiles
-        client_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
-        freelancer_id = uuid.UUID("00000000-0000-0000-0000-000000000002")
+        # 1. User Profiles (matching real Supabase Auth user IDs)
+        client_id = uuid.UUID("35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2")
+        freelancer_id = uuid.UUID("f907f77b-c340-4abe-8c12-a4606b8c2b15")
 
         client = session.exec(select(UserProfile).where(UserProfile.email == "elena@acmeglobal.com")).first()
         if not client:

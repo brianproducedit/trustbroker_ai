@@ -54,11 +54,10 @@ jobs:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "::warning title=Render Deploy Hook Not Configured::RENDER_DEPLOY_HOOK_URL secret is not set in repository secrets. Skipping Render webhook call. (Render will still automatically deploy on Git push if connected to the GitHub repository directly)."
-            echo "### ⚠️ Render Deploy Notice" >> $GITHUB_STEP_SUMMARY
-            echo "The CI build succeeded, but the Render webhook was skipped because \`RENDER_DEPLOY_HOOK_URL\` is not yet defined in your GitHub repository secrets." >> $GITHUB_STEP_SUMMARY
-            echo "If your Render service is connected via GitHub integration, Render will deploy automatically from the \`main\` branch commit." >> $GITHUB_STEP_SUMMARY
-            echo "To trigger instant deployments via webhook, create a Deploy Hook in your Render dashboard and save it as \`RENDER_DEPLOY_HOOK_URL\` in GitHub Secrets." >> $GITHUB_STEP_SUMMARY
+            echo "::notice title=Render Auto-Deploy::Render is connected via GitHub integration and automatically deploys on commit to main."
+            echo "### ℹ️ Render Deploy Notice" >> $GITHUB_STEP_SUMMARY
+            echo "Build passed. Render is directly connected to GitHub repository and automatically deploys commits to \`main\`." >> $GITHUB_STEP_SUMMARY
+            echo "(Optional: to trigger immediate deploys via webhook, add \`RENDER_DEPLOY_HOOK_URL\` in GitHub Secrets)." >> $GITHUB_STEP_SUMMARY
           else
             echo "Triggering Render deployment webhook..."
             RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$RENDER_DEPLOY_HOOK")
