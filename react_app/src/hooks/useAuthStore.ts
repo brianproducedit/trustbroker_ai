@@ -47,7 +47,7 @@ const mapSupabaseUser = (user: User, fallbackRole: 'client' | 'freelancer' = 'cl
 }
 
 const DEV_CLIENT_USER: UserProfile = {
-  id: '00000000-0000-0000-0000-000000000001',
+  id: '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2',
   email: 'elena@acmeglobal.com',
   name: 'Elena Rostova',
   role: 'client',
@@ -55,7 +55,7 @@ const DEV_CLIENT_USER: UserProfile = {
 }
 
 const DEV_FREELANCER_USER: UserProfile = {
-  id: '00000000-0000-0000-0000-000000000002',
+  id: 'f907f77b-c340-4abe-8c12-a4606b8c2b15',
   email: 'tariro@devstudio.co.zw',
   name: 'Tariro Moyo',
   role: 'freelancer',
@@ -72,10 +72,58 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   initialized: false,
 
   initialize: async () => {
-    // 1. Check for stored Dev Session first if offline or in dev mode
-    const storedDevToken = localStorage.getItem('tb_dev_token')
     const storedRole = (localStorage.getItem('tb_active_role') as 'client' | 'freelancer') || 'client'
 
+    // 1. Prioritize real Supabase session if configured
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+
+        if (session && session.user) {
+          localStorage.removeItem('tb_dev_token')
+          const profile = mapSupabaseUser(session.user, storedRole)
+          set({
+            session,
+            user: profile,
+            devToken: null,
+            activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
+            isAuthenticated: true,
+            isLoading: false,
+            initialized: true,
+          })
+
+          // Register listener for auth state changes
+          supabase.auth.onAuthStateChange((_event, session) => {
+            if (session && session.user) {
+              const role = get().activeRole
+              const profile = mapSupabaseUser(session.user, role)
+              set({
+                session,
+                user: profile,
+                devToken: null,
+                activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
+                isAuthenticated: true,
+                isLoading: false,
+              })
+            } else if (!get().devToken) {
+              set({
+                session: null,
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+              })
+            }
+          })
+          return
+        }
+      } catch (err) {
+        console.warn('Supabase auth getSession warning, checking local dev session:', err)
+      }
+    }
+
+    // 2. Check for stored Dev Session if no active Supabase session
+    const storedDevToken = localStorage.getItem('tb_dev_token')
     if (storedDevToken) {
       const devUser = storedRole === 'freelancer' ? DEV_FREELANCER_USER : DEV_CLIENT_USER
       set({
@@ -87,59 +135,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         initialized: true,
       })
       return
-    }
-
-    // 2. Check Supabase session if configured
-    if (isSupabaseConfigured) {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) throw error
-
-        if (session && session.user) {
-          const profile = mapSupabaseUser(session.user, storedRole)
-          set({
-            session,
-            user: profile,
-            activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
-            isAuthenticated: true,
-            isLoading: false,
-            initialized: true,
-          })
-        } else {
-          set({
-            session: null,
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            initialized: true,
-          })
-        }
-
-        // Register listener for auth state changes
-        supabase.auth.onAuthStateChange((_event, session) => {
-          if (session && session.user) {
-            const role = get().activeRole
-            const profile = mapSupabaseUser(session.user, role)
-            set({
-              session,
-              user: profile,
-              activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
-              isAuthenticated: true,
-              isLoading: false,
-            })
-          } else if (!get().devToken) {
-            set({
-              session: null,
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
-            })
-          }
-        })
-        return
-      } catch (err) {
-        console.warn('Supabase auth getSession warning, falling back to local auth state:', err)
-      }
     }
 
     set({
@@ -154,51 +149,70 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signIn: async (email: string, password: string) => {
     set({ isLoading: true })
 
-    // Check if this is a demo email first for instant 1-click test flow
-    if (email === 'elena@acmeglobal.com' && (password === 'password123' || password === 'demo123')) {
+    const isElenaDemo = email === 'elena@acmeglobal.com' && (password === 'password123' || password === 'demo123')
+    const isTariroDemo = email === 'tariro@devstudio.co.zw' && (password === 'password123' || password === 'demo123')
+
+    // 1. Try real Supabase Auth first when configured
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (!error && data.session && data.user) {
+          localStorage.removeItem('tb_dev_token')
+          const profile = mapSupabaseUser(data.user)
+          localStorage.setItem('tb_active_role', profile.role)
+          set({
+            session: data.session,
+            user: profile,
+            devToken: null,
+            activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
+            isAuthenticated: true,
+            isLoading: false,
+          })
+          return { success: true }
+        }
+
+        if (error) {
+          // If Supabase returns error for demo accounts, fall back to dev role seamlessly
+          if (isElenaDemo) {
+            console.info('Supabase sign-in fallback to client demo account:', error.message)
+            get().signInWithDevRole('client')
+            set({ isLoading: false })
+            return { success: true }
+          }
+          if (isTariroDemo) {
+            console.info('Supabase sign-in fallback to freelancer demo account:', error.message)
+            get().signInWithDevRole('freelancer')
+            set({ isLoading: false })
+            return { success: true }
+          }
+          set({ isLoading: false })
+          return { success: false, error: error.message }
+        }
+      } catch (err: any) {
+        if (isElenaDemo || isTariroDemo) {
+          get().signInWithDevRole(isElenaDemo ? 'client' : 'freelancer')
+          set({ isLoading: false })
+          return { success: true }
+        }
+        set({ isLoading: false })
+        return { success: false, error: err?.message || 'Authentication error occurred.' }
+      }
+    }
+
+    // 2. Local fallback if Supabase not configured
+    if (isElenaDemo) {
       get().signInWithDevRole('client')
       set({ isLoading: false })
       return { success: true }
     }
-    if (email === 'tariro@devstudio.co.zw' && (password === 'password123' || password === 'demo123')) {
+    if (isTariroDemo) {
       get().signInWithDevRole('freelancer')
       set({ isLoading: false })
       return { success: true }
     }
 
-    if (!isSupabaseConfigured) {
-      set({ isLoading: false })
-      return { success: false, error: 'Supabase authentication is not configured in environment variables.' }
-    }
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        set({ isLoading: false })
-        return { success: false, error: error.message }
-      }
-
-      if (data.session && data.user) {
-        localStorage.removeItem('tb_dev_token')
-        const profile = mapSupabaseUser(data.user)
-        localStorage.setItem('tb_active_role', profile.role)
-        set({
-          session: data.session,
-          user: profile,
-          devToken: null,
-          activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
-          isAuthenticated: true,
-          isLoading: false,
-        })
-        return { success: true }
-      }
-
-      set({ isLoading: false })
-      return { success: false, error: 'No active session returned.' }
-    } catch (err: any) {
-      set({ isLoading: false })
-      return { success: false, error: err?.message || 'Authentication error occurred.' }
-    }
+    set({ isLoading: false })
+    return { success: false, error: 'Supabase authentication is not configured in environment variables.' }
   },
 
   signUp: async (email, password, metadata) => {
