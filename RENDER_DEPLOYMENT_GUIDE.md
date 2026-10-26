@@ -48,7 +48,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
    - **Root Directory:** `backend`
    - **Runtime:** `Python 3`
    - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Start Command:** `python -m app.start`
    - **Instance Type:** `Free`
 3. Add the Backend Environment Variables (Section 4).
 4. Click **Create Web Service**. Note the deployed URL (e.g. `https://trustbroker-ai-api.onrender.com`).
@@ -70,16 +70,38 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
 
 ---
 
-## 4. Required Environment Variables
+## 4. Required Environment Variables & How to Get Them
 
-### Backend (`trustbroker-ai-api`)
+### A. How to Get your Supabase Database URI (Crucial for Render IPv4):
+> [!IMPORTANT]
+> Supabase direct connections (`db.[ref].supabase.co`) use IPv6 only. Render's free tier only supports **IPv4**.
+> You must use the **Connection Pooler (Supavisor)** URI:
+1. Open your project on the [Supabase Dashboard](https://supabase.com/dashboard/project/fgdvlrfbpzkaetwwjhxq).
+2. Click the **Connect** button in the top navigation bar.
+3. In the connect drawer, select **Connection Pooler** (or **ORMs** $\rightarrow$ SQLAlchemy).
+4. Mode: Choose **Transaction** (Port `6543`) or **Session** (Port `5432`).
+5. Copy the connection string format:
+   ```text
+   postgresql://postgres.fgdvlrfbpzkaetwwjhxq:[YOUR-DATABASE-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require
+   ```
+6. Replace `[YOUR-DATABASE-PASSWORD]` with the database password set when creating the Supabase project.
+
+### B. Setting Environment Variables in Render Dashboard:
+1. Open your [Render Dashboard](https://dashboard.render.com).
+2. Click on **`trustbroker-ai-api`**.
+3. In the left sidebar, click **Environment**.
+4. Click **Add Environment Variable** (or edit existing row).
+5. Set `DATABASE_URL` to your Supabase Pooler URI.
+6. Click **Save Changes** $\rightarrow$ select **Save and deploy**.
+
+### Backend (`trustbroker-ai-api`) Reference Table:
 | Variable | Value / Source | Description |
 |---|---|---|
 | `ENVIRONMENT` | `production` | App environment mode |
-| `DATABASE_URL` | Supabase $\rightarrow$ Settings $\rightarrow$ Database $\rightarrow$ URI | Direct PostgreSQL connection string |
+| `DATABASE_URL` | Supabase $\rightarrow$ Top **Connect** button $\rightarrow$ Connection Pooler | IPv4 Connection Pooler URI (port 6543 or 5432) |
 | `SUPABASE_URL` | `https://fgdvlrfbpzkaetwwjhxq.supabase.co` | Supabase project API URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase $\rightarrow$ Settings $\rightarrow$ API $\rightarrow$ `service_role` | Secret backend admin key |
-| `SUPABASE_JWT_SECRET` | Supabase $\rightarrow$ Settings $\rightarrow$ API $\rightarrow$ JWT Secret | Shared secret for HS256 JWT decoding |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase $\rightarrow$ Project Settings $\rightarrow$ API $\rightarrow$ `service_role` | Secret backend admin key |
+| `SUPABASE_JWT_SECRET` | Supabase $\rightarrow$ Project Settings $\rightarrow$ API $\rightarrow$ JWT Secret | Shared secret for HS256 JWT decoding |
 | `PAYPAL_CLIENT_ID` | PayPal Developer Portal $\rightarrow$ Apps & Credentials | Sandbox REST App Client ID |
 | `PAYPAL_CLIENT_SECRET` | PayPal Developer Portal $\rightarrow$ Apps & Credentials | Sandbox REST App Secret |
 | `PAYPAL_MODE` | `sandbox` | `sandbox` for testing, `live` for production |
@@ -96,7 +118,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
 |---|---|
 | `VITE_API_BASE_URL` | `https://trustbroker-ai-api.onrender.com/api/v1` |
 | `VITE_SUPABASE_URL` | `https://fgdvlrfbpzkaetwwjhxq.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Supabase $\rightarrow$ Settings $\rightarrow$ API $\rightarrow$ `anon` public key |
+| `VITE_SUPABASE_ANON_KEY` | Supabase $\rightarrow$ Project Settings $\rightarrow$ API $\rightarrow$ `anon` public key |
 | `VITE_PAYPAL_CLIENT_ID` | PayPal Sandbox Client ID |
 
 ---
