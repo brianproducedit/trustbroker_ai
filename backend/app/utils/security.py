@@ -21,8 +21,8 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
         )
         return payload
     except JWTError as exc:
-        # Development fallback for test tokens
-        if settings.environment == "development" and token.startswith("dev-user-"):
+        # Fallback for 1-click test tokens (supports demo and hackathon reviews)
+        if token.startswith("dev-user-"):
             user_role = token.replace("dev-user-", "")
             is_client = user_role == "client"
             return {
