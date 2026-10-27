@@ -40,14 +40,11 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
     (a: any) => a.role === 'freelancer' && a.version_number === currentVersion
   )
 
-  const isClientDemo = String(c.client_id) === '00000000-0000-0000-0000-000000000001'
-  const isFreelancerDemo = String(c.freelancer_id) === '00000000-0000-0000-0000-000000000002'
-
   const client: ContractParty = {
     id: String(c.client_id || 'client-default'),
-    name: isClientDemo ? 'Elena Rostova' : (c.client_name || 'Client'),
-    email: isClientDemo ? 'elena@acmeglobal.com' : (c.client_email || 'client@trustbroker.ai'),
-    organization: isClientDemo ? 'Acme Global Ventures LLC' : undefined,
+    name: c.client_name || 'Client',
+    email: c.client_email || '',
+    organization: c.client_organization || undefined,
     role: 'client',
     accepted: Boolean(clientAcceptance),
     acceptedAt: clientAcceptance?.accepted_at,
@@ -55,9 +52,9 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
 
   const freelancer: ContractParty = {
     id: String(c.freelancer_id || 'freelancer-default'),
-    name: isFreelancerDemo ? 'Tariro Moyo' : (c.freelancer_name || (c.freelancer_email ? c.freelancer_email.split('@')[0] : 'Freelancer')),
-    email: isFreelancerDemo ? 'tariro@devstudio.co.zw' : (c.freelancer_email || 'tariro@devstudio.co.zw'),
-    organization: isFreelancerDemo ? 'DevStudio Zimbabwe' : undefined,
+    name: c.freelancer_name || (c.freelancer_email ? c.freelancer_email.split('@')[0] : 'Freelancer'),
+    email: c.freelancer_email || '',
+    organization: c.freelancer_organization || undefined,
     role: 'freelancer',
     accepted: Boolean(freelancerAcceptance),
     acceptedAt: freelancerAcceptance?.accepted_at,

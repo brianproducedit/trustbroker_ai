@@ -13,11 +13,11 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 flex flex-col gap-4">
             <Logo isDark />
             <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
-              Decoupling cross-border digital payments from subjective disputes through AI statement of work verification and PayPal Sandbox conditional release coordination.
+              The trust layer between clients and freelancers: AI-drafted contracts, PayPal-secured milestones, and evidence-based verification.
             </p>
             <div className="flex items-center gap-2 text-xs text-blue-400 font-mono mt-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>PayPal AI Hackathon Submission 2026</span>
+              <span>Built on the PayPal developer platform</span>
             </div>
           </div>
 
@@ -26,23 +26,23 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">Product</h4>
             <ul className="flex flex-col gap-2.5 text-sm text-slate-400">
               <li>
-                <Link to={ROUTES.DASHBOARD} className="hover:text-white transition-colors">
-                  Contract Ledger
+                <Link to={ROUTES.HOW_IT_WORKS} className="hover:text-white transition-colors">
+                  How it works
                 </Link>
               </li>
               <li>
-                <Link to={ROUTES.HOME} className="hover:text-white transition-colors">
-                  AI SOW Generator
+                <Link to={ROUTES.FOR_CLIENTS} className="hover:text-white transition-colors">
+                  For clients
                 </Link>
               </li>
               <li>
-                <Link to={ROUTES.DELIVERY_VERIFICATION('TB-2026-084')} className="hover:text-white transition-colors">
-                  Evidence Verification
+                <Link to={ROUTES.FOR_FREELANCERS} className="hover:text-white transition-colors">
+                  For freelancers
                 </Link>
               </li>
               <li>
-                <Link to={ROUTES.ACTIVITY_HISTORY('TB-2026-084')} className="hover:text-white transition-colors">
-                  Audit Activity Trail
+                <Link to={ROUTES.SIGN_UP} className="hover:text-white transition-colors">
+                  Create an account
                 </Link>
               </li>
             </ul>
@@ -95,12 +95,12 @@ export const Footer: React.FC = () => {
 
           {/* Compliance & Trust */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">Trust &amp; Demo</h4>
+            <h4 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">Trust</h4>
             <ul className="flex flex-col gap-2.5 text-sm text-slate-400">
               <li>
                 <span className="text-emerald-400 flex items-center gap-1.5 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  PayPal Sandbox Connected
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  PayPal-secured milestones
                 </span>
               </li>
               <li>
@@ -125,12 +125,12 @@ export const Footer: React.FC = () => {
         {/* Disclaimer row */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>
-            TrustBroker AI &copy; 2026. Built for the PayPal AI Hackathon. Prototype demonstration for conditional milestone disbursements.
+            TrustBroker AI &copy; 2026. PayPal-secured milestone payments for clients and freelancers.
           </p>
           <div className="flex items-center gap-6 text-slate-400">
-            <span>PayPal Sandbox Integration</span>
-            <span>Groq LPU &amp; OpenRouter AI</span>
-            <span>Lexend &amp; React 19</span>
+            <span>PayPal</span>
+            <span>Groq &amp; OpenRouter</span>
+            <span>AG Grid</span>
           </div>
         </div>
       </div>

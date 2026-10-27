@@ -1,6 +1,6 @@
 # TrustBroker AI — Backend Service
 
-FastAPI-powered backend engine for **TrustBroker AI**, providing deterministic contract lifecycle management, milestone escrow staging with PayPal, high-speed AI delivery verification via Groq LPU (with OpenRouter fallback), and immutable audit logging.
+FastAPI backend for **TrustBroker AI**: contract lifecycle, PayPal-secured milestone payments, AI delivery verification via Groq (OpenRouter fallback), and audit logging.
 
 ---
 
@@ -12,7 +12,7 @@ FastAPI-powered backend engine for **TrustBroker AI**, providing deterministic c
 - **Identity & Auth:** Supabase Auth (JWT validation)
 - **Storage:** Supabase Storage (Deliverables bucket)
 - **AI Verification & Drafting:** Groq LPU (`openai/gpt-oss-120b`) with OpenRouter fallback
-- **Payments:** PayPal Orders v2 Sandbox API
+- **Payments:** PayPal Orders v2 (and Payouts in later phases)
 - **Deployment:** Render (Python Web Service / Docker)
 
 ---

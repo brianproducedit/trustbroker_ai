@@ -20,24 +20,20 @@ export const SignIn: React.FC = () => {
   const redirectParam = searchParams.get('redirect')
 
   const initialRole: 'client' | 'freelancer' =
-    roleParam === 'supplier' || roleParam === 'freelancer' ? 'freelancer' : 'client'
+    roleParam === 'freelancer' ? 'freelancer' : 'client'
 
   const [selectedRole, setSelectedRole] = useState<'client' | 'freelancer'>(initialRole)
-  const [email, setEmail] = useState(
-    initialRole === 'freelancer' ? 'tariro@devstudio.co.zw' : 'elena@acmeglobal.com'
-  )
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (roleParam === 'supplier' || roleParam === 'freelancer') {
+    if (roleParam === 'freelancer') {
       setSelectedRole('freelancer')
-      setEmail('tariro@devstudio.co.zw')
-    } else if (roleParam === 'buyer' || roleParam === 'client') {
+    } else if (roleParam === 'client') {
       setSelectedRole('client')
-      setEmail('elena@acmeglobal.com')
     }
   }, [roleParam])
 
@@ -55,18 +51,6 @@ export const SignIn: React.FC = () => {
       navigate(redirectParam ? decodeURIComponent(redirectParam) : ROUTES.DASHBOARD)
     } else {
       toast.error(result.error || 'Failed to sign in. Please check your credentials.')
-    }
-  }
-
-  const handleQuickFill = (role: 'client' | 'freelancer') => {
-    setSelectedRole(role)
-    setActiveRole(role)
-    if (role === 'client') {
-      setEmail('elena@acmeglobal.com')
-      setPassword('password123')
-    } else {
-      setEmail('tariro@devstudio.co.zw')
-      setPassword('password123')
     }
   }
 
@@ -89,48 +73,47 @@ export const SignIn: React.FC = () => {
           <CardHeader className="text-center pb-3">
             <CardTitle className="text-2xl font-bold text-[#1A2940]">Sign In</CardTitle>
             <CardDescription className="text-xs text-[#5D6B82] mt-1">
-              Access your contracts, staged milestone funds, and verification reports.
+              Sign in to your client or freelancer workspace.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-5">
-            {/* Quick Demo Test Logins */}
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium px-1">
-                <span>Demo Accounts:</span>
-                <span className="text-blue-600 font-semibold text-[10px]">1-Click Quick Fill</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={selectedRole === 'client' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleQuickFill('client')}
-                  className={`h-8 text-xs font-medium justify-center gap-1.5 ${
-                    selectedRole === 'client'
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Client (Elena)</span>
-                </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={selectedRole === 'client' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setSelectedRole('client')
+                  setActiveRole('client')
+                }}
+                className={`h-8 text-xs font-medium justify-center gap-1.5 ${
+                  selectedRole === 'client'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Client workspace</span>
+              </Button>
 
-                <Button
-                  type="button"
-                  variant={selectedRole === 'freelancer' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleQuickFill('freelancer')}
-                  className={`h-8 text-xs font-medium justify-center gap-1.5 ${
-                    selectedRole === 'freelancer'
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Freelancer (Tariro)</span>
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant={selectedRole === 'freelancer' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setSelectedRole('freelancer')
+                  setActiveRole('freelancer')
+                }}
+                className={`h-8 text-xs font-medium justify-center gap-1.5 ${
+                  selectedRole === 'freelancer'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Freelancer workspace</span>
+              </Button>
             </div>
 
             {/* Form */}
@@ -234,7 +217,7 @@ export const SignIn: React.FC = () => {
       </div>
 
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
-        TrustBroker AI &bull; PayPal AI Hackathon Sandbox Prototype &bull; Secure Authentication
+        TrustBroker AI &bull; PayPal-secured milestone payments
       </footer>
     </div>
   )

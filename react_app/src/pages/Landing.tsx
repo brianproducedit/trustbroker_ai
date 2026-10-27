@@ -10,7 +10,6 @@ import {
   CreditCard, 
   Sparkles, 
   ArrowRight, 
-  ShieldCheck, 
   UserCheck, 
   Code2,
   Lock
@@ -22,30 +21,12 @@ export const Landing: React.FC = () => {
       <Header />
 
       <main className="w-full pt-[68px] flex-1">
-        {/* Subtle Hackathon Top Ribbon */}
-        <section className="w-full bg-[#0E1B35] text-white py-2 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-medium text-blue-300">PayPal AI Hackathon 2026</span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-300">PayPal Sandbox + Groq LPU AI</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-400 text-[11px]">
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                Verified Sandbox Environment
-              </span>
-            </div>
-          </div>
-        </section>
-
         {/* Hero Section */}
         <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-16">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto gap-6">
             <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50/80 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5 shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              Next-Gen Work Verification
+              AI contracts · PayPal-secured milestones
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#1A2940] leading-[1.15]">
@@ -54,23 +35,22 @@ export const Landing: React.FC = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-[#5D6B82] leading-relaxed max-w-2xl">
-              AI-drafted contracts. Staged payments. Verified delivery. Neither party has to risk working or paying without security.
+              Describe the work. Hire with evidence. Pay when the milestone checks out.
             </p>
 
-            {/* Persona Action Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Button asChild size="lg" className="h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm gap-2">
-                <Link to="/sign-in?role=client&redirect=/dashboard">
+                <Link to={`${ROUTES.SIGN_UP}?role=client`}>
                   <UserCheck className="w-4 h-4 text-blue-200" />
-                  <span>I am Hiring (Client Demo)</span>
+                  <span>Hire with TrustBroker</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
 
               <Button asChild variant="outline" size="lg" className="h-11 px-6 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border-slate-300 font-medium text-sm gap-2">
-                <Link to="/sign-in?role=freelancer&redirect=/dashboard">
+                <Link to={`${ROUTES.SIGN_UP}?role=freelancer`}>
                   <UserCheck className="w-4 h-4 text-slate-500" />
-                  <span>I am a Freelancer (Demo)</span>
+                  <span>Find work</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
@@ -83,62 +63,27 @@ export const Landing: React.FC = () => {
           <div className="text-center max-w-xl mx-auto mb-10">
             <h2 className="text-2xl font-bold text-[#1A2940]">How TrustBroker Works</h2>
             <p className="text-xs text-[#5D6B82] mt-1.5">
-              From project brief to final payment disbursement in four automated steps.
+              From brief to PayPal payout, with AI on the contract, the applicants, and the deliverable.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Step 1 */}
-            <Card className="border-[#DDE4EF] bg-white hover:shadow-md transition-shadow">
-              <CardContent className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
-                  1
-                </div>
-                <h3 className="font-semibold text-base text-[#1A2940]">Describe Project</h3>
-                <p className="text-xs text-[#5D6B82] leading-relaxed">
-                  Enter your brief in plain language. AI generates a clear contract with milestones and measurable acceptance criteria.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Step 2 */}
-            <Card className="border-[#DDE4EF] bg-white hover:shadow-md transition-shadow">
-              <CardContent className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
-                  2
-                </div>
-                <h3 className="font-semibold text-base text-[#1A2940]">Agree on Terms</h3>
-                <p className="text-xs text-[#5D6B82] leading-relaxed">
-                  Both client and freelancer review and digitally accept the contract scope. Terms are locked before work begins.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Step 3 */}
-            <Card className="border-[#DDE4EF] bg-white hover:shadow-md transition-shadow">
-              <CardContent className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
-                  3
-                </div>
-                <h3 className="font-semibold text-base text-[#1A2940]">Stage Payment</h3>
-                <p className="text-xs text-[#5D6B82] leading-relaxed">
-                  The client stages milestone funds through PayPal Sandbox. The freelancer starts work knowing funds are committed.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Step 4 */}
-            <Card className="border-[#DDE4EF] bg-white hover:shadow-md transition-shadow">
-              <CardContent className="p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
-                  4
-                </div>
-                <h3 className="font-semibold text-base text-[#1A2940]">Verify & Release</h3>
-                <p className="text-xs text-[#5D6B82] leading-relaxed">
-                  Work is submitted and evaluated against criteria. Upon verification, funds release automatically to the freelancer.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { n: '1', title: 'Draft & publish', desc: 'AI turns a brief into an open contract with milestones and criteria.' },
+              { n: '2', title: 'Apply & vet', desc: 'Freelancers apply. AI ranks them from profile, portfolio, and past work.' },
+              { n: '3', title: 'Fund the milestone', desc: 'The client funds the next milestone through PayPal before work starts.' },
+              { n: '4', title: 'Verify & pay', desc: 'AI inspects the evidence. Policy then allows the PayPal payout.' },
+            ].map((step) => (
+              <Card key={step.n} className="border-[#DDE4EF] bg-white hover:shadow-md transition-shadow">
+                <CardContent className="p-6 space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                    {step.n}
+                  </div>
+                  <h3 className="font-semibold text-base text-[#1A2940]">{step.title}</h3>
+                  <p className="text-xs text-[#5D6B82] leading-relaxed">{step.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
@@ -154,13 +99,13 @@ export const Landing: React.FC = () => {
                   Objective verification replaces endless debates.
                 </h2>
                 <p className="text-xs sm:text-sm text-[#5D6B82] leading-relaxed">
-                  Every milestone has explicit acceptance criteria. When Tariro submits code, Groq LPU AI assesses test passes, responsiveness, and file deliverables, giving Elena a clear pass/fail breakdown before funds release.
+                  Every milestone has explicit acceptance criteria. When the freelancer submits evidence, AI assesses it against those criteria and gives the client a clear pass, fail, or needs-review breakdown before any payout.
                 </p>
 
                 <div className="pt-2 flex flex-col sm:flex-row gap-3">
                   <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white gap-2 text-xs">
-                    <Link to="/sign-in?role=client&redirect=/dashboard/contracts/contract-1">
-                      Explore This Contract
+                    <Link to={ROUTES.HOW_IT_WORKS}>
+                      See the full flow
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Button>
@@ -208,7 +153,7 @@ export const Landing: React.FC = () => {
                     {/* Milestone 2 */}
                     <div className="p-3 bg-white rounded-lg border border-blue-200 bg-blue-50/30 flex items-center justify-between gap-3 text-xs">
                       <div className="space-y-0.5">
-                        <div className="font-medium text-slate-800">Milestone 2: PayPal Sandbox Integration</div>
+                        <div className="font-medium text-slate-800">Milestone 2: PayPal checkout flow</div>
                         <div className="text-slate-500 text-[11px]">Due Mar 15 &bull; In review</div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -222,7 +167,7 @@ export const Landing: React.FC = () => {
                     <div className="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between gap-3 text-xs opacity-75">
                       <div className="space-y-0.5">
                         <div className="font-medium text-slate-800">Milestone 3: End-to-End Testing & Handover</div>
-                        <div className="text-slate-500 text-[11px]">Due Mar 30 &bull; Staged in Sandbox</div>
+                        <div className="text-slate-500 text-[11px]">Due Mar 30 &bull; Milestone funded</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-slate-600 text-[10px]">
@@ -246,7 +191,7 @@ export const Landing: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-slate-600 text-xs font-semibold">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-blue-600" />
-                <span>PayPal Orders v2 Sandbox</span>
+                <span>PayPal Orders &amp; Payouts</span>
               </div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-600" />
@@ -254,11 +199,11 @@ export const Landing: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-emerald-600" />
-                <span>AG Grid Enterprise Ready</span>
+                <span>AG Grid &amp; AG Studio</span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-slate-700" />
-                <span>End-to-End Cryptographic Audit</span>
+                <span>Traceable activity history</span>
               </div>
             </div>
           </div>

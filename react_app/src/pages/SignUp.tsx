@@ -26,16 +26,16 @@ export const SignUp: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState<'client' | 'freelancer'>(
-    roleParam === 'supplier' || roleParam === 'freelancer' ? 'freelancer' : 'client'
+    roleParam === 'freelancer' ? 'freelancer' : 'client'
   )
-  const [agreed, setAgreed] = useState(true)
+  const [agreed, setAgreed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (roleParam === 'supplier' || roleParam === 'freelancer') {
+    if (roleParam === 'freelancer') {
       setRole('freelancer')
-    } else if (roleParam === 'buyer' || roleParam === 'client') {
+    } else if (roleParam === 'client') {
       setRole('client')
     }
   }, [roleParam])
@@ -120,7 +120,7 @@ export const SignUp: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Primary Role Selector */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#1A2940]">Primary Focus</Label>
+                <Label className="text-xs font-semibold text-[#1A2940]">Primary workspace</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -133,7 +133,7 @@ export const SignUp: React.FC = () => {
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    I am Hiring (Client)
+                    I am hiring
                   </Button>
                   <Button
                     type="button"
@@ -146,7 +146,7 @@ export const SignUp: React.FC = () => {
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    I am Delivering (Freelancer)
+                    I am a freelancer
                   </Button>
                 </div>
               </div>
@@ -258,7 +258,7 @@ export const SignUp: React.FC = () => {
                   className="mt-0.5"
                 />
                 <label htmlFor="terms" className="text-xs text-slate-600 leading-snug cursor-pointer select-none">
-                  I agree to the Terms of Service, Privacy Policy, and PayPal Sandbox testing conditions.
+                  I agree to the Terms of Service and Privacy Policy.
                 </label>
               </div>
 
@@ -292,7 +292,7 @@ export const SignUp: React.FC = () => {
       </div>
 
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
-        TrustBroker AI &bull; PayPal AI Hackathon Sandbox Prototype
+        TrustBroker AI &bull; PayPal-secured milestone payments
       </footer>
     </div>
   )

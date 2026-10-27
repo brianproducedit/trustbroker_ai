@@ -40,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
   const navigate = useNavigate()
   const { activeContractId } = useContractStore()
   const authSignOut = useAuthStore((state) => state.signOut)
+  const user = useAuthStore((state) => state.user)
   const [signOutOpen, setSignOutOpen] = useState(false)
 
   const currentContractKey = activeContractId || 'contract-1'
@@ -53,8 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
 
   const handleRoleToggle = () => {
     onToggleRole()
-    const nextRole = currentRole === 'client' ? 'Freelancer' : 'Client'
-    toast.info(`Switched view to ${nextRole} Mode`)
+    const nextRole = currentRole === 'client' ? 'freelancer' : 'client'
+    toast.info(`Switched to ${nextRole} workspace`)
   }
 
   // Clear, distinct persona navigation
@@ -69,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
     { label: 'Your Projects', icon: LayoutGrid, path: ROUTES.DASHBOARD },
     { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
     { label: 'Submit Delivery', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },
-    { label: 'Earnings & Payouts', icon: Wallet, path: ROUTES.SUPPLIER_PAYOUTS },
+    { label: 'Earnings & Payouts', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
     { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
   ]
 
@@ -155,10 +156,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
                   ? 'bg-blue-950/80 text-blue-300 hover:text-white border-blue-800/60'
                   : 'bg-emerald-950/80 text-emerald-300 hover:text-white border-emerald-800/60'
               )}
-              title="Toggle between Client and Freelancer views"
+              title="Switch workspace"
             >
               <ArrowLeftRight className="w-2.5 h-2.5" />
-              <span>Switch</span>
+              <span>Switch workspace</span>
             </button>
           </div>
 
@@ -171,24 +172,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
             />
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-white truncate">
-                {currentRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo'}
+                {user?.name || 'Signed in'}
               </span>
               <span className="text-[10px] text-slate-400 truncate">
-                {currentRole === 'client' ? 'Acme Global Org' : 'DevStudio Harare'}
+                {user?.organization || user?.email || ''}
               </span>
             </div>
           </div>
         </div>
 
-        {/* PayPal Sandbox Status */}
         <div className="flex items-center justify-between px-2 py-1 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-mono text-[11px] text-slate-300">PayPal Sandbox</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="font-mono text-[11px] text-slate-300">PayPal connected</span>
           </div>
-          <span className="font-mono text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">
-            Live Demo
-          </span>
         </div>
 
         {/* Sign Out Action Button */}

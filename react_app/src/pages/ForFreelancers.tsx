@@ -2,36 +2,37 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { ROUTES } from '@/constants'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Building2, 
-  Sparkles, 
-  CheckCircle2, 
-  ArrowRight, 
-  Lock
+import {
+  Globe2,
+  CreditCard,
+  ArrowRight,
+  Sparkles,
+  DollarSign,
 } from 'lucide-react'
 
-export const ForBuyers: React.FC = () => {
+export const ForFreelancers: React.FC = () => {
   const benefits = [
     {
-      title: 'AI Drafts Clear Contracts in Seconds',
-      desc: 'No messy contract negotiations. Describe what you need and AI generates clear milestones, deadlines, and unambiguous acceptance criteria.',
+      title: 'Work against funded milestones',
+      desc: 'Apply to open contracts. Once awarded, the client funds the milestone through PayPal before you start — so you are not working on a promise.',
+      icon: CreditCard,
+      color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    },
+    {
+      title: 'Zero ambiguity or scope creep',
+      desc: 'Milestones have explicit, agreed-upon acceptance criteria. Deliver what is specified and get a clear pass, fail, or review result.',
       icon: Sparkles,
       color: 'bg-blue-50 text-blue-600 border-blue-200',
     },
     {
-      title: 'Funds Stay Protected Until Work is Verified',
-      desc: 'Stage milestone payments through PayPal Sandbox. Your payment is secured and only released once the deliverable passes inspection.',
-      icon: Lock,
-      color: 'bg-indigo-50 text-indigo-600 border-indigo-200',
-    },
-    {
-      title: 'Automated Delivery Assessment',
-      desc: 'When the freelancer submits work, AI evaluates repository code, builds, and deliverables against criteria so you have an objective report.',
-      icon: CheckCircle2,
-      color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+      title: 'Paid when the work verifies',
+      desc: 'Submit files, screenshots, or a live URL. After verification, the PayPal payout goes to the email on your profile.',
+      icon: DollarSign,
+      color: 'bg-amber-50 text-amber-600 border-amber-200',
     },
   ]
 
@@ -40,46 +41,44 @@ export const ForBuyers: React.FC = () => {
       <Header />
 
       <main className="w-full pt-[68px] flex-1">
-        {/* Hero */}
         <section className="py-14 sm:py-20 bg-white border-b border-[#DDE4EF]">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-5">
-            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-blue-600" />
-              For Clients & Hiring Managers
+            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 text-xs font-semibold gap-1.5">
+              <Globe2 className="w-3.5 h-3.5 text-emerald-600" />
+              For Freelancers & Studios
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1A2940] tracking-tight leading-tight">
-              Hire global talent with <br className="hidden sm:inline" />
-              <span className="text-blue-600">confidence and peace of mind.</span>
+              Get paid for verified work. <br className="hidden sm:inline" />
+              <span className="text-emerald-600">No invoice chasing.</span>
             </h1>
 
             <p className="text-sm sm:text-base text-[#5D6B82] max-w-2xl leading-relaxed">
-              Never worry about unfinished projects or broken code. Staged milestone payments guarantee you only pay for completed, verified work.
+              Browse open contracts, apply with your portfolio, and receive PayPal payouts when milestones pass inspection — including if you are new and have no completed jobs yet.
             </p>
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-11 px-6 gap-2">
-                <Link to="/sign-in?role=client&redirect=/dashboard/create-project">
-                  Create Your First Project
+              <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-11 px-6 gap-2">
+                <Link to={`${ROUTES.SIGN_UP}?role=freelancer`}>
+                  Find work
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
 
               <Button asChild variant="outline" size="lg" className="border-slate-300 text-slate-700 text-xs h-11 px-6">
-                <Link to="/sign-in?role=client&redirect=/dashboard">
-                  Explore Client Dashboard
+                <Link to={ROUTES.HOW_IT_WORKS}>
+                  See how it works
                 </Link>
               </Button>
             </div>
           </div>
         </section>
 
-        {/* Benefits Grid */}
         <section className="py-14 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="text-2xl font-bold text-[#1A2940]">Why Clients Rely on TrustBroker</h2>
+            <h2 className="text-2xl font-bold text-[#1A2940]">Built for Fair Freelance Collaboration</h2>
             <p className="text-xs text-[#5D6B82] mt-1.5">
-              Built to make freelance collaborations transparent, smooth, and predictable.
+              Transparent terms, funded milestones, and a recorded payout trail.
             </p>
           </div>
 
@@ -107,4 +106,4 @@ export const ForBuyers: React.FC = () => {
   )
 }
 
-export default ForBuyers
+export default ForFreelancers

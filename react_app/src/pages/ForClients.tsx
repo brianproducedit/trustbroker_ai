@@ -6,33 +6,33 @@ import { ROUTES } from '@/constants'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Globe2, 
-  CreditCard, 
-  ArrowRight, 
-  Sparkles, 
-  DollarSign 
+import {
+  Building2,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  Lock,
 } from 'lucide-react'
 
-export const ForSuppliers: React.FC = () => {
+export const ForClients: React.FC = () => {
   const benefits = [
     {
-      title: 'Guaranteed Funds Staged Upfront',
-      desc: 'Never wonder if a client has the budget to pay. Before writing a line of code, milestone payments are safely staged via PayPal Sandbox.',
-      icon: CreditCard,
-      color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-    },
-    {
-      title: 'Zero Ambiguity or Scope Creep',
-      desc: 'Milestones have explicit, agreed-upon acceptance criteria. Deliver what is specified and get approved without moving goalposts.',
+      title: 'AI Drafts Clear Contracts in Seconds',
+      desc: 'Describe the work in plain language. TrustBroker turns it into milestones, deadlines, and measurable acceptance criteria you can edit before publishing.',
       icon: Sparkles,
       color: 'bg-blue-50 text-blue-600 border-blue-200',
     },
     {
-      title: 'Direct Disbursement Upon Verification',
-      desc: 'Submit your code or project links for verification. As soon as criteria are satisfied, milestone disbursements execute directly to your account.',
-      icon: DollarSign,
-      color: 'bg-amber-50 text-amber-600 border-amber-200',
+      title: 'PayPal-secured milestone payments',
+      desc: 'Fund the next milestone through PayPal. Payment is only released after the deliverable is verified against the agreed criteria.',
+      icon: Lock,
+      color: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+    },
+    {
+      title: 'Hire from evidence, not guesswork',
+      desc: 'Freelancers apply to open contracts. AI ranks applicants from profile, portfolio, and past work — including a fair path for new talent.',
+      icon: CheckCircle2,
+      color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
     },
   ]
 
@@ -41,46 +41,44 @@ export const ForSuppliers: React.FC = () => {
       <Header />
 
       <main className="w-full pt-[68px] flex-1">
-        {/* Hero */}
         <section className="py-14 sm:py-20 bg-white border-b border-[#DDE4EF]">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-5">
-            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 text-xs font-semibold gap-1.5">
-              <Globe2 className="w-3.5 h-3.5 text-emerald-600" />
-              For Freelancers & Software Studios
+            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-blue-600" />
+              For Clients & Hiring Managers
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1A2940] tracking-tight leading-tight">
-              Get paid for verified work. <br className="hidden sm:inline" />
-              <span className="text-emerald-600">Zero invoice chasing.</span>
+              Hire global talent with <br className="hidden sm:inline" />
+              <span className="text-blue-600">confidence and a clear trail.</span>
             </h1>
 
             <p className="text-sm sm:text-base text-[#5D6B82] max-w-2xl leading-relaxed">
-              Say goodbye to ghosting and payment delays. With TrustBroker, client funds are staged before work commences and released upon objective verification.
+              Publish an open contract, review AI-vetted applicants, fund the milestone on PayPal, and pay when the work checks out.
             </p>
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-11 px-6 gap-2">
-                <Link to="/sign-in?role=freelancer&redirect=/dashboard">
-                  View Freelancer Portal
+              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-11 px-6 gap-2">
+                <Link to={`${ROUTES.SIGN_UP}?role=client`}>
+                  Hire with TrustBroker
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
 
               <Button asChild variant="outline" size="lg" className="border-slate-300 text-slate-700 text-xs h-11 px-6">
-                <Link to={ROUTES.HOW_IT_WORKS}>
-                  Learn How Staging Works
+                <Link to={`${ROUTES.SIGN_IN}?role=client`}>
+                  Sign in as a client
                 </Link>
               </Button>
             </div>
           </div>
         </section>
 
-        {/* Benefits Grid */}
         <section className="py-14 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="text-2xl font-bold text-[#1A2940]">Built for Fair Freelance Collaboration</h2>
+            <h2 className="text-2xl font-bold text-[#1A2940]">Why Clients Use TrustBroker</h2>
             <p className="text-xs text-[#5D6B82] mt-1.5">
-              Transparent terms, pre-funded milestones, and automated release.
+              Built to make freelance collaborations transparent, structured, and predictable.
             </p>
           </div>
 
@@ -108,4 +106,4 @@ export const ForSuppliers: React.FC = () => {
   )
 }
 
-export default ForSuppliers
+export default ForClients

@@ -49,10 +49,10 @@ export const Header: React.FC = () => {
             Sign in
           </Link>
           <Link
-            to={ROUTES.DASHBOARD}
+            to={ROUTES.SIGN_UP}
             className="h-10 px-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 transition-all hover:gap-2"
           >
-            <span>Live Demo</span>
+            <span>Get started</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -105,11 +105,11 @@ export const Header: React.FC = () => {
               Sign in
             </Link>
             <Link
-              to={ROUTES.DASHBOARD}
+              to={ROUTES.SIGN_UP}
               onClick={() => setMobileMenuOpen(false)}
               className="w-full h-10 inline-flex items-center justify-center rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Launch Dashboard Demo
+              Get started
             </Link>
           </div>
         </div>

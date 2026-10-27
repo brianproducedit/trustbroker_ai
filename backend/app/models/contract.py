@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
@@ -13,11 +13,19 @@ def utc_now() -> datetime:
 
 class ContractStatus(str, Enum):
     DRAFT = "draft"
+    OPEN = "open"
+    AWARDED = "awarded"
     PENDING_ACCEPTANCE = "pending_acceptance"
     ACTIVE = "active"
     IN_VERIFICATION = "in_verification"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+
+
+class ContractVisibility(str, Enum):
+    PRIVATE_DRAFT = "private_draft"
+    OPEN = "open"
+    CLOSED = "closed"
 
 
 class Contract(SQLModel, table=True):
@@ -30,6 +38,9 @@ class Contract(SQLModel, table=True):
     category: str = Field(default="software", nullable=False)
     current_version: int = Field(default=1, nullable=False)
     status: ContractStatus = Field(default=ContractStatus.DRAFT, nullable=False)
+    visibility: str = Field(default=ContractVisibility.PRIVATE_DRAFT.value, index=True, nullable=False)
+    required_skills: List[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False, server_default="[]"))
+    opens_at: Optional[datetime] = Field(default=None, nullable=True)
     total_amount: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2, nullable=False)
     currency: str = Field(default="USD", nullable=False)
     staged_amount: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2, nullable=False)

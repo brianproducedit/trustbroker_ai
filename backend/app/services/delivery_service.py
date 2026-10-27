@@ -9,6 +9,7 @@ from app.models.user import UserProfile
 from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, DeliveryFileRead
 from app.services.audit_service import log_audit_event
 from app.services.verification_service import orchestrate_delivery_verification
+from app.services.policy_engine import PolicyEngine
 from app.utils.security import require_contract_party
 
 
@@ -69,6 +70,10 @@ def submit_delivery(
     milestone = session.get(Milestone, req.milestone_id)
     if not milestone or milestone.contract_id != contract.id:
         raise HTTPException(status_code=404, detail="Milestone not found for this contract")
+
+    policy = PolicyEngine.can_submit_delivery(freelancer, contract, milestone)
+    if not policy.allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=policy.reason)
 
     # Determine delivery version for this milestone
     current_count = session.exec(

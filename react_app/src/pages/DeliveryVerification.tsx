@@ -82,8 +82,8 @@ export const DeliveryVerification: React.FC = () => {
         contractId: contract.id,
         milestoneId: selectedMilestone.id,
         submittedBy: activeRole === 'freelancer' 
-          ? (contract.freelancer?.name || (contract as any).supplier?.name || 'Tariro Moyo') 
-          : 'Tariro Moyo',
+          ? (contract.freelancer?.name || 'the freelancer')
+          : 'the freelancer',
         description: notes,
         repoUrl,
         liveUrl,
@@ -409,7 +409,7 @@ export const DeliveryVerification: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="text-white">Request Milestone Revision</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
-                Provide actionable notes for Tariro to address before re-submitting for verification.
+                Provide actionable notes for the freelancer to address before re-submitting for verification.
               </DialogDescription>
             </DialogHeader>
 

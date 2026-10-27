@@ -106,25 +106,24 @@ export const ContractDetail: React.FC = () => {
   }
 
   // Safe Party Access
-  const clientParty = contract.client || (contract as any).buyer || {
+  const clientParty = contract.client || {
     id: 'client-default',
-    name: 'Elena Rostova',
-    email: 'elena@acmeglobal.com',
-    role: 'client',
-    accepted: true,
-    acceptedAt: contract.createdAt,
-  }
-
-  const freelancerParty = contract.freelancer || (contract as any).supplier || {
-    id: 'freelancer-default',
-    name: 'Tariro Moyo',
-    email: 'tariro@devstudio.co.zw',
-    role: 'freelancer',
+    name: 'Client',
+    email: '',
+    role: 'client' as const,
     accepted: false,
   }
 
-  const isClient = activeRole === 'client' || (activeRole as string) === 'buyer'
-  const isFreelancer = activeRole === 'freelancer' || (activeRole as string) === 'supplier'
+  const freelancerParty = contract.freelancer || {
+    id: 'freelancer-default',
+    name: 'Freelancer',
+    email: '',
+    role: 'freelancer' as const,
+    accepted: false,
+  }
+
+  const isClient = activeRole === 'client'
+  const isFreelancer = activeRole === 'freelancer'
   const isUserAccepted = isClient ? clientParty.accepted : freelancerParty.accepted
 
   // Financial Metrics
@@ -264,7 +263,7 @@ export const ContractDetail: React.FC = () => {
 
   const handlePaymentSuccess = (details: any) => {
     stagePayment(contract.id, contract.totalAmount, details.id || 'PAYPAL-MOCK-ORDER')
-    toast.success(`Payment staged: ${formatCurrency(contract.totalAmount)} USD in PayPal Sandbox!`)
+    toast.success(`Payment funded: ${formatCurrency(contract.totalAmount)} USD via PayPal.`)
     addNotification({
       title: 'Payment Staged via PayPal',
       description: `${formatCurrency(contract.totalAmount)} USD reserved for ${contract.code}.`,
@@ -591,7 +590,7 @@ export const ContractDetail: React.FC = () => {
                   value="payments" 
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
                 >
-                  PayPal Sandbox
+                  PayPal
                 </TabsTrigger>
                 <TabsTrigger 
                   value="activity" 
@@ -979,12 +978,12 @@ export const ContractDetail: React.FC = () => {
                 <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
                   <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
                     <CreditCard className="w-4 h-4" />
-                    <span>PayPal Orders v2 Sandbox Integration</span>
+                    <span>PayPal Orders v2</span>
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-white">Stage Escrow Payments</h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Client stages funds conditionally into PayPal Sandbox. Funds remain held until milestones are verified.
+                      The client funds the milestone through PayPal. Payout is released after the work is verified.
                     </p>
                   </div>
 

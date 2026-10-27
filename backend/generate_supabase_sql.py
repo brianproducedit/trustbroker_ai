@@ -24,8 +24,11 @@ sql_parts.append("""-- =========================================================
 
 -- 1. Create Enums (Idempotent)
 DO $$ BEGIN
-    CREATE TYPE contractstatus AS ENUM ('DRAFT', 'PENDING_ACCEPTANCE', 'ACTIVE', 'IN_VERIFICATION', 'COMPLETED', 'CANCELLED');
+    CREATE TYPE contractstatus AS ENUM ('DRAFT', 'OPEN', 'AWARDED', 'PENDING_ACCEPTANCE', 'ACTIVE', 'IN_VERIFICATION', 'COMPLETED', 'CANCELLED');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+ALTER TYPE contractstatus ADD VALUE IF NOT EXISTS 'OPEN';
+ALTER TYPE contractstatus ADD VALUE IF NOT EXISTS 'AWARDED';
 
 DO $$ BEGIN
     CREATE TYPE milestonestatus AS ENUM ('PENDING', 'IN_PROGRESS', 'SUBMITTED', 'VERIFYING', 'VERIFIED', 'SETTLED', 'REVISION_REQUESTED');
@@ -160,6 +163,68 @@ CREATE TABLE IF NOT EXISTS audit_events (
     details VARCHAR NOT NULL,
     metadata_json JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS headline VARCHAR;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio VARCHAR;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS skills JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS portfolio JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS paypal_payout_email VARCHAR;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS primary_workspace VARCHAR NOT NULL DEFAULT 'client';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS profile_completeness INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS visibility VARCHAR NOT NULL DEFAULT 'private_draft';
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS required_skills JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS opens_at TIMESTAMP WITH TIME ZONE;
+
+CREATE TABLE IF NOT EXISTS applications (
+    id UUID PRIMARY KEY,
+    contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+    freelancer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    cover_note VARCHAR NOT NULL DEFAULT '',
+    proposed_start VARCHAR,
+    status VARCHAR NOT NULL DEFAULT 'submitted',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    CONSTRAINT uq_applications_contract_freelancer UNIQUE (contract_id, freelancer_id)
+);
+
+CREATE TABLE IF NOT EXISTS vetting_reports (
+    id UUID PRIMARY KEY,
+    application_id UUID NOT NULL UNIQUE REFERENCES applications(id) ON DELETE CASCADE,
+    score INTEGER NOT NULL DEFAULT 0,
+    recommendation VARCHAR NOT NULL,
+    reasons JSONB NOT NULL DEFAULT '{}'::jsonb,
+    model_used VARCHAR NOT NULL DEFAULT 'stub',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    type VARCHAR NOT NULL,
+    title VARCHAR NOT NULL,
+    body VARCHAR NOT NULL DEFAULT '',
+    entity_type VARCHAR,
+    entity_id UUID,
+    read_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS payouts (
+    id UUID PRIMARY KEY,
+    contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+    milestone_id UUID NOT NULL REFERENCES milestones(id) ON DELETE CASCADE,
+    freelancer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL,
+    currency VARCHAR NOT NULL DEFAULT 'USD',
+    paypal_batch_id VARCHAR,
+    paypal_item_id VARCHAR,
+    paypal_payout_email VARCHAR,
+    status VARCHAR NOT NULL DEFAULT 'pending',
+    idempotency_key VARCHAR NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS payment_attempts (

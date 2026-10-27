@@ -85,11 +85,15 @@ def get_current_user(
     # Query existing profile in PostgreSQL
     profile = session.exec(select(UserProfile).where(UserProfile.id == user_id)).first()
     if not profile:
+        workspace = (metadata.get("primary_workspace") or metadata.get("role") or "client")
+        if workspace not in ("client", "freelancer"):
+            workspace = "client"
         profile = UserProfile(
             id=user_id,
             email=email,
             full_name=full_name,
             organization=metadata.get("organization"),
+            primary_workspace=workspace,
         )
         session.add(profile)
         session.commit()

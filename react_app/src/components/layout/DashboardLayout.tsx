@@ -59,8 +59,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const handleRoleToggle = () => {
     toggleActiveRole()
     setProfileOpen(false)
-    const nextRole = activeRole === 'client' ? 'Freelancer' : 'Client'
-    toast.info(`Switched view to ${nextRole} Mode`)
+    const nextRole = activeRole === 'client' ? 'freelancer' : 'client'
+    toast.info(`Switched to ${nextRole} workspace`)
   }
 
   // Generate breadcrumb text from location
@@ -165,8 +165,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           {/* Right actions: Sandbox Indicator, Notifications, Profile */}
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="hidden sm:inline-flex bg-blue-950/40 border-blue-900/60 text-blue-300 text-[11px] gap-1.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              PayPal Sandbox
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              PayPal
             </Badge>
 
             {/* Notification Bell Dropdown */}
@@ -277,13 +277,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 }`}>
                   {user?.name
                     ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-                    : activeRole === 'client'
-                    ? 'ER'
-                    : 'TM'}
+                    : 'TB'}
                 </div>
                 <div className="hidden xl:flex flex-col text-left">
                   <span className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors leading-none flex items-center gap-1.5">
-                    <span>{user?.name || (activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo')}</span>
+                    <span>{user?.name || 'Account'}</span>
                     <UserCheck className={`w-3 h-3 ${activeRole === 'client' ? 'text-blue-400' : 'text-emerald-400'}`} />
                   </span>
                   <span className="text-[10px] text-slate-400 mt-1 uppercase font-mono leading-none">
@@ -298,13 +296,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#131B2E] border border-[#222A3D] shadow-2xl p-3 z-50 flex flex-col gap-2">
                   <div className="p-2 border-b border-[#222A3D] flex flex-col gap-0.5">
                     <span className="text-xs font-bold text-white">
-                      {user?.name || (activeRole === 'client' ? 'Elena Rostova' : 'Tariro Moyo')}
+                      {user?.name || 'Account'}
                     </span>
                     <span className="text-[11px] font-mono text-slate-400 truncate">
-                      {user?.email || (activeRole === 'client' ? 'elena@acmeglobal.com' : 'tariro@devstudio.co.zw')}
+                      {user?.email || ''}
                     </span>
                     <span className="text-[10px] text-blue-400 font-mono mt-1">
-                      Mode: {activeRole === 'client' ? 'Client' : 'Freelancer'}
+                      Workspace: {activeRole === 'client' ? 'Client' : 'Freelancer'}
                     </span>
                   </div>
 
@@ -315,7 +313,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-[#172038] transition-colors cursor-pointer"
                   >
                     <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Switch to {activeRole === 'client' ? 'Freelancer Mode' : 'Client Mode'}</span>
+                    <span>Switch to {activeRole === 'client' ? 'freelancer' : 'client'} workspace</span>
                   </button>
 
                   <div className="h-px bg-[#222A3D] my-1" />
@@ -369,9 +367,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               <span className="text-emerald-400 font-medium mr-1.5">
                 {activeRole === 'client' ? 'Client Workspace:' : 'Freelancer Workspace:'}
               </span>
-              {activeRole === 'client' 
-                ? 'Create contracts, stage payments via PayPal Sandbox, and approve verified milestones.' 
-                : 'Review contracts, submit deliverable evidence, and track milestone disbursements.'}
+              {activeRole === 'client'
+                ? 'Create contracts, fund milestones with PayPal, and review verified work.'
+                : 'Apply for work, submit deliverable evidence, and track payouts.'}
             </span>
           </div>
           <div className="hidden md:flex items-center gap-3 font-mono text-[11px] text-slate-400">

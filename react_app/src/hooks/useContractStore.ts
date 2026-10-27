@@ -7,6 +7,12 @@ import { api } from '@/lib/api'
 import { transformContract } from '@/lib/transformers'
 import { useAuthStore } from './useAuthStore'
 
+function workspaceActor(role: 'client' | 'freelancer'): string {
+  const user = useAuthStore.getState().user
+  const workspace = role === 'client' ? 'Client' : 'Freelancer'
+  return user?.name ? `${user.name} (${workspace})` : workspace
+}
+
 interface ContractStore {
   contracts: Contract[]
   activeContractId: string
@@ -282,17 +288,17 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       stagedAmount: 0,
       releasedAmount: 0,
       client: {
-        id: 'client-01',
-        name: 'Elena Rostova',
-        email: 'elena@acmeglobal.com',
+        id: useAuthStore.getState().user?.id || 'client-01',
+        name: useAuthStore.getState().user?.name || 'Client',
+        email: useAuthStore.getState().user?.email || '',
         role: 'client',
         accepted: true,
         acceptedAt: new Date().toISOString(),
       },
       freelancer: {
         id: 'freelancer-01',
-        name: 'Tariro Moyo',
-        email: freelancerEmail || 'tariro@devstudio.co.zw',
+        name: freelancerEmail ? freelancerEmail.split('@')[0] : 'Freelancer',
+        email: freelancerEmail || '',
         role: 'freelancer',
         accepted: false,
       },
@@ -301,7 +307,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          actor: 'Elena Rostova (Client)',
+          actor: workspaceActor('client'),
           action: 'CONTRACT_CREATED',
           details: `Draft created: "${title}" with ${milestones.length} milestones.`,
         },
@@ -346,7 +352,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               {
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
-                actor: state.activeRole === 'client' ? 'Elena Rostova (Client)' : 'Tariro Moyo (Freelancer)',
+                actor: workspaceActor(state.activeRole),
                 action: 'CONTRACT_UPDATED',
                 details: `Contract updated to version ${c.version + 1}.`,
               },
@@ -383,7 +389,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               {
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
-                actor: state.activeRole === 'client' ? 'Elena Rostova (Client)' : 'Tariro Moyo (Freelancer)',
+                actor: workspaceActor(state.activeRole),
                 action: 'CONTRACT_CANCELLED',
                 details: reason || 'Contract cancelled.',
               },
@@ -727,7 +733,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               {
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
-                actor: state.activeRole === 'client' ? 'Elena Rostova (Client)' : 'Client',
+                actor: workspaceActor(state.activeRole),
                 action: 'REVISION_REQUESTED',
                 details: `Revision requested: "${notes}".`,
               },
