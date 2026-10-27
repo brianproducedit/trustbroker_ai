@@ -77,6 +77,18 @@ def seed_database():
                 session.commit()
                 print(f"  Created Demo Profile: {acc['full_name']} ({acc['email']})")
 
+        # 2. Resolve the primary client and freelancer for the showcase contract.
+        #    Prefer the official demo accounts (client.demo / freelancer.demo) so
+        #    judges logging in with JUDGE_DEMO credentials see the contract.
+        demo_client = session.exec(select(UserProfile).where(UserProfile.email == "client.demo@trustbroker.ai")).first()
+        demo_freelancer = session.exec(select(UserProfile).where(UserProfile.email == "freelancer.demo@trustbroker.ai")).first()
+
+        # Fall back to the legacy elena/tariro profiles if demo accounts are missing
+        contract_client_id = demo_client.id if demo_client else client_id
+        contract_freelancer_id = demo_freelancer.id if demo_freelancer else freelancer_id
+        contract_freelancer_email = (demo_freelancer.email if demo_freelancer else "tariro@devstudio.co.zw")
+
+        # Also keep the old elena/tariro profiles as linked aliases
         client = session.exec(select(UserProfile).where(UserProfile.email == "elena@acmeglobal.com")).first()
         if not client:
             client = UserProfile(
@@ -112,7 +124,7 @@ def seed_database():
         else:
             freelancer_id = freelancer.id
 
-        # 2. Check if Showcase Contract 1 exists
+        # 3. Check if Showcase Contract 1 exists
         existing_c1 = session.exec(select(Contract).where(Contract.code == "TB-2026-001")).first()
         if not existing_c1:
             contract_id = uuid.uuid4()
@@ -128,9 +140,9 @@ def seed_database():
                 currency="USD",
                 staged_amount=Decimal("6000.00"),
                 released_amount=Decimal("4000.00"),
-                client_id=client_id,
-                freelancer_id=freelancer_id,
-                freelancer_email="tariro@devstudio.co.zw",
+                client_id=contract_client_id,
+                freelancer_id=contract_freelancer_id,
+                freelancer_email=contract_freelancer_email,
                 created_at=now - timedelta(days=14),
                 updated_at=now - timedelta(hours=2),
             )
@@ -148,7 +160,7 @@ def seed_database():
                     "architecture": "Next.js App Router, TailwindCSS, Supabase DB, Stripe/PayPal Escrow",
                     "milestones_count": 3
                 },
-                created_by=client_id,
+                created_by=contract_client_id,
                 created_at=now - timedelta(days=14),
             )
             session.add(cv1)
@@ -158,7 +170,7 @@ def seed_database():
                 id=uuid.uuid4(),
                 contract_id=contract_id,
                 version_number=1,
-                user_id=client_id,
+                user_id=contract_client_id,
                 role="client",
                 accepted_at=now - timedelta(days=13),
             )
@@ -166,7 +178,7 @@ def seed_database():
                 id=uuid.uuid4(),
                 contract_id=contract_id,
                 version_number=1,
-                user_id=freelancer_id,
+                user_id=contract_freelancer_id,
                 role="freelancer",
                 accepted_at=now - timedelta(days=13),
             )
@@ -265,7 +277,7 @@ def seed_database():
                 id=deliv2_id,
                 contract_id=contract_id,
                 milestone_id=m2_id,
-                submitted_by=freelancer_id,
+                submitted_by=contract_freelancer_id,
                 description="Deployed Next.js storefront with live PayPal sandbox credentials and end-to-end checkout suite.",
                 repo_url="https://github.com/devstudio/next-commerce-demo",
                 live_url="https://commerce-demo.devstudio.co.zw",
@@ -344,8 +356,8 @@ def seed_database():
                 AuditEvent(
                     id=uuid.uuid4(),
                     contract_id=contract_id,
-                    actor_id=client_id,
-                    actor_name="Elena Rostova",
+                    actor_id=contract_client_id,
+                    actor_name="Elena Rostova (Client)",
                     action="contract_created",
                     details="Contract TB-2026-001 created with 3 milestones totaling $15,000.00.",
                     created_at=now - timedelta(days=14),
@@ -353,8 +365,8 @@ def seed_database():
                 AuditEvent(
                     id=uuid.uuid4(),
                     contract_id=contract_id,
-                    actor_id=freelancer_id,
-                    actor_name="Tariro Moyo",
+                    actor_id=contract_freelancer_id,
+                    actor_name="Tariro Moyo (Freelancer)",
                     action="contract_accepted",
                     details="Freelancer accepted contract terms for version 1.",
                     created_at=now - timedelta(days=13),
@@ -362,8 +374,8 @@ def seed_database():
                 AuditEvent(
                     id=uuid.uuid4(),
                     contract_id=contract_id,
-                    actor_id=client_id,
-                    actor_name="Elena Rostova",
+                    actor_id=contract_client_id,
+                    actor_name="Elena Rostova (Client)",
                     action="payment_staged",
                     details="Staged $4,000.00 into PayPal Sandbox Escrow for Milestone 1.",
                     created_at=now - timedelta(days=12),
@@ -371,8 +383,8 @@ def seed_database():
                 AuditEvent(
                     id=uuid.uuid4(),
                     contract_id=contract_id,
-                    actor_id=client_id,
-                    actor_name="Elena Rostova",
+                    actor_id=contract_client_id,
+                    actor_name="Elena Rostova (Client)",
                     action="payment_released",
                     details="Authorized release of $4,000.00 for Milestone 1 after verified delivery.",
                     created_at=now - timedelta(days=7),
@@ -380,8 +392,8 @@ def seed_database():
                 AuditEvent(
                     id=uuid.uuid4(),
                     contract_id=contract_id,
-                    actor_id=client_id,
-                    actor_name="Elena Rostova",
+                    actor_id=contract_client_id,
+                    actor_name="Elena Rostova (Client)",
                     action="payment_staged",
                     details="Staged $6,000.00 into PayPal Sandbox Escrow for Milestone 2.",
                     created_at=now - timedelta(days=6),
@@ -389,8 +401,8 @@ def seed_database():
                 AuditEvent(
                     id=uuid.uuid4(),
                     contract_id=contract_id,
-                    actor_id=freelancer_id,
-                    actor_name="Tariro Moyo",
+                    actor_id=contract_freelancer_id,
+                    actor_name="Tariro Moyo (Freelancer)",
                     action="delivery_submitted",
                     details="Submitted delivery evidence for Milestone 2: Storefront & Cart Checkout Integration.",
                     created_at=now - timedelta(hours=4),

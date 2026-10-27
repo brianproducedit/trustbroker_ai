@@ -78,6 +78,7 @@ interface ContractStore {
     submission: Omit<EvidenceSubmission, 'id' | 'submittedAt' | 'version'>
   ) => Promise<VerificationAssessment>
   requestRevision: (contractId: string, milestoneId: string, notes: string) => Promise<void>
+  overrideReview: (contractId: string, milestoneId: string, reason: string) => Promise<void>
   resubmitDelivery: (contractId: string, milestoneId: string) => void
   releasePayment: (contractId: string, milestoneId: string) => Promise<void>
 
@@ -607,7 +608,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               id: ce.criterion_id || `crit-${Date.now()}`,
               title: ce.title || 'Verified criterion',
               description: ce.explanation || '',
-              status: ce.passed ? 'pass' : 'fail',
+              status: ce.status || (ce.passed ? 'pass' : 'fail'),
               aiConfidence: (Number(ce.score) || 85) / 100,
               evidenceMatchSnippet: ce.evidence_match_snippet || '',
               feedback: ce.explanation || '',
@@ -628,7 +629,11 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                     if (m.id === milestoneId) {
                       return {
                         ...m,
-                        status: assessment.passed ? ('verified' as MilestoneStatus) : ('revision_requested' as MilestoneStatus),
+                        status: assessment.passed
+                          ? ('verified' as MilestoneStatus)
+                          : (assessment.requiresHumanReview
+                              ? ('submitted' as MilestoneStatus)
+                              : ('revision_requested' as MilestoneStatus)),
                         paymentStatus: assessment.passed
                           ? ('release_authorized' as PaymentStatus)
                           : m.paymentStatus,
@@ -749,6 +754,48 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 actor: workspaceActor(state.activeRole),
                 action: 'REVISION_REQUESTED',
                 details: `Revision requested: "${notes}".`,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
+  },
+
+  overrideReview: async (contractId, milestoneId, reason) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+    if (isUuid) {
+      try {
+        await api.deliveries.overrideReview(contractId, milestoneId, reason)
+      } catch (err) {
+        console.warn('Backend overrideReview warning:', err)
+      }
+    }
+
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            milestones: c.milestones.map((m) => {
+              if (m.id === milestoneId) {
+                return {
+                  ...m,
+                  status: 'verified' as MilestoneStatus,
+                  paymentStatus: (m.paymentStatus === 'staged_in_sandbox' ? 'release_authorized' : m.paymentStatus) as PaymentStatus,
+                }
+              }
+              return m
+            }),
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: workspaceActor(state.activeRole),
+                action: 'HUMAN_REVIEW_OVERRIDE',
+                details: `Client manual approval override: "${reason}".`,
               },
             ],
           }

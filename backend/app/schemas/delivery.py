@@ -50,3 +50,7 @@ class DeliveryRead(BaseModel):
 
 class RevisionRequest(BaseModel):
     notes: str = ""
+
+
+class OverrideReviewRequest(BaseModel):
+    reason: str

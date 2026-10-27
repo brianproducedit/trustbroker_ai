@@ -204,6 +204,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ notes: notes || '' }),
       }),
+    overrideReview: (contractId: string, milestoneId: string, reason: string) =>
+      apiFetch<any>(`/deliveries/${contractId}/${milestoneId}/override-review`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
   },
 
   // Payments & Escrow

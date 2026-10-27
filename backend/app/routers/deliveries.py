@@ -5,8 +5,7 @@ from sqlmodel import Session
 from app.database import get_session
 from app.models.user import UserProfile
 from app.models.contract import Contract
-from app.models.delivery import Delivery
-from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, RevisionRequest
+from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, RevisionRequest, OverrideReviewRequest
 from app.services import delivery_service
 from app.utils.security import get_current_user, require_contract_party
 
@@ -71,5 +70,23 @@ def request_milestone_revision(
         milestone_id=milestone_id,
         client=current_user,
         notes=req.notes,
+    )
+
+
+@router.post("/{contract_id}/{milestone_id}/override-review", summary="Client manual approval of milestone via review override")
+def override_milestone_review(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    req: OverrideReviewRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Client approves milestone delivery via human review override (Roadmap §7.2)."""
+    return delivery_service.override_review(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        client=current_user,
+        reason=req.reason,
     )
 
