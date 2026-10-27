@@ -422,7 +422,21 @@ def seed_database():
             session.commit()
             print("  Created Showcase Contract 1: TB-2026-001 (Active, $15,000.00)")
         else:
-            print("  Contract TB-2026-001 already exists.")
+            # Ensure existing contract points to the demo accounts so judges see it
+            needs_update = False
+            if demo_client and existing_c1.client_id != demo_client.id:
+                existing_c1.client_id = demo_client.id
+                needs_update = True
+            if demo_freelancer and existing_c1.freelancer_id != demo_freelancer.id:
+                existing_c1.freelancer_id = demo_freelancer.id
+                existing_c1.freelancer_email = demo_freelancer.email
+                needs_update = True
+            if needs_update:
+                session.add(existing_c1)
+                session.commit()
+                print("  Contract TB-2026-001 updated to use demo account UUIDs.")
+            else:
+                print("  Contract TB-2026-001 already exists.")
 
         print("[OK] Database seeding complete.")
 

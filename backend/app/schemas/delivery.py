@@ -30,6 +30,7 @@ class DeliveryCreateRequest(BaseModel):
     repo_url: Optional[str] = None
     live_url: Optional[str] = None
     files: List[DeliveryFileCreate] = []
+    file_attachments: Optional[List[DeliveryFileCreate]] = None
     auto_verify: bool = True  # Automatically run AI verification upon submission
 
 
