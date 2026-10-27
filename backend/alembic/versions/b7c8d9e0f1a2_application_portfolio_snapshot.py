@@ -18,11 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "applications",
-        sa.Column("portfolio_snapshot", sa.JSON(), server_default=sa.text("'[]'::json"), nullable=False),
-    )
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    if "applications" in insp.get_table_names():
+        app_cols = {c["name"] for c in insp.get_columns("applications")}
+        if "portfolio_snapshot" not in app_cols:
+            op.add_column(
+                "applications",
+                sa.Column("portfolio_snapshot", sa.JSON(), server_default=sa.text("'[]'::json"), nullable=False),
+            )
 
 
 def downgrade() -> None:
-    op.drop_column("applications", "portfolio_snapshot")
+    pass
