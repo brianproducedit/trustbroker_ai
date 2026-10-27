@@ -42,7 +42,8 @@ import {
   Share2,
   Download,
   FileCode,
-  Users
+  Users,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -54,9 +55,7 @@ export const ContractDetail: React.FC = () => {
     contracts, 
     activeRole, 
     acceptContract, 
-    releasePayment, 
     requestRevision,
-    stagePayment,
     addMilestone,
     removeMilestone,
     fetchContractById
@@ -109,7 +108,7 @@ export const ContractDetail: React.FC = () => {
     if (!isUuid) return
     api.payments.getHistory(id).then(setPaymentAttempts).catch(() => setPaymentAttempts([]))
     api.payments.payouts(id).then(setPayouts).catch(() => setPayouts([]))
-  }, [id, activeTab, stagedAmount, releasedAmount])
+  }, [id, activeTab, contract?.stagedAmount, contract?.releasedAmount])
 
   const [milestoneFilter, setMilestoneFilter] = useState<'all' | 'in_progress' | 'review' | 'settled'>('all')
   const [copiedCode, setCopiedCode] = useState(false)
@@ -121,8 +120,16 @@ export const ContractDetail: React.FC = () => {
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false)
   const [releaseDialogOpen, setReleaseDialogOpen] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null)
+  const [isReleasing, setIsReleasing] = useState(false)
+  const [copiedPayId, setCopiedPayId] = useState<string | null>(null)
   const [revisionNotes, setRevisionNotes] = useState('')
   const [activityFilter, setActivityFilter] = useState<'all' | 'contract' | 'payment' | 'verification'>('all')
+
+  const copyPayToClipboard = (text: string, idKey: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedPayId(idKey)
+    setTimeout(() => setCopiedPayId(null), 2000)
+  }
 
   // Add Milestone Form State (Client Only)
   const [newTitle, setNewTitle] = useState('')
@@ -309,7 +316,11 @@ export const ContractDetail: React.FC = () => {
 
   const handlePaymentSuccess = (details: any) => {
     const fundedAmount = Number(details?.amount ?? nextFundMilestone?.amount ?? 0)
-    if (id) fetchContractById(id)
+    if (id) {
+      fetchContractById(id)
+      api.payments.getHistory(id).then(setPaymentAttempts).catch(() => {})
+      api.payments.payouts(id).then(setPayouts).catch(() => {})
+    }
     toast.success(`Milestone funded: ${formatCurrency(fundedAmount)} USD via PayPal.`)
     addNotification({
       title: 'Milestone funded via PayPal',
@@ -326,24 +337,31 @@ export const ContractDetail: React.FC = () => {
 
   const handleConfirmRelease = async () => {
     if (!selectedMilestone) return
+    setIsReleasing(true)
     try {
       const result = await api.payments.releasePayout({
         contract_id: contract.id,
         milestone_id: selectedMilestone.id,
       })
-      if (id) fetchContractById(id)
+      if (id) {
+        fetchContractById(id)
+        api.payments.getHistory(id).then(setPaymentAttempts).catch(() => {})
+        api.payments.payouts(id).then(setPayouts).catch(() => {})
+      }
       setReleaseDialogOpen(false)
       toast.success(
-        `PayPal payout ${result?.paypal_batch_id || result?.status}: ${formatCurrency(selectedMilestone.amount)} USD`
+        `PayPal payout ${result?.paypal_batch_id || result?.status || 'sent'}: ${formatCurrency(selectedMilestone.amount)} USD`
       )
       addNotification({
         title: 'PayPal payout sent',
-        description: `${formatCurrency(selectedMilestone.amount)} USD · batch ${result?.paypal_batch_id || 'pending'}.`,
+        description: `${formatCurrency(selectedMilestone.amount)} USD · batch ${result?.paypal_batch_id || 'processed'}.`,
         type: 'payment',
         link: `/dashboard/contracts/${contract.id}`,
       })
     } catch (err: any) {
       toast.error(err?.detail || 'PayPal payout failed. No duplicate send was assumed.')
+    } finally {
+      setIsReleasing(false)
     }
   }
 
@@ -1093,16 +1111,29 @@ export const ContractDetail: React.FC = () => {
                                 </Button>
                               )}
 
-                              {/* CLIENT: Approve Release */}
+                              {/* CLIENT: Authorize PayPal Payout Release */}
                               {isClient && isVerified && !isReleased && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleOpenReleaseModal(m)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
-                                >
-                                  <DollarSign className="w-3.5 h-3.5" />
-                                  Approve Release ({formatCurrency(m.amount, contract.currency)})
-                                </Button>
+                                isStaged ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleOpenReleaseModal(m)}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
+                                  >
+                                    <DollarSign className="w-3.5 h-3.5" />
+                                    Authorize Payout ({formatCurrency(m.amount, contract.currency)})
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setActiveTab('payments')}
+                                    className="border-amber-500/40 text-amber-300 hover:bg-amber-950/40 text-xs gap-1.5 h-8"
+                                    title="Fund milestone in Payments tab before releasing payout"
+                                  >
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                                    Fund to Release ({formatCurrency(m.amount, contract.currency)})
+                                  </Button>
+                                )
                               )}
 
                               {/* CLIENT: Request Revision */}
@@ -1201,54 +1232,304 @@ export const ContractDetail: React.FC = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="payments" className="space-y-4 outline-none">
+              <TabsContent value="payments" className="space-y-5 outline-none">
+                {/* 1. Milestone Funding Card */}
                 <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
-                    <CreditCard className="w-4 h-4" />
-                    <span>PayPal Orders v2</span>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white">Fund the next milestone</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      The client funds the next unfunded milestone through PayPal. The payout is sent after verification.
-                    </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#222A3D]">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
+                        <CreditCard className="w-4 h-4" />
+                        <span>PayPal Orders v2 &bull; Milestone Funding</span>
+                      </div>
+                      <h3 className="text-base font-bold text-white">Milestone Escrow Allocation</h3>
+                      <p className="text-xs text-slate-400">
+                        The client funds one milestone at a time into PayPal platform escrow. Funds remain staged until deliverables are verified.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs font-mono bg-[#0B1326] px-3.5 py-2 rounded-lg border border-[#222A3D]">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">STAGED IN ESCROW</span>
+                        <strong className="text-blue-400 font-bold">{formatCurrency(stagedAmount, contract.currency)}</strong>
+                      </div>
+                      <div className="border-l border-slate-700 pl-4">
+                        <span className="text-slate-400 block text-[10px]">RELEASED PAYOUTS</span>
+                        <strong className="text-emerald-400 font-bold">{formatCurrency(releasedAmount, contract.currency)}</strong>
+                      </div>
+                    </div>
                   </div>
 
-                  {isClient && contract.status === 'active' && nextFundMilestone ? (
-                    <PayPalCheckout
-                      contractId={contract.id}
-                      contractCode={contract.code}
-                      milestoneId={nextFundMilestone.id}
-                      amount={nextFundMilestone.amount}
-                      currency={contract.currency}
-                      onPaymentSuccess={handlePaymentSuccess}
-                    />
+                  {/* Contextual Funding View */}
+                  {isClient ? (
+                    contract.status === 'active' ? (
+                      nextFundMilestone ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-[#0B1326] border border-blue-900/40">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center text-xs">
+                                M{contract.milestones.findIndex((m) => m.id === nextFundMilestone.id) + 1}
+                              </span>
+                              <div>
+                                <span className="font-semibold text-white block">{nextFundMilestone.title}</span>
+                                <span className="text-slate-400 text-[11px]">Next unfunded milestone deliverable</span>
+                              </div>
+                            </div>
+                            <span className="font-mono font-bold text-emerald-400 text-sm">
+                              {formatCurrency(nextFundMilestone.amount, contract.currency)}
+                            </span>
+                          </div>
+
+                          <PayPalCheckout
+                            contractId={contract.id}
+                            contractCode={contract.code}
+                            milestoneId={nextFundMilestone.id}
+                            amount={nextFundMilestone.amount}
+                            currency={contract.currency}
+                            onPaymentSuccess={handlePaymentSuccess}
+                          />
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 flex items-center gap-3 text-xs text-emerald-300">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                          <span>All milestones on this contract are funded or fully disbursed.</span>
+                        </div>
+                      )
+                    ) : (
+                      <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] flex items-center gap-3 text-xs text-slate-300">
+                        <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                        <div>
+                          <strong className="text-white block font-semibold">Contract not yet active</strong>
+                          <span className="text-slate-400 text-[11px]">
+                            Milestone funding unlocks as soon as the awarded freelancer accepts the digital agreement.
+                          </span>
+                        </div>
+                      </div>
+                    )
                   ) : (
-                    <p className="text-xs text-slate-400">
-                      {contract.status !== 'active'
-                        ? 'Funding is available after the awarded freelancer accepts the contract.'
-                        : 'Every milestone is already funded or paid.'}
-                    </p>
+                    <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] flex items-center gap-3 text-xs text-slate-300">
+                      <ShieldCheck className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                      <div>
+                        <strong className="text-white block font-semibold">Freelancer View</strong>
+                        <span className="text-slate-400 text-[11px]">
+                          Client funds milestones directly via PayPal. Once a milestone is funded, you may submit evidence for automated AI verification.
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </Card>
 
-                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-3">
-                  <h3 className="text-sm font-bold">PayPal ids</h3>
-                  {paymentAttempts.length === 0 && payouts.length === 0 && (
-                    <p className="text-xs text-slate-400">No PayPal orders or payouts yet.</p>
+                {/* 2. PayPal Escrow Orders & Captures Table */}
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#222A3D]">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-blue-400" />
+                        <span>PayPal Orders &amp; Captures (Client Funding)</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Server-verified PayPal checkout order and capture identifiers for this contract.
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono text-slate-400">
+                      {paymentAttempts.length} {paymentAttempts.length === 1 ? 'Attempt' : 'Attempts'}
+                    </span>
+                  </div>
+
+                  {paymentAttempts.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-slate-400 bg-[#0B1326] rounded-xl border border-[#222A3D]">
+                      No PayPal funding orders initiated yet.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-[#222A3D] bg-[#0E1528] text-slate-400 font-mono uppercase text-[10px] tracking-wider">
+                            <th className="py-2.5 px-3">Date</th>
+                            <th className="py-2.5 px-3">PayPal Order ID</th>
+                            <th className="py-2.5 px-3">Capture ID</th>
+                            <th className="py-2.5 px-3">Amount</th>
+                            <th className="py-2.5 px-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#222A3D]">
+                          {paymentAttempts.map((a) => {
+                            const isCompleted = (a.paypal_status || a.status || '').toUpperCase() === 'COMPLETED' || a.status === 'staged_in_sandbox'
+                            return (
+                              <tr key={a.id} className="hover:bg-[#172036] transition-colors">
+                                <td className="py-3 px-3 font-mono text-slate-400 text-[11px]">
+                                  {formatDate(a.created_at)}
+                                </td>
+                                <td className="py-3 px-3 font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-slate-200">{a.paypal_order_id || '—'}</span>
+                                    {a.paypal_order_id && (
+                                      <button
+                                        onClick={() => copyPayToClipboard(a.paypal_order_id, `ord-${a.id}`)}
+                                        className="text-slate-500 hover:text-white"
+                                        title="Copy Order ID"
+                                      >
+                                        {copiedPayId === `ord-${a.id}` ? (
+                                          <Check className="w-3 h-3 text-emerald-400" />
+                                        ) : (
+                                          <Copy className="w-3 h-3" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-slate-200">{a.paypal_capture_id || '—'}</span>
+                                    {a.paypal_capture_id && (
+                                      <button
+                                        onClick={() => copyPayToClipboard(a.paypal_capture_id, `cap-${a.id}`)}
+                                        className="text-slate-500 hover:text-white"
+                                        title="Copy Capture ID"
+                                      >
+                                        {copiedPayId === `cap-${a.id}` ? (
+                                          <Check className="w-3 h-3 text-emerald-400" />
+                                        ) : (
+                                          <Copy className="w-3 h-3" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 font-mono font-bold text-white">
+                                  {formatCurrency(Number(a.amount) || 0, a.currency)}
+                                </td>
+                                <td className="py-3 px-3">
+                                  {isCompleted ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      COMPLETED
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-blue-950/80 text-blue-400 border border-blue-800/60">
+                                      <Clock className="w-3 h-3" />
+                                      {a.status?.toUpperCase() || 'CREATED'}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
-                  {paymentAttempts.map((a) => (
-                    <div key={a.id} className="text-xs font-mono bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
-                      <p>Order {a.paypal_order_id || '—'} · Capture {a.paypal_capture_id || '—'} · {a.status}</p>
-                      <p className="text-slate-400">{formatCurrency(Number(a.amount) || 0)} {a.currency}</p>
+                </Card>
+
+                {/* 3. PayPal Payouts Ledger */}
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#222A3D]">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-emerald-400" />
+                        <span>PayPal Payouts Disbursed (To Freelancer)</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Direct disbursements executed via <code className="text-slate-300">POST /v1/payments/payouts</code> after verification.
+                      </p>
                     </div>
-                  ))}
-                  {payouts.map((p) => (
-                    <div key={p.id} className="text-xs font-mono bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
-                      <p>Payout batch {p.paypal_batch_id || '—'} · Item {p.paypal_item_id || '—'} · {p.status}</p>
-                      <p className="text-slate-400">{formatCurrency(Number(p.amount) || 0)} {p.currency}</p>
+                    <span className="text-xs font-mono text-slate-400">
+                      {payouts.length} {payouts.length === 1 ? 'Payout' : 'Payouts'}
+                    </span>
+                  </div>
+
+                  {payouts.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-slate-400 bg-[#0B1326] rounded-xl border border-[#222A3D]">
+                      No PayPal payouts released for this contract yet. Releases occur upon client approval of verified milestones.
                     </div>
-                  ))}
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-[#222A3D] bg-[#0E1528] text-slate-400 font-mono uppercase text-[10px] tracking-wider">
+                            <th className="py-2.5 px-3">Date</th>
+                            <th className="py-2.5 px-3">Batch ID</th>
+                            <th className="py-2.5 px-3">Item ID</th>
+                            <th className="py-2.5 px-3">Receiver Email</th>
+                            <th className="py-2.5 px-3">Amount</th>
+                            <th className="py-2.5 px-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#222A3D]">
+                          {payouts.map((p) => {
+                            const isSuccess = p.status?.toLowerCase() === 'success' || p.status?.toLowerCase() === 'succeeded'
+                            const isProcessing = ['pending', 'processing'].includes(p.status?.toLowerCase())
+                            return (
+                              <tr key={p.id} className="hover:bg-[#172036] transition-colors">
+                                <td className="py-3 px-3 font-mono text-slate-400 text-[11px]">
+                                  {formatDate(p.created_at)}
+                                </td>
+                                <td className="py-3 px-3 font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-slate-200">{p.paypal_batch_id || '—'}</span>
+                                    {p.paypal_batch_id && (
+                                      <button
+                                        onClick={() => copyPayToClipboard(p.paypal_batch_id, `batch-${p.id}`)}
+                                        className="text-slate-500 hover:text-white"
+                                        title="Copy Batch ID"
+                                      >
+                                        {copiedPayId === `batch-${p.id}` ? (
+                                          <Check className="w-3 h-3 text-emerald-400" />
+                                        ) : (
+                                          <Copy className="w-3 h-3" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-slate-200">{p.paypal_item_id || '—'}</span>
+                                    {p.paypal_item_id && (
+                                      <button
+                                        onClick={() => copyPayToClipboard(p.paypal_item_id, `item-${p.id}`)}
+                                        className="text-slate-500 hover:text-white"
+                                        title="Copy Item ID"
+                                      >
+                                        {copiedPayId === `item-${p.id}` ? (
+                                          <Check className="w-3 h-3 text-emerald-400" />
+                                        ) : (
+                                          <Copy className="w-3 h-3" />
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 font-mono text-slate-300">
+                                  {p.paypal_payout_email || '—'}
+                                </td>
+                                <td className="py-3 px-3 font-mono font-bold text-emerald-400">
+                                  {formatCurrency(Number(p.amount) || 0, p.currency)}
+                                </td>
+                                <td className="py-3 px-3">
+                                  {isSuccess ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      SUCCESS
+                                    </span>
+                                  ) : isProcessing ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-blue-950/80 text-blue-400 border border-blue-800/60">
+                                      <Clock className="w-3 h-3" />
+                                      PROCESSING
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-950/80 text-amber-400 border border-amber-800/60">
+                                      <AlertCircle className="w-3 h-3" />
+                                      {p.status?.toUpperCase() || 'UNCLAIMED'}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </Card>
               </TabsContent>
 
@@ -1406,7 +1687,7 @@ export const ContractDetail: React.FC = () => {
             {/* 2. Financial Escrow Summary Card */}
             <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4 space-y-3">
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span className="font-semibold uppercase tracking-wider text-[10px]">Escrow Financials</span>
+                <span className="font-semibold uppercase tracking-wider text-[10px]">Milestone funding</span>
                 <Lock className="w-3.5 h-3.5 text-blue-400" />
               </div>
 
@@ -1778,25 +2059,36 @@ export const ContractDetail: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* DIALOG 4: APPROVE RELEASE CONFIRMATION */}
+        {/* DIALOG 4: AUTHORIZE PAYPAL PAYOUT RELEASE */}
         <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
           <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
             <DialogHeader>
-              <DialogTitle className="text-white">Approve Escrow Disbursement</DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                Confirm release of staged funds to the freelancer's PayPal account.
+              <DialogTitle className="text-white flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <span>Authorize PayPal Payout Release</span>
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs leading-relaxed">
+                Releasing this milestone triggers an immediate PayPal Payout via <code className="text-emerald-400 font-mono">POST /v1/payments/payouts</code> from the platform sandbox balance to the freelancer's PayPal email.
               </DialogDescription>
             </DialogHeader>
 
             {selectedMilestone && (
               <div className="py-2 space-y-3 text-xs text-slate-300">
-                <div className="p-3.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1.5">
+                <div className="p-3.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-2">
                   <div className="font-semibold text-white">{selectedMilestone.title}</div>
-                  <div className="text-emerald-400 font-mono text-base font-bold">
+                  <div className="text-emerald-400 font-mono text-lg font-bold">
                     {formatCurrency(selectedMilestone.amount, contract.currency)} USD
                   </div>
-                  <div className="text-[11px] text-slate-400">
-                    Recipient: {freelancerParty.name} ({freelancerParty.email})
+                  <div className="text-[11px] text-slate-400 border-t border-[#222A3D] pt-2 flex flex-col gap-1">
+                    <div>
+                      Freelancer: <strong className="text-slate-200">{freelancerParty.name}</strong>
+                    </div>
+                    <div>
+                      PayPal Receiver: <strong className="text-emerald-400 font-mono">{(contract.freelancer as any)?.paypal_payout_email || freelancerParty.email || 'None registered'}</strong>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                      Idempotency Key: payout:{selectedMilestone.id}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1806,6 +2098,7 @@ export const ContractDetail: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
+                disabled={isReleasing}
                 onClick={() => setReleaseDialogOpen(false)}
                 className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
               >
@@ -1813,11 +2106,21 @@ export const ContractDetail: React.FC = () => {
               </Button>
               <Button
                 size="sm"
+                disabled={isReleasing}
                 onClick={handleConfirmRelease}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
               >
-                <DollarSign className="w-3.5 h-3.5" />
-                Confirm &amp; Disburse
+                {isReleasing ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Disbursing via PayPal...</span>
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Confirm &amp; Disburse Payout</span>
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
