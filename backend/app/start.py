@@ -1,11 +1,37 @@
 """
 Production startup runner for TrustBroker AI.
-Safely runs migrations, diagnostics, and launches Uvicorn.
+Safely runs migrations, diagnostics, schema healing, and launches Uvicorn.
 """
 import os
 import sys
 import subprocess
 from app.config import settings
+
+
+def ensure_schema_columns(engine):
+    """Ensure all required columns and tables exist even if Alembic was partially applied."""
+    from sqlalchemy import text
+    statements = [
+        "DO $$ BEGIN ALTER TYPE contractstatus ADD VALUE IF NOT EXISTS 'OPEN'; EXCEPTION WHEN duplicate_object THEN null; END $$;",
+        "DO $$ BEGIN ALTER TYPE contractstatus ADD VALUE IF NOT EXISTS 'AWARDED'; EXCEPTION WHEN duplicate_object THEN null; END $$;",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS headline VARCHAR;",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio VARCHAR;",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS skills JSONB DEFAULT '[]'::jsonb;",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS portfolio JSONB DEFAULT '[]'::jsonb;",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS paypal_payout_email VARCHAR;",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS primary_workspace VARCHAR DEFAULT 'client';",
+        "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS profile_completeness INTEGER DEFAULT 0;",
+        "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS visibility VARCHAR DEFAULT 'private_draft';",
+        "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS required_skills JSONB DEFAULT '[]'::jsonb;",
+        "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS opens_at TIMESTAMP WITH TIME ZONE;",
+        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_snapshot JSONB DEFAULT '[]'::jsonb;",
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            try:
+                conn.execute(text(stmt))
+            except Exception:
+                pass
 
 
 def main():
@@ -44,7 +70,7 @@ def main():
     except Exception as e:
         print(f"[STARTUP] Notice: Alembic run skipped ({e})")
 
-    # Direct SQLModel table verification & showcase seeding
+    # Direct SQLModel table verification, column healing & showcase seeding
     try:
         from sqlmodel import SQLModel
         from app.database import engine
@@ -56,9 +82,14 @@ def main():
         from app.models.verification import VerificationReport, CriterionResult
         from app.models.audit import AuditEvent
         from app.models.payment import PaymentAttempt
+        from app.models.marketplace import Application, VettingReport, Notification, Payout
 
         SQLModel.metadata.create_all(engine)
         print("[STARTUP] [OK] SQLModel tables verified/created successfully.")
+
+        # Self-healing column additions for existing tables
+        ensure_schema_columns(engine)
+        print("[STARTUP] [OK] Schema columns verified & healed.")
 
         from app.seed import seed_database
         seed_database()

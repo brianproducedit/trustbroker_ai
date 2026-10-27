@@ -29,6 +29,54 @@ def seed_database():
         client_id = uuid.UUID("35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2")
         freelancer_id = uuid.UUID("f907f77b-c340-4abe-8c12-a4606b8c2b15")
 
+        # Judge Demo Accounts
+        demo_accounts = [
+            {
+                "id": uuid.UUID("1e0dacbd-8d91-46f2-b04e-02acad08ce0c"),
+                "email": "client.demo@trustbroker.ai",
+                "full_name": "Elena Rostova (Client)",
+                "organization": "Acme Global Ventures LLC",
+                "headline": "Fintech & Marketplace Product Lead",
+                "primary_workspace": "client",
+                "paypal_payout_email": None,
+            },
+            {
+                "id": uuid.UUID("2203012f-e6ac-4efb-8d63-4dc4e1a4bbbc"),
+                "email": "freelancer.demo@trustbroker.ai",
+                "full_name": "Tariro Moyo (Freelancer)",
+                "organization": "DevStudio Zimbabwe",
+                "headline": "Senior Full-Stack & API Architect",
+                "primary_workspace": "freelancer",
+                "paypal_payout_email": "freelancer-payout@sandbox.paypal.com",
+            },
+            {
+                "id": uuid.UUID("f2b2b247-9690-4a2d-88a6-5a994559dea7"),
+                "email": "newcomer.demo@trustbroker.ai",
+                "full_name": "Kuda Nyamuda (Newcomer)",
+                "organization": "Independent Fullstack",
+                "headline": "UI/UX & React Systems Engineer",
+                "primary_workspace": "freelancer",
+                "paypal_payout_email": "newcomer-payout@sandbox.paypal.com",
+            },
+        ]
+        for acc in demo_accounts:
+            existing_demo = session.exec(select(UserProfile).where(UserProfile.email == acc["email"])).first()
+            if not existing_demo:
+                p = UserProfile(
+                    id=acc["id"],
+                    email=acc["email"],
+                    full_name=acc["full_name"],
+                    organization=acc["organization"],
+                    headline=acc["headline"],
+                    primary_workspace=acc["primary_workspace"],
+                    paypal_payout_email=acc["paypal_payout_email"],
+                    created_at=now - timedelta(days=20),
+                    updated_at=now - timedelta(days=1),
+                )
+                session.add(p)
+                session.commit()
+                print(f"  Created Demo Profile: {acc['full_name']} ({acc['email']})")
+
         client = session.exec(select(UserProfile).where(UserProfile.email == "elena@acmeglobal.com")).first()
         if not client:
             client = UserProfile(
@@ -36,6 +84,7 @@ def seed_database():
                 email="elena@acmeglobal.com",
                 full_name="Elena Rostova",
                 organization="Acme Global Ventures",
+                primary_workspace="client",
                 created_at=now - timedelta(days=30),
                 updated_at=now - timedelta(days=30),
             )
@@ -52,6 +101,8 @@ def seed_database():
                 email="tariro@devstudio.co.zw",
                 full_name="Tariro Moyo",
                 organization="DevStudio Zimbabwe",
+                primary_workspace="freelancer",
+                paypal_payout_email="freelancer-payout@sandbox.paypal.com",
                 created_at=now - timedelta(days=30),
                 updated_at=now - timedelta(days=30),
             )
