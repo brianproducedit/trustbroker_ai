@@ -11,6 +11,7 @@ from app.schemas.payment import (
     CaptureOrderRequest,
     ReleasePayoutRequest,
     PaymentAttemptRead,
+    PayoutRead,
 )
 from app.services import payment_service
 from app.utils.security import get_current_user, require_contract_party
@@ -47,19 +48,37 @@ async def capture_order(
     )
 
 
-@router.post("/release", summary="Authorize PayPal payout to the freelancer")
-def release_payout(
+@router.post("/release", summary="Send a PayPal payout to the freelancer")
+async def release_payout(
     req: ReleasePayoutRequest,
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Release the PayPal payout to the freelancer after milestone verification passes."""
-    return payment_service.release_milestone_payout(
+    """PayPal Payouts API after verification. Duplicate calls reuse PayPal-Request-Id payout:{milestone_id}."""
+    return await payment_service.release_milestone_payout(
         session=session,
         contract_id=req.contract_id,
         milestone_id=req.milestone_id,
         client=current_user,
     )
+
+
+@router.get("/earnings", response_model=List[PayoutRead], summary="Freelancer payout rows")
+def list_earnings(
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """PayPal payout ledger for the signed-in freelancer."""
+    return payment_service.list_my_payouts(session, current_user)
+
+
+@router.get("/payouts/{contract_id}", response_model=List[PayoutRead], summary="Payouts for a contract")
+def list_contract_payouts(
+    contract_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    return payment_service.list_contract_payouts(session, contract_id, current_user)
 
 
 @router.get("/history/{contract_id}", response_model=List[PaymentAttemptRead], summary="Get payment attempts for a contract")

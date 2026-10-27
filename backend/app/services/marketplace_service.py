@@ -19,6 +19,7 @@ from app.schemas.marketplace import (
     ApplicantProfileSummary,
     ApplicationCreateRequest,
     ApplicationRead,
+    ListingDetailRead,
     ListingRead,
     VettingReportRead,
 )
@@ -26,6 +27,7 @@ from app.services.audit_service import log_audit_event
 from app.services.contract_service import get_contract_full
 from app.services.notification_service import queue_notification
 from app.services.policy_engine import PolicyEngine, PolicyResult
+from app.services.vetting_service import vet_application
 from app.schemas.contract import ContractRead
 
 
@@ -94,13 +96,17 @@ def _application_read(session: Session, application: Application, include_profil
                 profile_completeness=freelancer.profile_completeness,
                 paypal_payout_email=freelancer.paypal_payout_email,
             )
+    contract = session.get(Contract, application.contract_id)
     return ApplicationRead(
         id=application.id,
         contract_id=application.contract_id,
         freelancer_id=application.freelancer_id,
         cover_note=application.cover_note,
         proposed_start=application.proposed_start,
+        portfolio_snapshot=application.portfolio_snapshot or [],
         status=application.status,
+        contract_title=contract.title if contract else None,
+        contract_code=contract.code if contract else None,
         created_at=application.created_at,
         updated_at=application.updated_at,
         freelancer=freelancer_summary,
@@ -243,6 +249,7 @@ def apply_to_contract(
         freelancer_id=freelancer.id,
         cover_note=req.cover_note or "",
         proposed_start=req.proposed_start,
+        portfolio_snapshot=req.portfolio_snapshot or [],
         status=ApplicationStatus.SUBMITTED.value,
     )
     session.add(application)
@@ -255,7 +262,7 @@ def apply_to_contract(
             detail="You have already applied to this contract.",
         )
 
-    stub_vetting_report(session, application, freelancer)
+    vet_application(session, application, freelancer, contract)
     application.status = ApplicationStatus.RANKED.value
     application.updated_at = datetime.now(timezone.utc)
 
@@ -298,10 +305,11 @@ def list_contract_applications(
         session.exec(
             select(Application)
             .where(Application.contract_id == contract.id)
-            .order_by(Application.created_at.asc())
         ).all()
     )
-    return [_application_read(session, a, include_profile=True) for a in applications], len(applications)
+    reads = [_application_read(session, a, include_profile=True) for a in applications]
+    reads.sort(key=lambda a: (a.vetting.score if a.vetting else -1), reverse=True)
+    return reads, len(reads)
 
 
 def award_application(
@@ -392,3 +400,80 @@ def award_application(
         metadata={"application_id": str(application.id), "freelancer_id": str(freelancer.id)},
     )
     return get_contract_full(session, contract.id)
+
+
+def get_open_listing(session: Session, listing_id: uuid.UUID, user: UserProfile) -> ListingDetailRead:
+    contract = session.get(Contract, listing_id)
+    if not contract or contract.visibility != ContractVisibility.OPEN.value or contract.status != ContractStatus.OPEN:
+        raise HTTPException(status_code=404, detail="Open listing not found")
+    base = _listing_from_contract(session, contract)
+    full = get_contract_full(session, contract.id)
+    already = session.exec(
+        select(Application).where(
+            Application.contract_id == contract.id,
+            Application.freelancer_id == user.id,
+        )
+    ).first()
+    return ListingDetailRead(
+        **base.model_dump(),
+        milestones=[m.model_dump(mode="json") for m in full.milestones],
+        already_applied=already is not None,
+    )
+
+
+def list_my_applications(session: Session, freelancer: UserProfile) -> Tuple[List[ApplicationRead], int]:
+    applications = list(
+        session.exec(
+            select(Application)
+            .where(Application.freelancer_id == freelancer.id)
+            .order_by(Application.created_at.desc())
+        ).all()
+    )
+    return [_application_read(session, a, include_profile=False) for a in applications], len(applications)
+
+
+def shortlist_application(
+    session: Session,
+    application_id: uuid.UUID,
+    client: UserProfile,
+) -> ApplicationRead:
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    contract = session.get(Contract, application.contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    if contract.client_id != client.id:
+        raise HTTPException(status_code=403, detail="Only the client can shortlist applicants.")
+    if application.status not in (ApplicationStatus.RANKED.value, ApplicationStatus.SUBMITTED.value, ApplicationStatus.SHORTLISTED.value):
+        raise HTTPException(status_code=409, detail=f"Cannot shortlist an application in '{application.status}' status.")
+    application.status = ApplicationStatus.SHORTLISTED.value
+    application.updated_at = datetime.now(timezone.utc)
+    queue_notification(
+        session,
+        user_id=application.freelancer_id,
+        type="application_shortlisted",
+        title="You were shortlisted",
+        body=f"The client shortlisted you for {contract.code}.",
+        entity_type="contract",
+        entity_id=contract.id,
+    )
+    session.commit()
+    return _application_read(session, application, include_profile=True)
+
+
+def rerun_vetting(session: Session, application_id: uuid.UUID, user: UserProfile) -> ApplicationRead:
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    contract = session.get(Contract, application.contract_id)
+    freelancer = session.get(UserProfile, application.freelancer_id)
+    if not contract or not freelancer:
+        raise HTTPException(status_code=404, detail="Application parties not found")
+    if user.id not in (contract.client_id, application.freelancer_id):
+        raise HTTPException(status_code=403, detail="Only the client or applicant can refresh vetting.")
+    vet_application(session, application, freelancer, contract)
+    application.status = ApplicationStatus.RANKED.value
+    application.updated_at = datetime.now(timezone.utc)
+    session.commit()
+    return _application_read(session, application, include_profile=True)

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from sqlalchemy import JSON, Column, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
@@ -23,8 +23,10 @@ class ApplicationStatus(str, Enum):
 class VettingRecommendation(str, Enum):
     STRONG_FIT = "strong_fit"
     GOOD_FIT = "good_fit"
+    POSSIBLE_FIT = "possible_fit"
     NEW_TALENT = "new_talent"
     WEAK_FIT = "weak_fit"
+    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
 
 
 class PayoutStatus(str, Enum):
@@ -47,6 +49,10 @@ class Application(SQLModel, table=True):
     freelancer_id: uuid.UUID = Field(foreign_key="profiles.id", index=True, nullable=False)
     cover_note: str = Field(default="", nullable=False)
     proposed_start: Optional[str] = Field(default=None, nullable=True)
+    portfolio_snapshot: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        sa_column=Column(JSON, nullable=False, server_default="[]"),
+    )
     status: str = Field(default=ApplicationStatus.SUBMITTED.value, index=True, nullable=False)
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
     updated_at: datetime = Field(default_factory=utc_now, nullable=False)

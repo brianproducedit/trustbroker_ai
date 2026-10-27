@@ -81,6 +81,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (path.includes('/dashboard/activity')) {
       return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'Activity Audit Log' }]
     }
+    if (path.includes('/app/freelancer/profile')) {
+      return [{ label: 'Home', to: ROUTES.DASHBOARD }, { label: 'Profile' }]
+    }
+    if (path.includes('/app/freelancer/applications')) {
+      return [{ label: 'Home', to: ROUTES.DASHBOARD }, { label: 'Applications' }]
+    }
+    if (path.includes('/app/freelancer/contracts/')) {
+      return [{ label: 'Marketplace', to: ROUTES.MARKETPLACE }, { label: 'Listing' }]
+    }
+    if (path.includes('/app/freelancer/contracts')) {
+      return [{ label: 'Home', to: ROUTES.DASHBOARD }, { label: 'Marketplace' }]
+    }
     return [{ label: 'Dashboard' }]
   }
 

@@ -37,6 +37,7 @@ import {
   Inbox
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { FreelancerHome } from '@/pages/freelancer/FreelancerHome'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -199,6 +200,10 @@ export const Dashboard: React.FC = () => {
   const handleRelease = (milestoneId: string, amount: number) => {
     releasePayment(selectedContract.id, milestoneId)
     toast.success(`Payment released: ${formatCurrency(amount)} USD to freelancer!`)
+  }
+
+  if (activeRole === 'freelancer') {
+    return <FreelancerHome />
   }
 
   return (

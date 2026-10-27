@@ -183,11 +183,14 @@ CREATE TABLE IF NOT EXISTS applications (
     freelancer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     cover_note VARCHAR NOT NULL DEFAULT '',
     proposed_start VARCHAR,
+    portfolio_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
     status VARCHAR NOT NULL DEFAULT 'submitted',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     CONSTRAINT uq_applications_contract_freelancer UNIQUE (contract_id, freelancer_id)
 );
+
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS vetting_reports (
     id UUID PRIMARY KEY,

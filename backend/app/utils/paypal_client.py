@@ -35,7 +35,7 @@ async def create_paypal_order(
     amount: float,
     currency: str = "USD",
     reference_id: Optional[str] = None,
-    description: str = "TrustBroker Escrow Staging",
+    description: str = "TrustBroker milestone funding",
 ) -> Dict[str, Any]:
     """Create an order with PayPal Orders v2 API with intent=CAPTURE."""
     token = await get_paypal_access_token()
@@ -68,6 +68,45 @@ async def create_paypal_order(
         res = await client.post(f"{base_url}/v2/checkout/orders", headers=headers, json=payload)
         if res.status_code not in (200, 201):
             raise Exception(f"PayPal order creation failed: {res.text}")
+        return res.json()
+
+
+async def create_payout(
+    *,
+    amount: float,
+    currency: str,
+    receiver_email: str,
+    request_id: str,
+    note: str = "TrustBroker milestone payout",
+) -> Dict[str, Any]:
+    """Send funds from the platform PayPal balance to the freelancer via Payouts API."""
+    token = await get_paypal_access_token()
+    base_url = get_base_url()
+    payload = {
+        "sender_batch_header": {
+            "sender_batch_id": request_id,
+            "email_subject": "You have a payout from TrustBroker AI",
+            "email_message": note,
+        },
+        "items": [
+            {
+                "recipient_type": "EMAIL",
+                "amount": {"value": f"{amount:.2f}", "currency": currency},
+                "receiver": receiver_email,
+                "sender_item_id": request_id,
+                "note": note,
+            }
+        ],
+    }
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "PayPal-Request-Id": request_id,
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        res = await client.post(f"{base_url}/v1/payments/payouts", headers=headers, json=payload)
+        if res.status_code not in (200, 201):
+            raise Exception(f"PayPal payout failed: {res.text}")
         return res.json()
 
 

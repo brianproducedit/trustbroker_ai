@@ -39,6 +39,10 @@ class ClarifyResponse(BaseModel):
     provider_used: str = "stub"
 
 
+class VetApplicationRequest(BaseModel):
+    application_id: uuid.UUID
+
+
 class DeliveryVerificationRequest(BaseModel):
     contract_id: uuid.UUID
     milestone_id: uuid.UUID

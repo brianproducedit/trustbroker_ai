@@ -13,7 +13,9 @@ import {
   ArrowLeftRight,
   UploadCloud,
   Wallet,
-  LogOut
+  LogOut,
+  Search,
+  Inbox
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -67,11 +69,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
   ]
 
   const freelancerNavItems = [
-    { label: 'Your Projects', icon: LayoutGrid, path: ROUTES.DASHBOARD },
-    { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
-    { label: 'Submit Delivery', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },
-    { label: 'Earnings & Payouts', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
-    { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
+    { label: 'Home', icon: LayoutGrid, path: ROUTES.DASHBOARD },
+    { label: 'Find work', icon: Search, path: ROUTES.MARKETPLACE },
+    { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
+    { label: 'Active work', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
+    { label: 'Submit delivery', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },
+    { label: 'Profile', icon: UserCircle2, path: ROUTES.FREELANCER_PROFILE },
+    { label: 'Earnings', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
   ]
 
   const navItems = currentRole === 'client' ? clientNavItems : freelancerNavItems

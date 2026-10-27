@@ -7,8 +7,11 @@ from app.schemas.ai import (
     SOWDraftResponse,
     ClarifyRequest,
     ClarifyResponse,
+    VetApplicationRequest,
     DeliveryVerificationRequest,
 )
+from app.schemas.marketplace import ApplicationRead
+from app.services import marketplace_service
 from app.services import ai_provider, verification_service
 from app.utils.security import get_current_user
 
@@ -61,6 +64,20 @@ def clarify_brief(
         answers=req.answers,
     )
     return result
+
+
+@router.post(
+    "/vet-application",
+    response_model=ApplicationRead,
+    summary="AI-vet a freelancer application using profile, portfolio, cover, and past work",
+)
+def vet_application_endpoint(
+    req: VetApplicationRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Writes vetting_reports. Newcomers are not scored 0 on empty job history."""
+    return marketplace_service.rerun_vetting(session, req.application_id, current_user)
 
 
 @router.post("/verify-delivery", summary="Run AI verification against submitted milestone evidence")

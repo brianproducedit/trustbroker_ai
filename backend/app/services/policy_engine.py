@@ -146,16 +146,17 @@ class PolicyEngine:
                 False,
                 f"Contract must be active before funding a milestone (current: '{contract.status.value}').",
             )
-        if milestone:
-            if milestone.payment_status in (
-                PaymentStatus.STAGED_IN_SANDBOX,
-                PaymentStatus.RELEASE_AUTHORIZED,
-                PaymentStatus.RELEASED,
-            ):
-                return PolicyResult(
-                    False,
-                    f"Milestone is already funded or released (status: '{milestone.payment_status.value}').",
-                )
+        if milestone is None:
+            return PolicyResult(False, "A milestone is required to fund.")
+        if milestone.payment_status in (
+            PaymentStatus.STAGED_IN_SANDBOX,
+            PaymentStatus.RELEASE_AUTHORIZED,
+            PaymentStatus.RELEASED,
+        ):
+            return PolicyResult(
+                False,
+                f"Milestone is already funded or released (status: '{milestone.payment_status.value}').",
+            )
         return PolicyResult(True)
 
     @classmethod
