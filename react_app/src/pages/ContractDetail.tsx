@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { PayPalCheckout } from '@/components/payments/PayPalCheckout'
@@ -7,6 +7,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ROUTES } from '@/constants'
+import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -40,12 +41,15 @@ import {
   Lock,
   Share2,
   Download,
-  FileCode
+  FileCode,
+  Users
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export const ContractDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
   const { 
     contracts, 
     activeRole, 
@@ -68,7 +72,33 @@ export const ContractDetail: React.FC = () => {
   const contract = contracts.find((c) => c.id === id || c.code === id) || contracts[0]
 
   // View States
-  const [activeTab, setActiveTab] = useState<'contract' | 'sow' | 'payments' | 'activity'>('contract')
+  const [activeTab, setActiveTab] = useState<'contract' | 'sow' | 'payments' | 'activity' | 'applicants'>(
+    searchParams.get('tab') === 'applicants' ? 'applicants' : 'contract'
+  )
+  const [applications, setApplications] = useState<any[]>([])
+  const [appsLoading, setAppsLoading] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'applicants' || location.pathname.endsWith('/applicants')) {
+      setActiveTab('applicants')
+    }
+  }, [searchParams, location.pathname])
+
+  useEffect(() => {
+    if (activeTab !== 'applicants' || !id) return
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (!isUuid) {
+      setApplications([])
+      return
+    }
+    setAppsLoading(true)
+    api.contracts
+      .listApplications(id)
+      .then((res) => setApplications(res.applications || []))
+      .catch(() => setApplications([]))
+      .finally(() => setAppsLoading(false))
+  }, [id, activeTab])
+
   const [milestoneFilter, setMilestoneFilter] = useState<'all' | 'in_progress' | 'review' | 'settled'>('all')
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedHash, setCopiedHash] = useState(false)
@@ -551,7 +581,7 @@ export const ContractDetail: React.FC = () => {
               </div>
 
               {/* Pending Digital Acceptance Callout */}
-              {!isUserAccepted && (
+              {!isUserAccepted && contract.status !== 'draft' && contract.status !== 'open' && (
                 <div className="mt-4 p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-blue-400 shrink-0" />
@@ -572,8 +602,29 @@ export const ContractDetail: React.FC = () => {
             </Card>
 
             {/* Main Tabs Navigation */}
-            <Tabs defaultValue="contract" value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4 w-full">
+            <Tabs
+              defaultValue="contract"
+              value={activeTab}
+              onValueChange={(v) => {
+                setActiveTab(v as any)
+                if (v === 'applicants') {
+                  setSearchParams({ tab: 'applicants' })
+                } else {
+                  setSearchParams({})
+                }
+              }}
+              className="space-y-4 w-full"
+            >
               <TabsList className="bg-[#101726] border border-[#222A3D] p-1 h-auto flex flex-wrap gap-1">
+                {isClient && (
+                  <TabsTrigger
+                    value="applicants"
+                    className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                  >
+                    <Users className="w-3.5 h-3.5 mr-1.5 inline" />
+                    Applicants ({applications.length})
+                  </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="contract" 
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
@@ -586,12 +637,14 @@ export const ContractDetail: React.FC = () => {
                 >
                   Legal SOW &amp; Terms
                 </TabsTrigger>
+                {contract.status !== 'draft' && contract.status !== 'open' && (
                 <TabsTrigger 
                   value="payments" 
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
                 >
                   PayPal
                 </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="activity" 
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
@@ -599,6 +652,49 @@ export const ContractDetail: React.FC = () => {
                   Audit Activity Trail ({(contract.auditLogs || []).length})
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="applicants" className="space-y-4 outline-none">
+                {appsLoading ? (
+                  <div className="text-center py-16 text-sm text-slate-400">Loading applicants...</div>
+                ) : applications.length === 0 ? (
+                  <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+                    <CardContent className="py-16 text-center space-y-3">
+                      <Users className="w-10 h-10 text-slate-500 mx-auto" />
+                      <h3 className="text-lg font-semibold">Waiting for applications</h3>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        This listing is open. Freelancers can apply from the marketplace. You will see ranked
+                        applicants here — no payout or delivery steps until you award someone.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {applications.map((app) => (
+                      <Card key={app.id} className="border-[#222A3D] bg-[#131B2E] text-white">
+                        <CardContent className="py-4 space-y-2">
+                          <div className="flex justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-sm">
+                                {app.freelancer?.full_name || 'Freelancer'}
+                              </p>
+                              <p className="text-xs text-slate-400">{app.freelancer?.headline || app.status}</p>
+                            </div>
+                            {app.vetting && (
+                              <div className="text-right text-xs">
+                                <p className="font-mono text-emerald-400">{app.vetting.score}/100</p>
+                                <p className="text-slate-400 capitalize">{String(app.vetting.recommendation).replace('_', ' ')}</p>
+                              </div>
+                            )}
+                          </div>
+                          {app.cover_note && (
+                            <p className="text-xs text-slate-300">{app.cover_note}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
               {/* TAB 1: MILESTONES & DELIVERABLES */}
               <TabsContent value="contract" className="space-y-4 outline-none">

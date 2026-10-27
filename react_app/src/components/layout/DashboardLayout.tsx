@@ -66,8 +66,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   // Generate breadcrumb text from location
   const getBreadcrumbs = () => {
     const path = location.pathname
-    if (path.includes('/dashboard/create-project')) {
-      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'New Project' }]
+    if (path.includes('/dashboard/create-project') || path.includes('/app/client/contracts/new')) {
+      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'New contract' }]
     }
     if (path.includes('/dashboard/contracts')) {
       return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: `Contract ${activeContract?.code || ''}` }]

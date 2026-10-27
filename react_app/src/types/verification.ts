@@ -4,6 +4,7 @@ export interface AcceptanceCriterion {
   id: string
   title: string
   description: string
+  evidenceType?: string
   status: CriterionStatus
   aiConfidence?: number
   evidenceMatchSnippet?: string

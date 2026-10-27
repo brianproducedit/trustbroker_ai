@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 from app.database import get_session
 from app.models.user import UserProfile
-from app.schemas.ai import SOWDraftRequest, SOWDraftResponse, DeliveryVerificationRequest
+from app.schemas.ai import (
+    SOWDraftRequest,
+    SOWDraftResponse,
+    ClarifyRequest,
+    ClarifyResponse,
+    DeliveryVerificationRequest,
+)
 from app.services import ai_provider, verification_service
 from app.utils.security import get_current_user
 
@@ -33,6 +39,26 @@ def draft_sow(
         category=req.category,
         total_budget=req.total_budget,
         currency=req.currency,
+    )
+    return result
+
+
+@router.post(
+    "/clarify",
+    response_model=ClarifyResponse,
+    summary="Ask the client clarifying questions before publishing a contract",
+)
+def clarify_brief(
+    req: ClarifyRequest,
+    current_user: UserProfile = Depends(get_current_user),
+):
+    """Return 3–6 short questions so the client can refine the SOW. Skip is allowed in the UI."""
+    _ = current_user
+    result = ai_provider.generate_clarify_questions(
+        project_prompt=req.prompt,
+        category=req.category,
+        total_budget=req.total_budget,
+        answers=req.answers,
     )
     return result
 

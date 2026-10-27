@@ -375,6 +375,77 @@ Generate a JSON object with:
     }
 
 
+def generate_clarify_questions(
+    project_prompt: str,
+    category: str = "software",
+    total_budget: float = 1000.0,
+    answers: Optional[List[Dict[str, str]]] = None,
+) -> Dict[str, Any]:
+    """Ask 3–6 clarifying questions before the client reviews the SOW."""
+    system_instruction = (
+        "You are a senior contracting advisor for TrustBroker AI. "
+        "Ask 3 to 6 short clarification questions a client should answer before a freelance SOW is finalized. "
+        "Do not repeat facts already stated in the brief or in prior answers. "
+        "Return ONLY JSON: {\"questions\": [{\"id\": \"q1\", \"question\": \"...\"}]}"
+    )
+    prior = ""
+    if answers:
+        prior = "\nPrior answers:\n" + "\n".join(
+            f"- {a.get('question', '')}: {a.get('answer', '')}" for a in answers
+        )
+    user_content = f"""
+Client brief: {project_prompt}
+Category: {category}
+Budget: {total_budget} USD
+{prior}
+"""
+    result, provider_used = call_ai_with_fallbacks(system_instruction, user_content)
+    questions = []
+    if result and isinstance(result.get("questions"), list):
+        for idx, item in enumerate(result["questions"][:6]):
+            if isinstance(item, str) and item.strip():
+                questions.append({"id": f"q{idx + 1}", "question": item.strip()})
+            elif isinstance(item, dict) and item.get("question"):
+                questions.append({
+                    "id": str(item.get("id") or f"q{idx + 1}"),
+                    "question": str(item["question"]).strip(),
+                })
+    if len(questions) >= 3:
+        return {"questions": questions, "provider_used": provider_used or "groq"}
+
+    fallback = {
+        "software": [
+            "What tech stack or hosting constraints must the freelancer follow?",
+            "Is there an existing repo or design file they should start from?",
+            "Which browsers or devices must be supported?",
+            "What does 'done' look like for the first milestone?",
+        ],
+        "design": [
+            "Do you already have a brand kit (colors, type, logo)?",
+            "Which formats should be delivered (Figma, SVG, PNG)?",
+            "Are there examples of styles you like or dislike?",
+            "How many unique screens or assets are in scope?",
+        ],
+        "marketing": [
+            "Who is the target audience and primary channel?",
+            "Is copywriting included, or design/assets only?",
+            "Do you have existing analytics or campaign data to use?",
+            "What conversion event should this work improve?",
+        ],
+        "research": [
+            "What decision will this research inform?",
+            "Do you have a preferred method (desk research, interviews, survey)?",
+            "Are there sources or competitors that must be included?",
+            "What deliverable format do you need (memo, deck, spreadsheet)?",
+        ],
+    }
+    picked = fallback.get(category, fallback["software"])
+    return {
+        "questions": [{"id": f"q{i + 1}", "question": q} for i, q in enumerate(picked)],
+        "provider_used": "deterministic-fallback-engine",
+    }
+
+
 # ==============================================================================
 # Delivery Verification — AI-Powered Milestone Evaluation
 # ==============================================================================

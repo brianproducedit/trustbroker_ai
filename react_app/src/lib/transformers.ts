@@ -6,6 +6,7 @@ export function transformAcceptanceCriterion(c: any): AcceptanceCriterion {
     id: String(c.id),
     title: c.title || '',
     description: c.description || '',
+    evidenceType: c.evidence_type || 'text',
     status: c.status || 'pending',
     aiConfidence: c.ai_confidence !== undefined && c.ai_confidence !== null ? Number(c.ai_confidence) : undefined,
     evidenceMatchSnippet: c.evidence_match_snippet || undefined,
