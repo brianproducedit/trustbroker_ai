@@ -50,8 +50,9 @@ interface ContractStore {
     title: string,
     description: string,
     milestones: Milestone[],
-    freelancerEmail?: string
+    options?: { category?: string; requiredSkills?: string[]; freelancerEmail?: string }
   ) => Promise<string>
+  publishContract: (contractId: string) => Promise<Contract>
   updateContractDraft: (contractId: string, updates: Partial<Contract>) => Promise<void>
   deleteContract: (contractId: string) => Promise<void>
   cancelContract: (contractId: string, reason?: string) => Promise<void>
@@ -233,17 +234,19 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     }
   },
 
-  createContractDraft: async (title, description, milestones, freelancerEmail) => {
+  createContractDraft: async (title, description, milestones, options) => {
     const totalAmount = milestones.reduce((sum, m) => sum + m.amount, 0)
+    const freelancerEmail = options?.freelancerEmail
 
     // Try backend API first
     try {
       const payload = {
         title,
         description,
-        category: 'software',
-        freelancer_email: freelancerEmail || 'tariro@devstudio.co.zw',
+        category: options?.category || 'software',
+        required_skills: options?.requiredSkills || [],
         currency: 'USD',
+        ...(freelancerEmail ? { freelancer_email: freelancerEmail } : {}),
         milestones: milestones.map((m, idx) => ({
           title: m.title,
           description: m.description,
@@ -254,7 +257,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           acceptance_criteria: m.acceptanceCriteria.map((ac) => ({
             title: ac.title,
             description: ac.description || '',
-            evidence_type: 'text',
+            evidence_type: ac.evidenceType || 'text',
           })),
         })),
       }
@@ -282,7 +285,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       title,
       description,
       version: 1,
-      status: 'pending_acceptance',
+      status: 'draft',
       totalAmount,
       currency: 'USD',
       stagedAmount: 0,
@@ -322,6 +325,16 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     }))
 
     return newId
+  },
+
+  publishContract: async (contractId) => {
+    const published = await api.contracts.publish(contractId)
+    const transformed = transformContract(published)
+    set((state) => ({
+      contracts: state.contracts.map((c) => (c.id === transformed.id ? { ...c, ...transformed } : c)),
+      activeContractId: transformed.id,
+    }))
+    return transformed
   },
 
   updateContractDraft: async (contractId, updates) => {

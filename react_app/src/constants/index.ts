@@ -18,8 +18,10 @@ export const ROUTES = {
   // Authenticated Portal Pages (All contained inside DashboardLayout)
   DASHBOARD: '/dashboard',
   NEW_PROJECT: '/dashboard/create-project',
+  CLIENT_NEW_CONTRACT: '/app/client/contracts/new',
   CONTRACTS: '/dashboard/contracts',
   CONTRACT_DETAIL: (id: string = ':id') => `/dashboard/contracts/${id}`,
+  CONTRACT_APPLICANTS: (id: string = ':id') => `/dashboard/contracts/${id}?tab=applicants`,
   DELIVERIES: '/dashboard/deliveries',
   DELIVERY_VERIFICATION: (id: string = ':id') => `/dashboard/deliveries/${id}`,
   ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
@@ -41,6 +43,8 @@ export const STATUS_COLORS = {
 
 export const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft Contract',
+  open: 'Open listing',
+  awarded: 'Awarded',
   pending_acceptance: 'Pending Review',
   active: 'Active',
   in_verification: 'In Review',

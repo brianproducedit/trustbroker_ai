@@ -71,6 +71,7 @@ export const api = {
       description?: string
       category?: string
       freelancer_email?: string
+      required_skills?: string[]
       currency?: string
       milestones: Array<{
         title: string
@@ -90,6 +91,17 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    publish: (id: string) =>
+      apiFetch<any>(`/contracts/${id}/publish`, {
+        method: 'POST',
+      }),
+    apply: (id: string, data: { cover_note?: string; proposed_start?: string }) =>
+      apiFetch<any>(`/contracts/${id}/applications`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    listApplications: (id: string) =>
+      apiFetch<{ applications: any[]; total: number }>(`/contracts/${id}/applications`),
     update: (id: string, data: any) =>
       apiFetch<any>(`/contracts/${id}`, {
         method: 'PUT',
@@ -120,6 +132,37 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    clarify: (data: {
+      prompt: string
+      category?: string
+      total_budget: number
+      answers?: Array<{ question: string; answer: string }>
+    }) =>
+      apiFetch<{ questions: Array<{ id: string; question: string }>; provider_used?: string }>(
+        '/ai/clarify',
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }
+      ),
+    listings: (params?: {
+      category?: string
+      min_budget?: number
+      max_budget?: number
+      skill?: string
+      page?: number
+      per_page?: number
+    }) => {
+      const query = new URLSearchParams()
+      if (params?.category) query.set('category', params.category)
+      if (params?.min_budget != null) query.set('min_budget', String(params.min_budget))
+      if (params?.max_budget != null) query.set('max_budget', String(params.max_budget))
+      if (params?.skill) query.set('skill', params.skill)
+      if (params?.page) query.set('page', String(params.page))
+      if (params?.per_page) query.set('per_page', String(params.per_page))
+      const qs = query.toString() ? `?${query.toString()}` : ''
+      return apiFetch<{ listings: any[]; total: number }>(`/listings${qs}`)
+    },
     verifyDelivery: (data: {
       contract_id: string
       milestone_id: string

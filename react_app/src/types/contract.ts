@@ -3,6 +3,8 @@ import type { PaymentStatus } from './payment'
 
 export type ContractStatus =
   | 'draft'
+  | 'open'
+  | 'awarded'
   | 'pending_acceptance'
   | 'active'
   | 'in_verification'

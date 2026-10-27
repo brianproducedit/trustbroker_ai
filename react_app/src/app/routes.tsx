@@ -52,7 +52,23 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path={ROUTES.CLIENT_NEW_CONTRACT}
+        element={
+          <ProtectedRoute>
+            <CreateProject />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path={ROUTES.CONTRACT_DETAIL(':id')}
+        element={
+          <ProtectedRoute>
+            <ContractDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/contracts/:id/applicants"
         element={
           <ProtectedRoute>
             <ContractDetail />
