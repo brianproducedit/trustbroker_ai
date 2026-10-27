@@ -96,14 +96,20 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             disabled={isProcessing}
             createOrder={async () => {
               setErrorMsg(null)
-              const res = await api.payments.createOrder({
-                contract_id: contractId,
-                milestone_id: milestoneId,
-              })
-              if (!res?.order_id) {
-                throw new Error('Server did not return a PayPal order id')
+              try {
+                const res = await api.payments.createOrder({
+                  contract_id: contractId,
+                  milestone_id: milestoneId,
+                })
+                if (!res?.order_id) {
+                  throw new Error(res?.detail || 'Server did not return a PayPal order id')
+                }
+                return res.order_id
+              } catch (err: any) {
+                const msg = err?.detail || err?.message || 'Could not initiate PayPal checkout order'
+                setErrorMsg(msg)
+                throw err
               }
-              return res.order_id
             }}
             onApprove={async (data) => {
               setIsProcessing(true)
