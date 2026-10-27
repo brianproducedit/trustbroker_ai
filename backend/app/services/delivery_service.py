@@ -95,7 +95,8 @@ def submit_delivery(
     session.flush()
 
     # Add attached files
-    for f_data in req.files:
+    files_to_process = req.files or req.file_attachments or []
+    for f_data in files_to_process:
         is_safe, reason = validate_evidence_file(f_data.file_name, f_data.size_bytes, f_data.mime_type)
         if not is_safe:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"File rejection: {reason}")

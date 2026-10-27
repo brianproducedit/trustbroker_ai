@@ -1,39 +1,105 @@
 import uuid
+import time
+import logging
 from typing import Any, Dict, List, Optional
 from fastapi import Depends, Header, HTTPException, status
-from jose import JWTError, jwt
+from jose import JWTError, jwt, jwk
+from jose.utils import base64url_decode
 from sqlmodel import Session, select
 from app.config import settings
 from app.database import get_session
 from app.models.user import UserProfile
 from app.models.contract import Contract, ContractStatus
 
+logger = logging.getLogger(__name__)
+
+# In-memory JWKS cache (fetched once per process lifetime, refreshed on miss)
+_jwks_cache: Dict[str, Any] = {"keys": [], "fetched_at": 0}
+_JWKS_TTL = 3600  # Re-fetch JWKS every hour
+
+
+def _fetch_jwks() -> List[Dict[str, Any]]:
+    """Fetch the JSON Web Key Set from Supabase Auth's well-known endpoint."""
+    import httpx
+
+    now = time.time()
+    if _jwks_cache["keys"] and (now - _jwks_cache["fetched_at"]) < _JWKS_TTL:
+        return _jwks_cache["keys"]
+
+    jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
+    try:
+        resp = httpx.get(jwks_url, timeout=10.0)
+        resp.raise_for_status()
+        keys = resp.json().get("keys", [])
+        _jwks_cache["keys"] = keys
+        _jwks_cache["fetched_at"] = now
+        logger.info(f"[AUTH] Fetched {len(keys)} JWKS key(s) from Supabase")
+        return keys
+    except Exception as exc:
+        logger.warning(f"[AUTH] Failed to fetch JWKS: {exc}")
+        return _jwks_cache["keys"]  # Return stale cache if available
+
+
+def _get_signing_key(token: str) -> Any:
+    """Extract the signing key from JWKS matching the token's kid header."""
+    import json
+    import base64
+
+    # Decode token header to get kid and alg
+    header_segment = token.split(".")[0]
+    # Add padding
+    padding = 4 - len(header_segment) % 4
+    if padding != 4:
+        header_segment += "=" * padding
+    header = json.loads(base64.urlsafe_b64decode(header_segment))
+
+    kid = header.get("kid")
+    alg = header.get("alg", "HS256")
+
+    if alg == "HS256":
+        # Legacy HMAC-based signing — return the shared secret directly
+        return settings.supabase_jwt_secret, "HS256"
+
+    # ES256 / RS256 — look up in JWKS
+    jwks_keys = _fetch_jwks()
+    for key_data in jwks_keys:
+        if key_data.get("kid") == kid:
+            return key_data, alg
+
+    raise JWTError(f"No matching JWKS key found for kid={kid}")
+
 
 def decode_supabase_jwt(token: str) -> Dict[str, Any]:
-    """Decode and cryptographically verify a Supabase Auth JWT token."""
+    """Decode and cryptographically verify a Supabase Auth JWT token.
+    
+    Supports both legacy HS256 (shared secret) and modern ES256 (ECDSA via JWKS).
+    """
+    # Fallback for 1-click dev test tokens (supports demo and hackathon reviews)
+    if token.startswith("dev-user-"):
+        user_role = token.replace("dev-user-", "")
+        is_client = user_role == "client"
+        return {
+            "sub": "1e0dacbd-8d91-46f2-b04e-02acad08ce0c" if is_client else "2203012f-e6ac-4efb-8d63-4dc4e1a4bbbc",
+            "email": "client.demo@trustbroker.ai" if is_client else "freelancer.demo@trustbroker.ai",
+            "user_metadata": {
+                "full_name": "Elena Rostova" if is_client else "Tariro Moyo",
+                "organization": "Acme Global Ventures LLC" if is_client else "DevStudio Zimbabwe",
+                "role": user_role,
+                "primary_workspace": user_role,
+            },
+        }
+
     try:
-        # Supabase signs access tokens with HMAC-SHA256 using the project JWT Secret
+        key_or_jwk, alg = _get_signing_key(token)
+
         payload = jwt.decode(
             token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            key_or_jwk,
+            algorithms=[alg],
             options={"verify_aud": False},
         )
         return payload
     except JWTError as exc:
-        # Fallback for 1-click test tokens (supports demo and hackathon reviews)
-        if token.startswith("dev-user-"):
-            user_role = token.replace("dev-user-", "")
-            is_client = user_role == "client"
-            return {
-                "sub": "35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2" if is_client else "f907f77b-c340-4abe-8c12-a4606b8c2b15",
-                "email": "elena@acmeglobal.com" if is_client else "tariro@devstudio.co.zw",
-                "user_metadata": {
-                    "full_name": "Elena Rostova" if is_client else "Tariro Moyo",
-                    "organization": "Acme Global Ventures LLC" if is_client else "DevStudio Zimbabwe",
-                    "role": user_role,
-                },
-            }
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid or expired credentials: {str(exc)}",

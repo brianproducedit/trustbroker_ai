@@ -190,11 +190,21 @@ export const api = {
       description: string
       repo_url?: string
       live_url?: string
+      files?: any[]
       file_attachments?: any[]
+      auto_verify?: boolean
     }) =>
       apiFetch<any>('/deliveries', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          contract_id: data.contract_id,
+          milestone_id: data.milestone_id,
+          description: data.description,
+          repo_url: data.repo_url,
+          live_url: data.live_url,
+          files: data.files || data.file_attachments || [],
+          auto_verify: data.auto_verify ?? true,
+        }),
       }),
     get: (id: string) => apiFetch<any>(`/deliveries/${id}`),
     listMilestoneDeliveries: (milestoneId: string) =>

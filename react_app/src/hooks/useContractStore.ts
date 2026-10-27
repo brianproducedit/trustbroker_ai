@@ -575,14 +575,18 @@ export const useContractStore = create<ContractStore>((set, get) => ({
 
     if (isUuid) {
       try {
-        // 1. Submit Delivery to FastAPI
         const deliveryRes = await api.deliveries.submit({
           contract_id: contractId,
           milestone_id: milestoneId,
           description: submission.description,
           repo_url: submission.repoUrl,
           live_url: submission.liveUrl,
-          file_attachments: submission.fileAttachments,
+          files: (submission.fileAttachments || []).map((f) => ({
+            file_name: f.name,
+            storage_path: f.url,
+            size_bytes: f.sizeBytes,
+            mime_type: f.mimeType,
+          })),
         })
 
         const deliveryId = deliveryRes?.delivery?.id || deliveryRes?.id
