@@ -3,8 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ROUTES } from '@/constants'
 import { Landing } from '@/pages/Landing'
 import { HowItWorks } from '@/pages/HowItWorks'
-import { ForBuyers } from '@/pages/ForBuyers'
-import { ForSuppliers } from '@/pages/ForSuppliers'
+import { ForClients } from '@/pages/ForClients'
+import { ForFreelancers } from '@/pages/ForFreelancers'
 import { DeveloperPortal } from '@/pages/DeveloperPortal'
 import { SignIn } from '@/pages/SignIn'
 import { SignUp } from '@/pages/SignUp'
@@ -16,7 +16,7 @@ import { CreateProject } from '@/pages/dashboard/CreateProject'
 import { ContractDetail } from '@/pages/ContractDetail'
 import { DeliveryVerification } from '@/pages/DeliveryVerification'
 import { ActivityHistory } from '@/pages/ActivityHistory'
-import { SupplierPayouts } from '@/pages/dashboard/SupplierPayouts'
+import { FreelancerPayouts } from '@/pages/dashboard/FreelancerPayouts'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const AppRoutes: React.FC = () => {
@@ -25,8 +25,8 @@ export const AppRoutes: React.FC = () => {
       {/* Public Pages (Light Theme) */}
       <Route path={ROUTES.HOME} element={<Landing />} />
       <Route path={ROUTES.HOW_IT_WORKS} element={<HowItWorks />} />
-      <Route path={ROUTES.FOR_CLIENTS} element={<ForBuyers />} />
-      <Route path={ROUTES.FOR_FREELANCERS} element={<ForSuppliers />} />
+      <Route path={ROUTES.FOR_CLIENTS} element={<ForClients />} />
+      <Route path={ROUTES.FOR_FREELANCERS} element={<ForFreelancers />} />
       <Route path={ROUTES.DEVELOPER_PORTAL} element={<DeveloperPortal />} />
       <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
       <Route path={ROUTES.SIGN_UP} element={<SignUp />} />
@@ -76,10 +76,10 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path={ROUTES.SUPPLIER_PAYOUTS}
+        path={ROUTES.FREELANCER_PAYOUTS}
         element={
           <ProtectedRoute>
-            <SupplierPayouts />
+            <FreelancerPayouts />
           </ProtectedRoute>
         }
       />

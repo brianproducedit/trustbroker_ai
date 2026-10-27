@@ -4,12 +4,13 @@ from decimal import Decimal
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, func
-from app.models.contract import Contract, ContractStatus, ContractVersion
+from app.models.contract import Contract, ContractStatus, ContractVisibility, ContractVersion
 from app.models.milestone import Milestone, MilestoneStatus, AcceptanceCriterion, CriterionStatus, PaymentStatus
 from app.models.acceptance import ContractAcceptance
 from app.models.user import UserProfile
 from app.schemas.contract import ContractCreateRequest, ContractUpdateRequest, ContractRead, MilestoneRead, AcceptanceCriterionRead, ContractAcceptanceRead
 from app.services.audit_service import log_audit_event
+from app.services.policy_engine import PolicyEngine
 
 
 def generate_contract_code(session: Session) -> str:
@@ -104,6 +105,9 @@ def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
         category=contract.category,
         current_version=contract.current_version,
         status=contract.status,
+        visibility=contract.visibility,
+        required_skills=contract.required_skills or [],
+        opens_at=contract.opens_at,
         total_amount=contract.total_amount,
         currency=contract.currency,
         staged_amount=contract.staged_amount,
@@ -143,6 +147,8 @@ def create_contract(
         category=req.category,
         current_version=1,
         status=ContractStatus.DRAFT,
+        visibility=ContractVisibility.PRIVATE_DRAFT.value,
+        required_skills=req.required_skills or [],
         total_amount=total_amount,
         currency=req.currency,
         client_id=client.id,
@@ -277,6 +283,8 @@ def update_contract(
         contract.category = req.category
     if req.freelancer_email is not None:
         contract.freelancer_email = req.freelancer_email
+    if req.required_skills is not None:
+        contract.required_skills = req.required_skills
 
     contract.current_version += 1
     contract.updated_at = datetime.now(timezone.utc)
@@ -364,6 +372,9 @@ def accept_contract(
     is_client = contract.client_id == user.id
     is_freelancer = contract.freelancer_id == user.id or contract.freelancer_email == user.email
 
+    policy = PolicyEngine.can_accept_contract(user, contract)
+    if not policy.allowed:
+        raise HTTPException(status_code=403, detail=policy.reason)
     if not (is_client or is_freelancer):
         raise HTTPException(status_code=403, detail="You are not a party to this contract.")
 

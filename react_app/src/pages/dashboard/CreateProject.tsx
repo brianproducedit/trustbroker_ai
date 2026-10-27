@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
@@ -40,19 +41,20 @@ export const CreateProject: React.FC = () => {
   const navigate = useNavigate()
   const { createContractDraft } = useContractStore()
   const { addNotification } = useNotificationStore()
+  const user = useAuthStore((state) => state.user)
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
 
   // Step 1: Brief
   const [brief, setBrief] = useState(
-    'Build a high-converting React 19 web application with Tailwind CSS, strict TypeScript checks, and PayPal Sandbox milestone payments. Delivery in 14 days, split into 3 clear milestones.'
+    'Build a high-converting React 19 web application with Tailwind CSS, strict TypeScript checks, and PayPal milestone payments. Delivery in 14 days, split into 3 clear milestones.'
   )
   const [isGenerating, setIsGenerating] = useState(false)
 
   // Step 2: SOW & Milestones
   const [projectTitle, setProjectTitle] = useState('React 19 Fintech Web Application')
   const [projectDesc, setProjectDesc] = useState(
-    'A production-ready React 19 web application with modular components, TypeScript type verification, and PayPal Sandbox milestone disbursements.'
+    'A production-ready React 19 web application with modular components, TypeScript type verification, and PayPal milestone disbursements.'
   )
 
   const [milestones, setMilestones] = useState<EditableMilestone[]>([
@@ -74,7 +76,7 @@ export const CreateProject: React.FC = () => {
       amount: 1500,
       deadline: '2026-11-09',
       criteria: [
-        'PayPal Sandbox staging button executes and captures test order',
+        'PayPal checkout button executes and captures the order',
         'Contract detail tabs and milestones view update reactively',
       ],
     },
@@ -91,10 +93,10 @@ export const CreateProject: React.FC = () => {
     },
   ])
 
-  // Step 3: Supplier
-  const [supplierName, setSupplierName] = useState('Tariro Moyo')
-  const [supplierEmail, setSupplierEmail] = useState('tariro@devstudio.co.zw')
-  const [supplierOrg, setSupplierOrg] = useState('DevStudio Harare')
+  // Step 3: Freelancer (invite until open-contract publish ships in Phase 2)
+  const [freelancerName, setFreelancerName] = useState('')
+  const [freelancerEmail, setFreelancerEmail] = useState('')
+  const [freelancerOrg, setFreelancerOrg] = useState('')
 
   // Step 4: Confirm
   const [confirmedAccuracy, setConfirmedAccuracy] = useState(true)
@@ -122,12 +124,12 @@ export const CreateProject: React.FC = () => {
 
   const validateStep3 = () => {
     const errors: { name?: string; email?: string } = {}
-    if (!supplierName.trim()) {
+    if (!freelancerName.trim()) {
       errors.name = 'Freelancer name is required'
     }
-    if (!supplierEmail.trim()) {
+    if (!freelancerEmail.trim()) {
       errors.email = 'Freelancer email is required'
-    } else if (!/\S+@\S+\.\S+/.test(supplierEmail)) {
+    } else if (!/\S+@\S+\.\S+/.test(freelancerEmail)) {
       errors.email = 'Please provide a valid email address (e.g. name@domain.com)'
     }
     setStep3Errors(errors)
@@ -141,7 +143,7 @@ export const CreateProject: React.FC = () => {
   const quickTemplates = [
     {
       title: 'React 19 Web App',
-      text: 'Build a responsive React 19 web app with Tailwind CSS, TypeScript, and a working PayPal Sandbox checkout flow. Delivery in 14 days, 3 milestones.',
+      text: 'Build a responsive React 19 web app with Tailwind CSS, TypeScript, and a working PayPal checkout flow. Delivery in 14 days, 3 milestones.',
     },
     {
       title: 'Mobile UI Kit',
@@ -286,7 +288,7 @@ export const CreateProject: React.FC = () => {
       projectTitle,
       projectDesc,
       formattedMilestones,
-      supplierEmail
+      freelancerEmail
     )
 
     addNotification({
@@ -673,12 +675,12 @@ export const CreateProject: React.FC = () => {
                   </Label>
                   <Input
                     id="sup-name"
-                    value={supplierName}
+                    value={freelancerName}
                     onChange={(e) => {
-                      setSupplierName(e.target.value)
+                      setFreelancerName(e.target.value)
                       if (step3Errors.name) setStep3Errors((prev) => ({ ...prev, name: undefined }))
                     }}
-                    placeholder="e.g. Tariro Moyo"
+                    placeholder="e.g. Alex Morgan"
                     className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
                   />
                   {step3Errors.name && (
@@ -693,12 +695,12 @@ export const CreateProject: React.FC = () => {
                   <Input
                     id="sup-email"
                     type="email"
-                    value={supplierEmail}
+                    value={freelancerEmail}
                     onChange={(e) => {
-                      setSupplierEmail(e.target.value)
+                      setFreelancerEmail(e.target.value)
                       if (step3Errors.email) setStep3Errors((prev) => ({ ...prev, email: undefined }))
                     }}
-                    placeholder="e.g. tariro@devstudio.co.zw"
+                    placeholder="e.g. alex@studio.com"
                     className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
                   />
                   {step3Errors.email && (
@@ -713,8 +715,8 @@ export const CreateProject: React.FC = () => {
                 </Label>
                 <Input
                   id="sup-org"
-                  value={supplierOrg}
-                  onChange={(e) => setSupplierOrg(e.target.value)}
+                  value={freelancerOrg}
+                  onChange={(e) => setFreelancerOrg(e.target.value)}
                   placeholder="e.g. DevStudio Harare"
                   className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
                 />
@@ -726,14 +728,14 @@ export const CreateProject: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-400">
                   <div className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D]">
                     <span className="text-[10px] text-blue-400 font-mono font-semibold uppercase block">Client (Hiring)</span>
-                    <span className="font-semibold text-white">Elena Rostova</span>
-                    <span className="text-[11px] text-slate-400 block">elena@acmeglobal.com</span>
+                    <span className="font-semibold text-white">{user?.name || 'You'}</span>
+                    <span className="text-[11px] text-slate-400 block">{user?.email || ''}</span>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D]">
                     <span className="text-[10px] text-emerald-400 font-mono font-semibold uppercase block">Freelancer (Delivering)</span>
-                    <span className="font-semibold text-white">{supplierName || 'Not specified'}</span>
-                    <span className="text-[11px] text-slate-400 block">{supplierEmail || 'Not specified'}</span>
+                    <span className="font-semibold text-white">{freelancerName || 'Not specified'}</span>
+                    <span className="text-[11px] text-slate-400 block">{freelancerEmail || 'Not specified'}</span>
                   </div>
                 </div>
               </div>
@@ -834,7 +836,7 @@ export const CreateProject: React.FC = () => {
                   htmlFor="confirm-sow"
                   className="text-xs text-slate-300 leading-snug cursor-pointer select-none"
                 >
-                  I confirm this Statement of Work is accurate. Upon creation, this agreement will be recorded and ready for PayPal Sandbox staging.
+                  I confirm this Statement of Work is accurate. Upon creation, this agreement will be recorded and ready for PayPal milestone funding.
                 </label>
               </div>
             </CardContent>

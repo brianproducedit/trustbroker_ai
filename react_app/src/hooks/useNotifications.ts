@@ -22,7 +22,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'n-1',
     title: 'Milestone 1 Payment Released',
-    description: '$1,200 USD disbursed to Tariro Moyo for TB-2026-084.',
+    description: '$1,200 USD paid to the freelancer for TB-2026-084.',
     timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
     type: 'payment',
     read: false,
@@ -40,7 +40,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'n-3',
     title: 'Terms Accepted by Client',
-    description: 'Elena Rostova digitally accepted the contract scope.',
+    description: 'The client accepted the contract scope.',
     timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
     type: 'contract',
     read: true,

@@ -58,7 +58,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         captureId: mockCaptureId,
         amount,
         currency,
-        payer: { email_address: 'elena@acmeglobal.com' },
+        payer: { email_address: 'client@example.com' },
       })
     }, 600)
   }
@@ -68,10 +68,10 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       <div className="bg-[#0D221D] border border-emerald-800/60 rounded-xl p-5 flex flex-col gap-3 text-emerald-200">
         <div className="flex items-center gap-2 text-emerald-400">
           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="font-semibold text-sm">Payment Staged Successfully in Sandbox</span>
+          <span className="font-semibold text-sm">Milestone funded with PayPal</span>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed">
-          The funds of <strong className="text-white">{formatCurrency(amount, currency)}</strong> are staged in PayPal Sandbox for contract <strong className="text-white">{contractCode}</strong>. Payouts will be released upon verified deliverable inspection.
+          <strong className="text-white">{formatCurrency(amount, currency)}</strong> is funded for contract <strong className="text-white">{contractCode}</strong>. The payout is released after the deliverable is verified.
         </p>
         <div className="bg-[#0B1326] p-3 rounded-lg border border-[#222A3D] font-mono text-xs flex flex-col gap-1.5 text-slate-300">
           <div className="flex items-center justify-between">
@@ -92,7 +92,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-blue-400" />
-          <h3 className="text-sm font-bold text-white">PayPal Sandbox Checkout</h3>
+          <h3 className="text-sm font-bold text-white">Fund milestone with PayPal</h3>
         </div>
         <span className="text-xs font-mono bg-blue-950/80 text-blue-400 px-2.5 py-0.5 rounded-full border border-blue-800/60 font-semibold">
           {formatCurrency(amount, currency)}
@@ -100,7 +100,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       </div>
 
       <p className="text-xs text-slate-300 leading-relaxed">
-        Stage contract funds into PayPal Sandbox. Funds will be held until the freelancer submits deliverables and acceptance criteria are verified.
+        Fund this milestone through PayPal. The payout is sent after the freelancer’s deliverable is verified.
       </p>
 
       {errorMsg && (
@@ -184,14 +184,14 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
               }}
               onError={(err) => {
                 console.warn('PayPal script notice (standard in test sandbox):', err)
-                setErrorMsg('Notice: Sandbox client ID is in mock sandbox mode. You can use 1-Click Sandbox Stage below.')
+                setErrorMsg('PayPal checkout could not load. You can retry, or use the fund-without-popup option below if the PayPal button is unavailable.')
                 if (onPaymentError) onPaymentError(err)
               }}
             />
           </div>
         </PayPalScriptProvider>
 
-        {/* 1-Click Sandbox Test Fallback Button */}
+        {/* Fallback fund control if the PayPal button does not load */}
         <div className="flex items-center gap-2 pt-2 border-t border-[#222A3D]">
           <button
             type="button"
@@ -202,12 +202,12 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             {isProcessing ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Staging Payment in Sandbox...</span>
+                <span>Funding milestone...</span>
               </>
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                <span>1-Click Sandbox Payment Stage ({formatCurrency(amount, currency)})</span>
+                <span>Fund milestone ({formatCurrency(amount, currency)})</span>
               </>
             )}
           </button>

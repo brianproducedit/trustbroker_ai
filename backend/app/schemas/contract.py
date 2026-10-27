@@ -14,6 +14,7 @@ class ContractCreateRequest(BaseModel):
     category: str = "software"
     freelancer_email: Optional[str] = None
     freelancer_id: Optional[uuid.UUID] = None
+    required_skills: List[str] = []
     currency: str = "USD"
     milestones: List[MilestoneCreate] = []
 
@@ -24,6 +25,7 @@ class ContractUpdateRequest(BaseModel):
     category: Optional[str] = None
     freelancer_email: Optional[str] = None
     freelancer_id: Optional[uuid.UUID] = None
+    required_skills: Optional[List[str]] = None
     milestones: Optional[List[MilestoneCreate]] = None
 
 
@@ -46,6 +48,9 @@ class ContractRead(BaseModel):
     category: str
     current_version: int
     status: ContractStatus
+    visibility: str = "private_draft"
+    required_skills: List[str] = []
+    opens_at: Optional[datetime] = None
     total_amount: Decimal
     currency: str
     staged_amount: Decimal

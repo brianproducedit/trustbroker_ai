@@ -10,6 +10,7 @@ from app.models.user import UserProfile
 from app.schemas.payment import PaymentAttemptRead
 from app.services.audit_service import log_audit_event
 from app.utils import paypal_client
+from app.services.policy_engine import PolicyEngine
 from app.utils.security import require_client
 
 
@@ -38,6 +39,10 @@ async def create_milestone_escrow_order(
     else:
         amount = contract.total_amount
         description = f"Full Escrow Staging for Contract: {contract.title} ({contract.code})"
+
+    fund_policy = PolicyEngine.can_fund(client, contract, target_milestone)
+    if not fund_policy.allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=fund_policy.reason)
 
     if amount <= Decimal("0.00"):
         raise HTTPException(status_code=400, detail="Cannot stage escrow for 0 or negative amount")
@@ -163,7 +168,7 @@ def release_milestone_payout(
     milestone_id: uuid.UUID,
     client: UserProfile,
 ) -> Dict[str, Any]:
-    """Release staged escrow funds to supplier after work verification."""
+    """Release staged funds to the freelancer after work verification."""
     contract = session.get(Contract, contract_id)
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found")
@@ -173,12 +178,10 @@ def release_milestone_payout(
     if not milestone or milestone.contract_id != contract.id:
         raise HTTPException(status_code=404, detail="Milestone not found for this contract")
 
-    # Deterministic Policy Check
-    if milestone.status != MilestoneStatus.VERIFIED:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Milestone cannot be released: current status is '{milestone.status.value}', must be 'verified'.",
-        )
+    freelancer = session.get(UserProfile, contract.freelancer_id) if contract.freelancer_id else None
+    release_policy = PolicyEngine.can_release_payout(client, contract, milestone, freelancer)
+    if not release_policy.allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=release_policy.reason)
 
     # Transition milestone
     milestone.payment_status = PaymentStatus.RELEASED

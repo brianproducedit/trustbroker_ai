@@ -2,70 +2,113 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { ROUTES } from '@/constants'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  CreditCard, 
-  CheckCircle2, 
-  ArrowRight, 
-  ShieldCheck, 
+import {
+  CreditCard,
+  CheckCircle2,
+  ArrowRight,
+  ShieldCheck,
   Sparkles,
-  UserCheck
+  UserCheck,
+  FileSearch,
+  Megaphone,
+  Wallet,
 } from 'lucide-react'
 
 export const HowItWorks: React.FC = () => {
   const steps = [
     {
       step: '01',
-      title: 'Describe Your Project Brief',
-      subtitle: 'AI-Generated Statement of Work',
-      desc: 'Clients describe what they need in ordinary language. TrustBroker structures this into clear milestones with testable acceptance criteria, deadlines, and milestone budgets.',
+      title: 'Describe the brief',
+      subtitle: 'AI-drafted statement of work',
+      desc: 'The client describes the project in ordinary language. TrustBroker asks clarifying questions and drafts milestones, budgets, and testable acceptance criteria.',
       icon: Sparkles,
       iconColor: 'bg-blue-50 text-blue-600 border-blue-200',
       bullets: [
-        'Converts project ideas into concrete milestone deliverables',
-        'Defines clear pass/fail acceptance criteria',
-        'Clients can add, remove, and adjust milestones before finalizing',
+        'Plain-language brief becomes a structured contract',
+        'Each milestone has pass / fail / needs-review criteria',
+        'The client edits everything before publishing',
       ],
     },
     {
       step: '02',
-      title: 'Both Parties Accept the Terms',
-      subtitle: 'Mutual Agreement Before Work Begins',
-      desc: 'The freelancer receives the contract and reviews the scope, milestone payouts, and timeline. Both parties digitally accept the terms, locking the agreement.',
-      icon: UserCheck,
-      iconColor: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+      title: 'Publish an open contract',
+      subtitle: 'Visible to freelancers',
+      desc: 'The contract is published so qualified freelancers can find the work. It is not assigned to a person until the client awards it.',
+      icon: Megaphone,
+      iconColor: 'bg-sky-50 text-sky-600 border-sky-200',
       bullets: [
-        'Complete transparency into milestone deliverables and expectations',
-        'Both parties must agree before any work begins',
-        'Creates an immutable, traceable audit trail',
+        'Open listing with budget, timeline, and skills',
+        'Drafts stay private until you publish',
+        'One clear version of the statement of work',
       ],
     },
     {
       step: '03',
-      title: 'Stage Milestone Payment via PayPal',
-      subtitle: 'Guaranteed Funds Held in Sandbox',
-      desc: 'The client stages funds using PayPal Sandbox. The freelancer has 100% confidence that payment is secured before starting work, while the client knows funds will not release without approval.',
-      icon: CreditCard,
-      iconColor: 'bg-amber-50 text-amber-600 border-amber-200',
+      title: 'Freelancers apply',
+      subtitle: 'Cover note and portfolio',
+      desc: 'Interested freelancers apply with a short note and relevant portfolio items. New talent can apply even with no completed TrustBroker jobs.',
+      icon: UserCheck,
+      iconColor: 'bg-indigo-50 text-indigo-600 border-indigo-200',
       bullets: [
-        'Funds are committed through official PayPal Orders API',
-        'Freelancers work knowing payment is already staged',
-        'Zero upfront disbursement until work is verified',
+        'One application per contract',
+        'Portfolio and skills travel with the application',
+        'Newcomers are not scored as zero',
       ],
     },
     {
       step: '04',
-      title: 'Verify Delivery & Release Payment',
-      subtitle: 'Objective AI Assessment & Instant Release',
-      desc: 'The freelancer submits work (repository link, live URL, notes). AI reviews the delivery against the acceptance criteria. Once verified, funds are released directly to the freelancer.',
+      title: 'AI vets applicants',
+      subtitle: 'Ranked for the client',
+      desc: 'AI compares each applicant to the contract using skills, portfolio relevance, communication, and past deliveries — and flags insufficient evidence instead of inventing history.',
+      icon: FileSearch,
+      iconColor: 'bg-violet-50 text-violet-600 border-violet-200',
+      bullets: [
+        'Fit scores with a short rationale',
+        'New talent badge when portfolio is strong and history is thin',
+        'The client awards one freelancer; others are notified',
+      ],
+    },
+    {
+      step: '05',
+      title: 'Award, accept, fund',
+      subtitle: 'PayPal-secured milestone',
+      desc: 'The awarded freelancer accepts the same contract version. The client funds the next milestone through PayPal. Work starts when that payment is confirmed.',
+      icon: CreditCard,
+      iconColor: 'bg-amber-50 text-amber-600 border-amber-200',
+      bullets: [
+        'Both parties accept the same version',
+        'PayPal checkout is verified on the server',
+        'Cancelled checkout never shows as funded',
+      ],
+    },
+    {
+      step: '06',
+      title: 'Submit work, AI verifies',
+      subtitle: 'Evidence against criteria',
+      desc: 'The freelancer submits screenshots, files, or a live URL. AI inspects the evidence against each criterion and records pass, fail, or needs review.',
       icon: CheckCircle2,
       iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-200',
       bullets: [
-        'Evaluates code quality, tests, and stated criteria',
-        'Detailed criterion-by-criterion pass/fail breakdown',
-        'Instant payout execution or one-click revision requests',
+        'Criterion-by-criterion results with citations',
+        'Fail leads to a revision, not a silent payout',
+        'Ambiguous work goes to the client for a human decision',
+      ],
+    },
+    {
+      step: '07',
+      title: 'Release the PayPal payout',
+      subtitle: 'When verification and policy pass',
+      desc: 'The client confirms release. TrustBroker sends a PayPal payout to the freelancer and records the payout id. AI never moves money on its own.',
+      icon: Wallet,
+      iconColor: 'bg-teal-50 text-teal-700 border-teal-200',
+      bullets: [
+        'Policy engine checks status before payout',
+        'Payout id and status are visible to both parties',
+        'Repeat for each milestone until the contract completes',
       ],
     },
   ]
@@ -75,22 +118,20 @@ export const HowItWorks: React.FC = () => {
       <Header />
 
       <main className="w-full pt-[68px] flex-1">
-        {/* Hero */}
         <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10 text-center">
           <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5 mb-4">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-            Clear & Predictable Lifecycle
+            From brief to payout
           </Badge>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#1A2940]">
             How TrustBroker Coordinates Projects
           </h1>
           <p className="text-sm sm:text-base text-[#5D6B82] max-w-2xl mx-auto mt-4 leading-relaxed">
-            Eliminating payment disputes with AI contract generation, staged PayPal milestone payments, and objective delivery verification.
+            AI-drafted contracts, open applications, PayPal-secured milestones, and evidence-based verification — so clients and freelancers share one trail of what was agreed and what was paid.
           </p>
         </section>
 
-        {/* Steps Timeline */}
         <section className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="space-y-6">
             {steps.map((item) => {
@@ -117,8 +158,8 @@ export const HowItWorks: React.FC = () => {
                         </p>
 
                         <div className="pt-2 grid grid-cols-1 gap-2">
-                          {item.bullets.map((bullet, bIdx) => (
-                            <div key={bIdx} className="flex items-center gap-2 text-xs text-slate-700">
+                          {item.bullets.map((bullet) => (
+                            <div key={bullet} className="flex items-center gap-2 text-xs text-slate-700">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                               <span>{bullet}</span>
                             </div>
@@ -132,22 +173,21 @@ export const HowItWorks: React.FC = () => {
             })}
           </div>
 
-          {/* CTA Banner */}
           <div className="mt-12 p-8 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center space-y-4 shadow-sm">
-            <h2 className="text-2xl font-bold">Ready to see it in action?</h2>
+            <h2 className="text-2xl font-bold">Ready to start?</h2>
             <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto leading-relaxed">
-              Experience the full contract, payment, and verification workflow in the interactive demo sandbox.
+              Create a client account to publish a contract, or a freelancer account to apply for open work.
             </p>
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" className="bg-white hover:bg-slate-100 text-blue-700 font-semibold text-xs h-10 px-5 gap-2">
-                <Link to="/sign-in?role=client&redirect=/dashboard">
-                  Try Client Flow
+                <Link to={`${ROUTES.SIGN_UP}?role=client`}>
+                  Hire with TrustBroker
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/40 text-white hover:bg-white/10 font-semibold text-xs h-10 px-5 gap-2">
-                <Link to="/sign-in?role=freelancer&redirect=/dashboard">
-                  Try Freelancer Flow
+                <Link to={`${ROUTES.SIGN_UP}?role=freelancer`}>
+                  Find work
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </Button>

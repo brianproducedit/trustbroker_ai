@@ -10,6 +10,10 @@ from app.routers import (
     deliveries_router,
     ai_router,
     audit_router,
+    listings_router,
+    applications_router,
+    notifications_router,
+    profiles_router,
 )
 
 
@@ -23,7 +27,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="TrustBroker AI Engine",
-    description="Deterministic cross-border work verification, milestone escrow staging, and AI verification engine.",
+    description="Trust layer between clients and freelancers: open contracts, applications, PayPal-secured milestone payments, and AI verification.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -47,6 +51,10 @@ app.include_router(payments_router, prefix=api_v1_prefix)
 app.include_router(deliveries_router, prefix=api_v1_prefix)
 app.include_router(ai_router, prefix=api_v1_prefix)
 app.include_router(audit_router, prefix=api_v1_prefix)
+app.include_router(listings_router, prefix=api_v1_prefix)
+app.include_router(applications_router, prefix=api_v1_prefix)
+app.include_router(notifications_router, prefix=api_v1_prefix)
+app.include_router(profiles_router, prefix=api_v1_prefix)
 
 
 @app.get("/", tags=["Root"])

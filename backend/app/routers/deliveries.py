@@ -19,7 +19,7 @@ def submit_milestone_delivery(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Submit work evidence (repo link, live URL, description, uploaded files) for a milestone."""
+    """Freelancer submits work evidence (repo link, live URL, description, uploaded files) for a milestone."""
     return delivery_service.submit_delivery(
         session=session,
         freelancer=current_user,

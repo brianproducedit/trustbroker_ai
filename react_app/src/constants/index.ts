@@ -1,6 +1,6 @@
 export const APP_NAME = 'TrustBroker AI'
 export const APP_TAGLINE = 'Smart Contracts & Milestone Payments for Freelancers'
-export const PAYPAL_SANDBOX_DISCLAIMER = 'Prototype Sandbox: Conditional payment demonstration using PayPal Sandbox endpoints. Not a licensed banking or fiduciary escrow institution.'
+export const PAYPAL_SANDBOX_DISCLAIMER = 'TrustBroker coordinates PayPal-secured milestone payments. It is not a licensed bank or escrow institution.'
 
 export const ROUTES = {
   // Public Pages
@@ -8,8 +8,6 @@ export const ROUTES = {
   HOW_IT_WORKS: '/how-it-works',
   FOR_CLIENTS: '/for-clients',
   FOR_FREELANCERS: '/for-freelancers',
-  FOR_BUYERS: '/for-clients',
-  FOR_SUPPLIERS: '/for-freelancers',
   DEVELOPER_PORTAL: '/developers',
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',
@@ -25,7 +23,7 @@ export const ROUTES = {
   DELIVERIES: '/dashboard/deliveries',
   DELIVERY_VERIFICATION: (id: string = ':id') => `/dashboard/deliveries/${id}`,
   ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
-  SUPPLIER_PAYOUTS: '/dashboard/payouts',
+  FREELANCER_PAYOUTS: '/dashboard/payouts',
 }
 
 export const STATUS_COLORS = {

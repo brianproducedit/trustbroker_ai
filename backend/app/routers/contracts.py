@@ -12,7 +12,12 @@ from app.schemas.contract import (
     ContractRead,
     ContractListResponse,
 )
-from app.services import contract_service
+from app.schemas.marketplace import (
+    ApplicationCreateRequest,
+    ApplicationListResponse,
+    ApplicationRead,
+)
+from app.services import contract_service, marketplace_service
 from app.utils.security import (
     get_current_user,
     require_contract_party,
@@ -21,13 +26,13 @@ from app.utils.security import (
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
 
 
-@router.post("", response_model=ContractRead, status_code=status.HTTP_201_CREATED, summary="Create a new contract draft")
+@router.post("", response_model=ContractRead, status_code=status.HTTP_201_CREATED, summary="Create a new contract draft as a client")
 def create_contract(
     req: ContractCreateRequest,
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Create a new contract draft with milestones and acceptance criteria."""
+    """Client creates a private contract draft with milestones and acceptance criteria."""
     return contract_service.create_contract(session=session, client=current_user, req=req)
 
 
@@ -40,7 +45,7 @@ def list_contracts(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Retrieve all contracts the user is a party to, with optional role/status filters."""
+    """Retrieve all contracts the client or freelancer is a party to, with optional role/status filters."""
     contracts, total = contract_service.list_user_contracts(
         session=session,
         user=current_user,
@@ -82,13 +87,67 @@ def update_contract(
     )
 
 
-@router.post("/{contract_id}/accept", response_model=ContractRead, summary="Accept contract terms")
+@router.post("/{contract_id}/publish", response_model=ContractRead, summary="Publish a draft as an open contract")
+def publish_contract(
+    contract_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Client publishes a complete SOW so freelancers can apply. Requires title, milestones, amounts, and criteria."""
+    return marketplace_service.publish_contract(
+        session=session,
+        contract_id=contract_id,
+        client=current_user,
+    )
+
+
+@router.post(
+    "/{contract_id}/applications",
+    response_model=ApplicationRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Freelancer applies to an open contract",
+)
+def apply_to_contract(
+    contract_id: uuid.UUID,
+    req: ApplicationCreateRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Freelancer submits one application per open contract. A second apply returns 409."""
+    return marketplace_service.apply_to_contract(
+        session=session,
+        contract_id=contract_id,
+        freelancer=current_user,
+        req=req,
+    )
+
+
+@router.get(
+    "/{contract_id}/applications",
+    response_model=ApplicationListResponse,
+    summary="List applications (client only)",
+)
+def list_contract_applications(
+    contract_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Only the client who published the contract can read applications and stub vetting scores."""
+    applications, total = marketplace_service.list_contract_applications(
+        session=session,
+        contract_id=contract_id,
+        client=current_user,
+    )
+    return ApplicationListResponse(applications=applications, total=total)
+
+
+@router.post("/{contract_id}/accept", response_model=ContractRead, summary="Accept awarded or invited contract terms")
 def accept_contract(
     contract_id: uuid.UUID,
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Sign/accept contract version. When both parties accept the current version, contract transitions to ACTIVE."""
+    """Freelancer (or client) accepts the current version. When both parties accept, the contract becomes ACTIVE."""
     return contract_service.accept_contract(
         session=session,
         contract_id=contract_id,

@@ -15,16 +15,16 @@ from app.schemas.payment import (
 from app.services import payment_service
 from app.utils.security import get_current_user, require_contract_party
 
-router = APIRouter(prefix="/payments", tags=["Payments & Escrow"])
+router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
-@router.post("/create-order", summary="Create PayPal order for escrow staging")
+@router.post("/create-order", summary="Create PayPal order to fund a milestone")
 async def create_order(
     req: CreateOrderRequest,
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Generate PayPal order to stage funds in sandbox escrow."""
+    """Generate a PayPal order so the client can fund a milestone."""
     return await payment_service.create_milestone_escrow_order(
         session=session,
         contract_id=req.contract_id,
@@ -33,7 +33,7 @@ async def create_order(
     )
 
 
-@router.post("/capture-order", response_model=PaymentAttemptRead, summary="Capture PayPal order into sandbox escrow")
+@router.post("/capture-order", response_model=PaymentAttemptRead, summary="Capture PayPal order for a funded milestone")
 async def capture_order(
     req: CaptureOrderRequest,
     current_user: UserProfile = Depends(get_current_user),
@@ -47,13 +47,13 @@ async def capture_order(
     )
 
 
-@router.post("/release", summary="Authorize release of escrow payout to supplier")
+@router.post("/release", summary="Authorize PayPal payout to the freelancer")
 def release_payout(
     req: ReleasePayoutRequest,
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Release escrow payout to supplier after milestone verification passes."""
+    """Release the PayPal payout to the freelancer after milestone verification passes."""
     return payment_service.release_milestone_payout(
         session=session,
         contract_id=req.contract_id,

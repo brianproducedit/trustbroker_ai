@@ -126,8 +126,8 @@ export const Dashboard: React.FC = () => {
       width: 170,
       cellRenderer: (params: ICellRendererParams) => {
         const party = activeRole === 'client' 
-          ? (params.data.freelancer || params.data.supplier) 
-          : (params.data.client || params.data.buyer)
+          ? params.data.freelancer
+          : params.data.client
         return (
           <div className="flex flex-col justify-center h-full text-xs">
             <span className="text-slate-200 font-medium truncate">{party?.name}</span>
@@ -148,7 +148,7 @@ export const Dashboard: React.FC = () => {
           <span className="text-[10px] text-slate-400">
             {params.data.releasedAmount > 0 
               ? `${formatCurrency(params.data.releasedAmount)} released` 
-              : activeRole === 'client' ? 'Staged in Sandbox' : 'Funds Staged'}
+              : activeRole === 'client' ? 'Milestone funded' : 'Funds staged'}
           </span>
         </div>
       ),
@@ -212,7 +212,7 @@ export const Dashboard: React.FC = () => {
             </h1>
             <p className="text-xs text-slate-400">
               {activeRole === 'client'
-                ? 'Stage funds in PayPal Sandbox, monitor active milestones, and authorize payouts upon verified delivery.'
+                ? 'Fund milestones with PayPal, monitor active work, and authorize payouts after verification.'
                 : 'Review contracted milestones, submit deliverable evidence for verification, and receive disbursements.'}
             </p>
           </div>
@@ -272,7 +272,7 @@ export const Dashboard: React.FC = () => {
                   {formatCurrency(roleMetrics.escrowAmount)}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-0.5">
-                  {activeRole === 'client' ? 'Staged in PayPal Sandbox' : 'Guaranteed by client'}
+                  {activeRole === 'client' ? 'Funded in PayPal' : 'Guaranteed by client'}
                 </div>
               </div>
             </CardContent>
@@ -356,7 +356,7 @@ export const Dashboard: React.FC = () => {
               <h3 className="text-base font-bold text-white">No contracts found in this workspace</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 {activeRole === 'client'
-                  ? "You haven't created any contracts yet. Draft an AI-assisted scope and stage milestone payments in PayPal Sandbox."
+                  ? "You haven't created any contracts yet. Draft an AI-assisted scope and fund milestones with PayPal."
                   : "You haven't been assigned to any contracts yet. Switch to Client mode to create a project or check back later."}
               </p>
             </div>
@@ -587,8 +587,8 @@ export const Dashboard: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle className="text-white">Authorize Payment Release</AlertDialogTitle>
               <AlertDialogDescription className="text-slate-400 text-xs">
-                Are you sure you want to release {pendingReleaseMilestone ? formatCurrency(pendingReleaseMilestone.amount) : '$0'} USD to {selectedContract?.freelancer?.name || (selectedContract as any)?.supplier?.name || 'the freelancer'}?
-                This will disburse the staged funds from PayPal Sandbox for milestone "{pendingReleaseMilestone?.title}". This action is irreversible.
+                Are you sure you want to release {pendingReleaseMilestone ? formatCurrency(pendingReleaseMilestone.amount) : '$0'} USD to {selectedContract?.freelancer?.name || 'the freelancer'}?
+                This will send the PayPal payout for milestone "{pendingReleaseMilestone?.title}". This action is irreversible.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">

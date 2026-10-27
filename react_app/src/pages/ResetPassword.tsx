@@ -206,7 +206,7 @@ export const ResetPassword: React.FC = () => {
       </div>
 
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
-        TrustBroker AI &bull; PayPal AI Hackathon Sandbox Prototype &bull; Security
+        TrustBroker AI &bull; Account security
       </footer>
     </div>
   )

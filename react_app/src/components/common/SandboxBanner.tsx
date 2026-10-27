@@ -26,7 +26,7 @@ export const SandboxBanner: React.FC<SandboxBannerProps> = ({
       >
         <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
         <span className="font-mono text-[11px] font-medium tracking-wide uppercase">
-          PayPal Sandbox • Demo Mode
+          PayPal-secured milestones
         </span>
       </div>
     )
@@ -34,7 +34,7 @@ export const SandboxBanner: React.FC<SandboxBannerProps> = ({
 
   return (
     <aside
-      aria-label="Institutional Sandbox Disclaimer"
+      aria-label="Payment notice"
       className={cn(
         'relative overflow-hidden px-4 py-2.5 text-xs flex items-center justify-between gap-4 border',
         isDark
@@ -53,9 +53,9 @@ export const SandboxBanner: React.FC<SandboxBannerProps> = ({
               isDark ? 'text-blue-300' : 'text-blue-700'
             )}
           >
-            PayPal Sandbox Demo
+            PayPal-secured payments
           </strong>
-          TrustBroker AI coordinates conditional payment releases against verified deliverables using PayPal Sandbox. Not a licensed banking or fiduciary escrow institution.
+          TrustBroker coordinates milestone payments through PayPal after work is verified. It is not a licensed bank or escrow institution.
         </p>
       </div>
       <a
