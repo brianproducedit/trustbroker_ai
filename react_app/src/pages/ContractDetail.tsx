@@ -77,6 +77,10 @@ export const ContractDetail: React.FC = () => {
   )
   const [applications, setApplications] = useState<any[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
+  const [awardTarget, setAwardTarget] = useState<any>(null)
+  const [expandedApp, setExpandedApp] = useState<string | null>(null)
+  const [paymentAttempts, setPaymentAttempts] = useState<any[]>([])
+  const [payouts, setPayouts] = useState<any[]>([])
 
   useEffect(() => {
     if (searchParams.get('tab') === 'applicants' || location.pathname.endsWith('/applicants')) {
@@ -98,6 +102,14 @@ export const ContractDetail: React.FC = () => {
       .catch(() => setApplications([]))
       .finally(() => setAppsLoading(false))
   }, [id, activeTab])
+
+  useEffect(() => {
+    if (activeTab !== 'payments' || !id) return
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (!isUuid) return
+    api.payments.getHistory(id).then(setPaymentAttempts).catch(() => setPaymentAttempts([]))
+    api.payments.payouts(id).then(setPayouts).catch(() => setPayouts([]))
+  }, [id, activeTab, stagedAmount, releasedAmount])
 
   const [milestoneFilter, setMilestoneFilter] = useState<'all' | 'in_progress' | 'review' | 'settled'>('all')
   const [copiedCode, setCopiedCode] = useState(false)
@@ -176,6 +188,10 @@ export const ContractDetail: React.FC = () => {
     (m) => m.status === 'verified' && m.paymentStatus !== 'released'
   )
 
+  const nextFundMilestone = contract.milestones.find(
+    (m) => !['staged_in_sandbox', 'release_authorized', 'released'].includes(m.paymentStatus)
+  )
+
   // Lifecycle Progression Steps
   const lifecycleSteps = [
     {
@@ -194,8 +210,8 @@ export const ContractDetail: React.FC = () => {
     },
     {
       id: 3,
-      title: 'Escrow Staged',
-      desc: isEscrowStaged ? 'Funds locked' : 'Unfunded',
+      title: 'Milestone funded',
+      desc: isEscrowStaged ? 'PayPal captured' : 'Unfunded',
       status: isEscrowStaged ? 'completed' : isBothAccepted ? 'current' : 'upcoming',
       icon: ShieldCheck,
     },
@@ -292,11 +308,12 @@ export const ContractDetail: React.FC = () => {
   }
 
   const handlePaymentSuccess = (details: any) => {
-    stagePayment(contract.id, contract.totalAmount, details.id || 'PAYPAL-MOCK-ORDER')
-    toast.success(`Payment funded: ${formatCurrency(contract.totalAmount)} USD via PayPal.`)
+    const fundedAmount = Number(details?.amount ?? nextFundMilestone?.amount ?? 0)
+    if (id) fetchContractById(id)
+    toast.success(`Milestone funded: ${formatCurrency(fundedAmount)} USD via PayPal.`)
     addNotification({
-      title: 'Payment Staged via PayPal',
-      description: `${formatCurrency(contract.totalAmount)} USD reserved for ${contract.code}.`,
+      title: 'Milestone funded via PayPal',
+      description: `${formatCurrency(fundedAmount)} USD captured for ${contract.code}. Order ${details?.id || details?.paypal_order_id || ''}.`,
       type: 'payment',
       link: `/dashboard/contracts/${contract.id}`,
     })
@@ -307,17 +324,27 @@ export const ContractDetail: React.FC = () => {
     setReleaseDialogOpen(true)
   }
 
-  const handleConfirmRelease = () => {
+  const handleConfirmRelease = async () => {
     if (!selectedMilestone) return
-    releasePayment(contract.id, selectedMilestone.id)
-    setReleaseDialogOpen(false)
-    toast.success(`Payment released: ${formatCurrency(selectedMilestone.amount)} USD sent to freelancer!`)
-    addNotification({
-      title: 'Milestone Payout Disbursed',
-      description: `${formatCurrency(selectedMilestone.amount)} USD released for verified milestone.`,
-      type: 'payment',
-      link: `/dashboard/contracts/${contract.id}`,
-    })
+    try {
+      const result = await api.payments.releasePayout({
+        contract_id: contract.id,
+        milestone_id: selectedMilestone.id,
+      })
+      if (id) fetchContractById(id)
+      setReleaseDialogOpen(false)
+      toast.success(
+        `PayPal payout ${result?.paypal_batch_id || result?.status}: ${formatCurrency(selectedMilestone.amount)} USD`
+      )
+      addNotification({
+        title: 'PayPal payout sent',
+        description: `${formatCurrency(selectedMilestone.amount)} USD · batch ${result?.paypal_batch_id || 'pending'}.`,
+        type: 'payment',
+        link: `/dashboard/contracts/${contract.id}`,
+      })
+    } catch (err: any) {
+      toast.error(err?.detail || 'PayPal payout failed. No duplicate send was assumed.')
+    }
   }
 
   const handleOpenRevision = (milestone: Milestone) => {
@@ -669,29 +696,134 @@ export const ContractDetail: React.FC = () => {
                   </Card>
                 ) : (
                   <div className="space-y-3">
-                    {applications.map((app) => (
+                    {applications.map((app) => {
+                      const rec = String(app.vetting?.recommendation || '')
+                      const badge =
+                        rec === 'new_talent'
+                          ? { label: 'New talent', className: 'bg-emerald-950 text-emerald-300 border-emerald-800' }
+                          : rec === 'strong_fit'
+                            ? { label: 'Strong fit', className: 'bg-blue-950 text-blue-300 border-blue-800' }
+                            : rec === 'insufficient_evidence'
+                              ? { label: 'Needs profile', className: 'bg-amber-950 text-amber-300 border-amber-800' }
+                              : rec
+                                ? { label: rec.replace(/_/g, ' '), className: 'bg-[#171F33] text-slate-300 border-[#2D3449]' }
+                                : null
+                      const reasons = app.vetting?.reasons || {}
+                      return (
                       <Card key={app.id} className="border-[#222A3D] bg-[#131B2E] text-white">
-                        <CardContent className="py-4 space-y-2">
+                        <CardContent className="py-4 space-y-3">
                           <div className="flex justify-between gap-3">
                             <div>
                               <p className="font-semibold text-sm">
                                 {app.freelancer?.full_name || 'Freelancer'}
                               </p>
                               <p className="text-xs text-slate-400">{app.freelancer?.headline || app.status}</p>
+                              {badge && (
+                                <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded border ${badge.className}`}>
+                                  {badge.label}
+                                </span>
+                              )}
                             </div>
                             {app.vetting && (
                               <div className="text-right text-xs">
                                 <p className="font-mono text-emerald-400">{app.vetting.score}/100</p>
-                                <p className="text-slate-400 capitalize">{String(app.vetting.recommendation).replace('_', ' ')}</p>
+                                <p className="text-slate-400">{app.status}</p>
                               </div>
                             )}
                           </div>
                           {app.cover_note && (
                             <p className="text-xs text-slate-300">{app.cover_note}</p>
                           )}
+                          <button
+                            type="button"
+                            className="text-[11px] text-blue-400"
+                            onClick={() => setExpandedApp(expandedApp === app.id ? null : app.id)}
+                          >
+                            {expandedApp === app.id ? 'Hide rationale' : 'Show AI rationale'}
+                          </button>
+                          {expandedApp === app.id && (
+                            <div className="text-[11px] text-slate-400 bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
+                              <p>{reasons.rationale || 'No rationale stored.'}</p>
+                              {reasons.dimension_scores && (
+                                <p>
+                                  Skills {reasons.dimension_scores.skills_match} · Portfolio {reasons.dimension_scores.portfolio_relevance} · Past {String(reasons.dimension_scores.past_delivery)}
+                                </p>
+                              )}
+                              {reasons.newcomer && <p>Newcomer: past delivery is insufficient evidence, not zero.</p>}
+                              {reasons.trial_milestone_suggestion && (
+                                <p className="text-emerald-300">
+                                  Trial milestone suggestion: {formatCurrency(Number(reasons.trial_milestone_suggestion.amount) || 0)} — {reasons.trial_milestone_suggestion.reason}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {contract.status === 'open' && app.status !== 'rejected' && app.status !== 'awarded' && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-[#2D3449] text-slate-200 text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const updated = await api.applications.shortlist(app.id)
+                                    setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, ...updated } : a)))
+                                    toast.success('Shortlisted')
+                                  } catch (err: any) {
+                                    toast.error(err?.detail || 'Shortlist failed')
+                                  }
+                                }}
+                              >
+                                Shortlist
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
+                                onClick={() => setAwardTarget(app)}
+                              >
+                                Award
+                              </Button>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
-                    ))}
+                      )
+                    })}
+                    <Dialog open={Boolean(awardTarget)} onOpenChange={(o) => !o && setAwardTarget(null)}>
+                      <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+                        <DialogHeader>
+                          <DialogTitle>Award this freelancer?</DialogTitle>
+                          <DialogDescription className="text-xs text-slate-400">
+                            This cannot be undone. Other applicants will be marked not selected and notified.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <p className="text-sm">{awardTarget?.freelancer?.full_name}</p>
+                        <DialogFooter>
+                          <Button variant="outline" size="sm" onClick={() => setAwardTarget(null)} className="border-[#2D3449] text-xs">
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 text-white text-xs"
+                            onClick={async () => {
+                              try {
+                                await api.applications.award(awardTarget.id)
+                                toast.success('Contract awarded. Other applicants were notified.')
+                                setAwardTarget(null)
+                                if (id) {
+                                  fetchContractById(id)
+                                  const res = await api.contracts.listApplications(id)
+                                  setApplications(res.applications || [])
+                                }
+                              } catch (err: any) {
+                                toast.error(err?.detail || 'Award failed')
+                              }
+                            }}
+                          >
+                            Confirm award
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
               </TabsContent>
@@ -1069,7 +1201,6 @@ export const ContractDetail: React.FC = () => {
                 </Card>
               </TabsContent>
 
-              {/* TAB 3: PAYPAL SANDBOX */}
               <TabsContent value="payments" className="space-y-4 outline-none">
                 <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
                   <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
@@ -1077,19 +1208,47 @@ export const ContractDetail: React.FC = () => {
                     <span>PayPal Orders v2</span>
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white">Stage Escrow Payments</h3>
+                    <h3 className="text-base font-bold text-white">Fund the next milestone</h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      The client funds the milestone through PayPal. Payout is released after the work is verified.
+                      The client funds the next unfunded milestone through PayPal. The payout is sent after verification.
                     </p>
                   </div>
 
-                  <PayPalCheckout
-                    contractId={contract.id}
-                    contractCode={contract.code}
-                    amount={contract.totalAmount}
-                    currency={contract.currency}
-                    onPaymentSuccess={handlePaymentSuccess}
-                  />
+                  {isClient && contract.status === 'active' && nextFundMilestone ? (
+                    <PayPalCheckout
+                      contractId={contract.id}
+                      contractCode={contract.code}
+                      milestoneId={nextFundMilestone.id}
+                      amount={nextFundMilestone.amount}
+                      currency={contract.currency}
+                      onPaymentSuccess={handlePaymentSuccess}
+                    />
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      {contract.status !== 'active'
+                        ? 'Funding is available after the awarded freelancer accepts the contract.'
+                        : 'Every milestone is already funded or paid.'}
+                    </p>
+                  )}
+                </Card>
+
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-3">
+                  <h3 className="text-sm font-bold">PayPal ids</h3>
+                  {paymentAttempts.length === 0 && payouts.length === 0 && (
+                    <p className="text-xs text-slate-400">No PayPal orders or payouts yet.</p>
+                  )}
+                  {paymentAttempts.map((a) => (
+                    <div key={a.id} className="text-xs font-mono bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
+                      <p>Order {a.paypal_order_id || '—'} · Capture {a.paypal_capture_id || '—'} · {a.status}</p>
+                      <p className="text-slate-400">{formatCurrency(Number(a.amount) || 0)} {a.currency}</p>
+                    </div>
+                  ))}
+                  {payouts.map((p) => (
+                    <div key={p.id} className="text-xs font-mono bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
+                      <p>Payout batch {p.paypal_batch_id || '—'} · Item {p.paypal_item_id || '—'} · {p.status}</p>
+                      <p className="text-slate-400">{formatCurrency(Number(p.amount) || 0)} {p.currency}</p>
+                    </div>
+                  ))}
                 </Card>
               </TabsContent>
 
@@ -1222,21 +1381,21 @@ export const ContractDetail: React.FC = () => {
                     </>
                   ) : stagedAmount < totalAmount ? (
                     <>
-                      <div className="text-sm font-bold text-white">Stage Escrow Funds</div>
+                      <div className="text-sm font-bold text-white">Fund next milestone</div>
                       <p className="text-xs text-slate-300">
-                        Remaining unreserved: {formatCurrency(totalAmount - stagedAmount)} USD.
+                        Remaining unfunded: {formatCurrency(totalAmount - stagedAmount)} USD.
                       </p>
                       <Button
                         onClick={() => setActiveTab('payments')}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5"
                       >
                         <CreditCard className="w-4 h-4" />
-                        <span>Stage via PayPal</span>
+                        <span>Fund with PayPal</span>
                       </Button>
                     </>
                   ) : (
                     <>
-                      <div className="text-sm font-bold text-white">Escrow 100% Funded</div>
+                      <div className="text-sm font-bold text-white">Milestones funded</div>
                       <p className="text-xs text-slate-300">Freelancer is working on active deliverables.</p>
                     </>
                   )}

@@ -30,9 +30,15 @@ class ListingListResponse(BaseModel):
     total: int
 
 
+class ListingDetailRead(ListingRead):
+    milestones: List[Dict[str, Any]] = []
+    already_applied: bool = False
+
+
 class ApplicationCreateRequest(BaseModel):
     cover_note: str = Field(default="", max_length=4000)
     proposed_start: Optional[str] = None
+    portfolio_snapshot: List[Dict[str, Any]] = []
 
 
 class ApplicantProfileSummary(BaseModel):
@@ -64,7 +70,10 @@ class ApplicationRead(BaseModel):
     freelancer_id: uuid.UUID
     cover_note: str
     proposed_start: Optional[str] = None
+    portfolio_snapshot: List[Dict[str, Any]] = []
     status: str
+    contract_title: Optional[str] = None
+    contract_code: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     freelancer: Optional[ApplicantProfileSummary] = None

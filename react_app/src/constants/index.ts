@@ -26,6 +26,10 @@ export const ROUTES = {
   DELIVERY_VERIFICATION: (id: string = ':id') => `/dashboard/deliveries/${id}`,
   ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
   FREELANCER_PAYOUTS: '/dashboard/payouts',
+  MARKETPLACE: '/app/freelancer/contracts',
+  LISTING_DETAIL: (id: string = ':id') => `/app/freelancer/contracts/${id}`,
+  FREELANCER_APPLICATIONS: '/app/freelancer/applications',
+  FREELANCER_PROFILE: '/app/freelancer/profile',
 }
 
 export const STATUS_COLORS = {

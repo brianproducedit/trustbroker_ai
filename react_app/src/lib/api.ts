@@ -95,7 +95,10 @@ export const api = {
       apiFetch<any>(`/contracts/${id}/publish`, {
         method: 'POST',
       }),
-    apply: (id: string, data: { cover_note?: string; proposed_start?: string }) =>
+    apply: (
+      id: string,
+      data: { cover_note?: string; proposed_start?: string; portfolio_snapshot?: any[] }
+    ) =>
       apiFetch<any>(`/contracts/${id}/applications`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -163,6 +166,11 @@ export const api = {
       const qs = query.toString() ? `?${query.toString()}` : ''
       return apiFetch<{ listings: any[]; total: number }>(`/listings${qs}`)
     },
+    vetApplication: (application_id: string) =>
+      apiFetch<any>('/ai/vet-application', {
+        method: 'POST',
+        body: JSON.stringify({ application_id }),
+      }),
     verifyDelivery: (data: {
       contract_id: string
       milestone_id: string
@@ -221,6 +229,38 @@ export const api = {
       }),
     getHistory: (contractId: string) =>
       apiFetch<any[]>(`/payments/history/${contractId}`),
+    payouts: (contractId: string) =>
+      apiFetch<any[]>(`/payments/payouts/${contractId}`),
+    earnings: () => apiFetch<any[]>('/payments/earnings'),
+  },
+
+  listings: {
+    list: (params?: {
+      category?: string
+      min_budget?: number
+      max_budget?: number
+      skill?: string
+      page?: number
+      per_page?: number
+    }) => api.ai.listings(params),
+    get: (id: string) => apiFetch<any>(`/listings/${id}`),
+  },
+
+  profiles: {
+    me: () => apiFetch<any>('/profiles/me'),
+    updateMe: (data: any) =>
+      apiFetch<any>('/profiles/me', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  applications: {
+    mine: () => apiFetch<{ applications: any[]; total: number }>('/applications/mine'),
+    award: (id: string) =>
+      apiFetch<any>(`/applications/${id}/award`, { method: 'POST' }),
+    shortlist: (id: string) =>
+      apiFetch<any>(`/applications/${id}/shortlist`, { method: 'POST' }),
   },
 
   // Audit Logs

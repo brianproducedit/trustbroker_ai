@@ -17,6 +17,10 @@ import { ContractDetail } from '@/pages/ContractDetail'
 import { DeliveryVerification } from '@/pages/DeliveryVerification'
 import { ActivityHistory } from '@/pages/ActivityHistory'
 import { FreelancerPayouts } from '@/pages/dashboard/FreelancerPayouts'
+import { Marketplace } from '@/pages/freelancer/Marketplace'
+import { ListingDetail } from '@/pages/freelancer/ListingDetail'
+import { MyApplications } from '@/pages/freelancer/MyApplications'
+import { FreelancerProfile } from '@/pages/freelancer/FreelancerProfile'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const AppRoutes: React.FC = () => {
@@ -96,6 +100,38 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <FreelancerPayouts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.MARKETPLACE}
+        element={
+          <ProtectedRoute>
+            <Marketplace />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.LISTING_DETAIL(':id')}
+        element={
+          <ProtectedRoute>
+            <ListingDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.FREELANCER_APPLICATIONS}
+        element={
+          <ProtectedRoute>
+            <MyApplications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.FREELANCER_PROFILE}
+        element={
+          <ProtectedRoute>
+            <FreelancerProfile />
           </ProtectedRoute>
         }
       />
