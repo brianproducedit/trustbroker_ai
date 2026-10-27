@@ -9,6 +9,7 @@ from app.models.user import UserProfile
 from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, DeliveryFileRead
 from app.services.audit_service import log_audit_event
 from app.services.verification_service import orchestrate_delivery_verification
+from app.services.verification.safety import validate_evidence_file, sanitize_filename
 from app.services.policy_engine import PolicyEngine
 from app.utils.security import require_contract_party
 
@@ -95,9 +96,14 @@ def submit_delivery(
 
     # Add attached files
     for f_data in req.files:
+        is_safe, reason = validate_evidence_file(f_data.file_name, f_data.size_bytes, f_data.mime_type)
+        if not is_safe:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"File rejection: {reason}")
+
+        safe_name = sanitize_filename(f_data.file_name)
         d_file = DeliveryFile(
             delivery_id=delivery.id,
-            file_name=f_data.file_name,
+            file_name=safe_name,
             storage_path=f_data.storage_path,
             size_bytes=f_data.size_bytes,
             mime_type=f_data.mime_type,
@@ -203,4 +209,72 @@ def request_revision(
         "milestone_id": str(milestone.id),
         "milestone_status": milestone.status.value,
         "notes": notes,
+    }
+
+
+def override_review(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    client: UserProfile,
+    reason: str,
+) -> Dict[str, Any]:
+    """Client approves milestone delivery via human review override (Roadmap §7.2 / Phase 5)."""
+    from app.models.milestone import PaymentStatus
+    from app.services.notification_service import queue_notification
+
+    clean_reason = (reason or "").strip()
+    if not clean_reason:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A justification reason is required for human review approval.",
+        )
+
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    if contract.client_id != client.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the client can perform human review override on this contract.",
+        )
+
+    milestone = session.get(Milestone, milestone_id)
+    if not milestone or milestone.contract_id != contract.id:
+        raise HTTPException(status_code=404, detail="Milestone not found for this contract")
+
+    milestone.status = MilestoneStatus.VERIFIED
+    if milestone.payment_status == PaymentStatus.STAGED_IN_SANDBOX:
+        milestone.payment_status = PaymentStatus.RELEASE_AUTHORIZED
+
+    session.add(milestone)
+    session.commit()
+
+    log_audit_event(
+        session=session,
+        action="human_review",
+        details=f"Client approved milestone '{milestone.title}' via human review override. Reason: {clean_reason}",
+        contract_id=contract.id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"milestone_id": str(milestone.id), "reason": clean_reason},
+    )
+
+    if contract.freelancer_id:
+        queue_notification(
+            session=session,
+            user_id=contract.freelancer_id,
+            type="verification",
+            title="Milestone Approved by Client",
+            body=f"Client approved milestone '{milestone.title}' via manual review override.",
+            entity_type="contract",
+            entity_id=contract.id,
+        )
+
+    return {
+        "status": "verified",
+        "milestone_id": str(milestone.id),
+        "milestone_status": milestone.status.value,
+        "payment_status": milestone.payment_status.value,
+        "reason": clean_reason,
     }

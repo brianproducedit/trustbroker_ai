@@ -74,46 +74,59 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   initialize: async () => {
     const storedRole = (localStorage.getItem('tb_active_role') as 'client' | 'freelancer') || 'client'
 
-    // 1. Prioritize real Supabase session if configured
+    // Always register the auth state change listener when Supabase is configured,
+    // regardless of whether a session exists yet. This ensures sign-in/sign-out
+    // events are captured even when the user arrives unauthenticated.
     if (isSupabaseConfigured) {
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session && session.user) {
+          const role = get().activeRole
+          const profile = mapSupabaseUser(session.user, role)
+          localStorage.removeItem('tb_dev_token')
+          set({
+            session,
+            user: profile,
+            devToken: null,
+            activeRole: profile.role === 'freelancer' ? 'freelancer' : role,
+            isAuthenticated: true,
+            isLoading: false,
+            initialized: true,
+          })
+        } else if (event === 'TOKEN_REFRESHED' && session && session.user) {
+          const role = get().activeRole
+          const profile = mapSupabaseUser(session.user, role)
+          set({
+            session,
+            user: profile,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+        } else if (event === 'SIGNED_OUT') {
+          if (!get().devToken) {
+            set({
+              session: null,
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+            })
+          }
+        }
+      })
+
+      // Check for existing session
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) throw error
-
-        if (session && session.user) {
+        if (!error && session && session.user) {
           localStorage.removeItem('tb_dev_token')
           const profile = mapSupabaseUser(session.user, storedRole)
           set({
             session,
             user: profile,
             devToken: null,
-            activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
+            activeRole: profile.role === 'freelancer' ? 'freelancer' : storedRole,
             isAuthenticated: true,
             isLoading: false,
             initialized: true,
-          })
-
-          // Register listener for auth state changes
-          supabase.auth.onAuthStateChange((_event, session) => {
-            if (session && session.user) {
-              const role = get().activeRole
-              const profile = mapSupabaseUser(session.user, role)
-              set({
-                session,
-                user: profile,
-                devToken: null,
-                activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
-                isAuthenticated: true,
-                isLoading: false,
-              })
-            } else if (!get().devToken) {
-              set({
-                session: null,
-                user: null,
-                isAuthenticated: false,
-                isLoading: false,
-              })
-            }
           })
           return
         }
@@ -149,8 +162,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signIn: async (email: string, password: string) => {
     set({ isLoading: true })
 
-    const isElenaDemo = email === 'elena@acmeglobal.com' && (password === 'password123' || password === 'demo123')
-    const isTariroDemo = email === 'tariro@devstudio.co.zw' && (password === 'password123' || password === 'demo123')
+    const DEMO_PASSWORD = 'DemoPassword2026!'
+    const isClientDemo = (
+      (email === 'client.demo@trustbroker.ai' || email === 'elena@acmeglobal.com') &&
+      (password === DEMO_PASSWORD || password === 'password123' || password === 'demo123')
+    )
+    const isFreelancerDemo = (
+      (email === 'freelancer.demo@trustbroker.ai' || email === 'tariro@devstudio.co.zw') &&
+      (password === DEMO_PASSWORD || password === 'password123' || password === 'demo123')
+    )
 
     // 1. Try real Supabase Auth first when configured
     if (isSupabaseConfigured) {
@@ -167,19 +187,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             activeRole: profile.role === 'freelancer' ? 'freelancer' : 'client',
             isAuthenticated: true,
             isLoading: false,
+            initialized: true,
           })
           return { success: true }
         }
 
         if (error) {
           // If Supabase returns error for demo accounts, fall back to dev role seamlessly
-          if (isElenaDemo) {
+          if (isClientDemo) {
             console.info('Supabase sign-in fallback to client demo account:', error.message)
             get().signInWithDevRole('client')
             set({ isLoading: false })
             return { success: true }
           }
-          if (isTariroDemo) {
+          if (isFreelancerDemo) {
             console.info('Supabase sign-in fallback to freelancer demo account:', error.message)
             get().signInWithDevRole('freelancer')
             set({ isLoading: false })
@@ -189,8 +210,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           return { success: false, error: error.message }
         }
       } catch (err: any) {
-        if (isElenaDemo || isTariroDemo) {
-          get().signInWithDevRole(isElenaDemo ? 'client' : 'freelancer')
+        if (isClientDemo || isFreelancerDemo) {
+          get().signInWithDevRole(isClientDemo ? 'client' : 'freelancer')
           set({ isLoading: false })
           return { success: true }
         }
@@ -200,12 +221,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     // 2. Local fallback if Supabase not configured
-    if (isElenaDemo) {
+    if (isClientDemo) {
       get().signInWithDevRole('client')
       set({ isLoading: false })
       return { success: true }
     }
-    if (isTariroDemo) {
+    if (isFreelancerDemo) {
       get().signInWithDevRole('freelancer')
       set({ isLoading: false })
       return { success: true }
