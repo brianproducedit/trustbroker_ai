@@ -271,7 +271,7 @@ export const FreelancerWork: React.FC = () => {
         {/* Work Contract Overview Dialog */}
         {selectedContract && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="max-w-2xl bg-[#0C1916] border-[#1C3831] text-white">
+            <DialogContent className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl bg-[#0C1916] border-[#1C3831] text-white p-6 sm:p-7 shadow-2xl">
               <DialogHeader>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-xs text-emerald-400 font-semibold">

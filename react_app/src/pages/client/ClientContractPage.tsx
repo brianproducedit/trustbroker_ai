@@ -812,7 +812,7 @@ export const ClientContractPage: React.FC = () => {
 
         {/* Award Confirmation Dialog */}
         <AlertDialog open={awardDialogOpen} onOpenChange={setAwardDialogOpen}>
-          <AlertDialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <AlertDialogContent className="w-full max-w-md sm:max-w-lg bg-[#131B2E] border-[#222A3D] text-white p-6 shadow-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-white">Award Contract</AlertDialogTitle>
               <AlertDialogDescription className="text-slate-400 text-xs">

@@ -146,7 +146,7 @@ export const ListingDetail: React.FC = () => {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-w-lg">
+        <DialogContent className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl bg-[#131B2E] border-[#222A3D] text-white p-6 sm:p-7 shadow-2xl">
           <DialogHeader>
             <DialogTitle>Apply to this contract</DialogTitle>
             <DialogDescription className="text-xs text-slate-400">
