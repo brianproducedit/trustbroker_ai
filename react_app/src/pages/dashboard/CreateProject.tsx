@@ -7,6 +7,13 @@ import { useAuthStore } from '@/hooks/useAuthStore'
 import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,10 +61,26 @@ interface ClarifyQuestion {
 const WIZARD_STORAGE_KEY = 'tb_contract_wizard_v1'
 
 const CATEGORIES = [
-  { value: 'software', label: 'Software' },
-  { value: 'design', label: 'Design' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'research', label: 'Research' },
+  { value: 'software', label: 'Software Development' },
+  { value: 'design', label: 'UI/UX & Product Design' },
+  { value: 'ai_ml', label: 'AI, LLM & Machine Learning' },
+  { value: 'mobile', label: 'Mobile App (iOS/Android)' },
+  { value: 'marketing', label: 'Marketing & Growth' },
+  { value: 'research', label: 'Research & Technical Writing' },
+  { value: 'data_science', label: 'Data Science & Analytics' },
+  { value: 'devops', label: 'DevOps & Cloud Infrastructure' },
+  { value: 'security', label: 'Cybersecurity & Auditing' },
+  { value: 'blockchain', label: 'Web3 & Smart Contracts' },
+  { value: 'content', label: 'Content Strategy & Copywriting' },
+  { value: 'video', label: 'Video Production & Animation' },
+  { value: 'consulting', label: 'Business & Financial Consulting' },
+  { value: 'legal', label: 'Legal Tech & Compliance' },
+  { value: 'translation', label: 'Translation & Localization' },
+  { value: 'ecommerce', label: 'E-commerce & Shopify/Stripe' },
+  { value: 'qa', label: 'QA Automation & Testing' },
+  { value: 'gaming', label: 'Game Development & 3D' },
+  { value: 'education', label: 'EdTech & Curriculum' },
+  { value: 'social_media', label: 'Social Media Management' },
 ] as const
 
 const EVIDENCE_TYPES = [
@@ -151,6 +174,8 @@ export const CreateProject: React.FC = () => {
 
   const [step, setStep] = useState<WizardStep>(1)
   const [category, setCategory] = useState('software')
+  const [requiredSkills, setRequiredSkills] = useState<string[]>(['TypeScript', 'React', 'REST APIs'])
+  const [newSkill, setNewSkill] = useState('')
   const [budget, setBudget] = useState(2500)
   const [targetDate, setTargetDate] = useState(defaultDeadline(21))
   const [brief, setBrief] = useState('')
@@ -173,6 +198,19 @@ export const CreateProject: React.FC = () => {
   )
   const budgetMismatch = Math.abs(milestoneSum - (Number(budget) || 0)) > 0.009
   const budgetDelta = Math.round((milestoneSum - Number(budget)) * 100) / 100
+
+  const handleAddSkill = (skillToAdd?: string) => {
+    const s = (skillToAdd || newSkill).trim()
+    if (!s) return
+    if (!requiredSkills.includes(s)) {
+      setRequiredSkills((prev) => [...prev, s])
+    }
+    setNewSkill('')
+  }
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setRequiredSkills((prev) => prev.filter((s) => s !== skillToRemove))
+  }
 
   useEffect(() => {
     if (searchParams.get('fresh') === '1') {
@@ -366,7 +404,7 @@ export const CreateProject: React.FC = () => {
       projectTitle || 'Untitled contract',
       projectDesc || brief,
       toStoreMilestones(milestones),
-      { category, requiredSkills: [category] }
+      { category, requiredSkills: requiredSkills.length > 0 ? requiredSkills : [category] }
     )
     setDraftId(createdId)
     return createdId
@@ -485,17 +523,32 @@ export const CreateProject: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs text-slate-300">Category</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {CATEGORIES.map((c) => (
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-slate-300">Project Category</Label>
+                  <span className="text-[11px] text-slate-400">20+ industries supported</span>
+                </div>
+                <Select value={category} onValueChange={(val) => setCategory(val)}>
+                  <SelectTrigger className="w-full bg-[#171F33] border-[#2D3449] text-white text-xs h-10">
+                    <SelectValue placeholder="Select a project category..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-60">
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className="text-xs focus:bg-[#222A3D] focus:text-white cursor-pointer">
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {CATEGORIES.slice(0, 6).map((c) => (
                     <button
                       key={c.value}
                       type="button"
                       onClick={() => setCategory(c.value)}
-                      className={`p-2.5 rounded-lg border text-xs font-semibold ${
+                      className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors cursor-pointer ${
                         category === c.value
-                          ? 'border-blue-500 bg-blue-600/20 text-blue-300'
-                          : 'border-[#2D3449] bg-[#171F33] text-slate-300 hover:border-blue-500/50'
+                          ? 'border-blue-500 bg-blue-600/30 text-blue-300 font-semibold'
+                          : 'border-[#222A3D] bg-[#0E1528] text-slate-400 hover:text-white hover:border-slate-600'
                       }`}
                     >
                       {c.label}
@@ -545,6 +598,55 @@ export const CreateProject: React.FC = () => {
                   placeholder="Describe the work, constraints, and what good looks like..."
                   className="bg-[#0B1326] border-[#2D3449] text-white placeholder:text-slate-500 text-xs leading-relaxed"
                 />
+              </div>
+
+              {/* Step 1: Required Skills Tag Input */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-slate-300">Required Skills & Stack</Label>
+                  <span className="text-[11px] text-slate-500">AI will evaluate applicants against these</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Type skill & press Enter (e.g. React, Next.js, Python)..."
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddSkill()
+                      }
+                    }}
+                    className="bg-[#0B1326] border-[#2D3449] text-white text-xs h-9"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => handleAddSkill()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-3 shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
+                </div>
+                {requiredSkills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1.5">
+                    {requiredSkills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="bg-blue-950/70 border border-blue-800/50 text-blue-300 text-[11px] px-2.5 py-0.5 rounded-full flex items-center gap-1.5"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSkill(skill)}
+                          className="hover:text-red-400 font-bold ml-0.5 cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between border-t border-[#222A3D] pt-4">

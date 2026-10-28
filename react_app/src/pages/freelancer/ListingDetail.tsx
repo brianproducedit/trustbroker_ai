@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle2, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 
 export const ListingDetail: React.FC = () => {
@@ -20,6 +21,7 @@ export const ListingDetail: React.FC = () => {
   const [profile, setProfile] = useState<any>(null)
   const [open, setOpen] = useState(false)
   const [cover, setCover] = useState('')
+  const [proposedStart, setProposedStart] = useState(new Date().toISOString().slice(0, 10))
   const [selected, setSelected] = useState<number[]>([])
   const [submitting, setSubmitting] = useState(false)
 
@@ -43,7 +45,11 @@ export const ListingDetail: React.FC = () => {
     setSubmitting(true)
     try {
       const snapshot = selected.map((i) => portfolio[i]).filter(Boolean)
-      await api.contracts.apply(id, { cover_note: cover, portfolio_snapshot: snapshot })
+      await api.contracts.apply(id, {
+        cover_note: cover,
+        portfolio_snapshot: snapshot,
+        proposed_start: proposedStart,
+      })
       toast.success('Application sent. AI is ranking your profile for the client.')
       setOpen(false)
       setListing((prev: any) => (prev ? { ...prev, already_applied: true } : prev))
@@ -65,10 +71,45 @@ export const ListingDetail: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
         <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.MARKETPLACE)} className="border-[#2D3449] text-slate-300 text-xs gap-1">
           <ArrowLeft className="w-3.5 h-3.5" /> Marketplace
         </Button>
+
+        {/* Client Organization Profile Card */}
+        <Card className="border-[#222A3D] bg-[#0E1528] text-white p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-base border border-blue-500/30">
+                {(listing.client_org || listing.client_name || 'A')[0]}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">Posted by</span>
+                  <span className="font-semibold text-sm text-white">{listing.client_org || 'Acme Global Ventures LLC'}</span>
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] py-0">
+                    <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> PayPal Verified
+                  </Badge>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  Sponsor: {listing.client_name || 'Elena Rostova'} · 100% Escrow Funded
+                </div>
+              </div>
+            </div>
+
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="border-[#222A3D] text-blue-400 hover:text-white hover:bg-blue-950/50 text-xs shrink-0 self-start sm:self-center"
+            >
+              <Link to={`/app/client/profile/${listing.client_id || 'client-1'}`}>
+                View Client Profile <ExternalLink className="w-3 h-3 ml-1.5" />
+              </Link>
+            </Button>
+          </div>
+        </Card>
+
         <Card className="border-[#222A3D] bg-[#131B2E] text-white">
           <CardHeader>
             <p className="text-[11px] font-mono text-emerald-400">{listing.code}</p>
@@ -112,27 +153,74 @@ export const ListingDetail: React.FC = () => {
               Cover note plus optional portfolio items. You can only apply once.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Cover note</Label>
-              <Textarea rows={4} value={cover} onChange={(e) => setCover(e.target.value)} className="bg-[#0B1326] border-[#2D3449] text-white text-xs" />
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-slate-300">Cover note & approach *</Label>
+              <Textarea
+                rows={4}
+                value={cover}
+                onChange={(e) => setCover(e.target.value)}
+                placeholder="Explain how you will deliver this milestone specification and your relevant stack experience..."
+                className="bg-[#0B1326] border-[#2D3449] text-white text-xs leading-relaxed"
+              />
             </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-slate-300">Proposed Start Date</Label>
+              <Input
+                type="date"
+                value={proposedStart}
+                onChange={(e) => setProposedStart(e.target.value)}
+                className="bg-[#0B1326] border-[#2D3449] text-white text-xs h-9 font-mono"
+              />
+            </div>
+
             {portfolio.length > 0 && (
               <div className="space-y-2">
-                <Label className="text-xs">Portfolio to include</Label>
-                {portfolio.map((p, idx) => (
-                  <label key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                    <Checkbox
-                      checked={selected.includes(idx)}
-                      onCheckedChange={(checked) =>
-                        setSelected((prev) => (checked ? [...prev, idx] : prev.filter((i) => i !== idx)))
-                      }
-                    />
-                    <span>
-                      {p.title || 'Untitled'} {p.url ? `· ${p.url}` : ''}
-                    </span>
-                  </label>
-                ))}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-slate-300">Attach Verified Portfolio Cards</Label>
+                  <span className="text-[11px] text-slate-500">Selected items feed into AI vetting</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {portfolio.map((p, idx) => {
+                    const isSelected = selected.includes(idx)
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() =>
+                          setSelected((prev) =>
+                            isSelected ? prev.filter((i) => i !== idx) : [...prev, idx]
+                          )
+                        }
+                        className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-emerald-950/40 border-emerald-500 text-white'
+                            : 'bg-[#0B1326] border-[#222A3D] text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-semibold text-white truncate">
+                            {isSelected ? '✓ ' : ''}{p.title || 'Untitled Project'}
+                          </span>
+                          {p.url && (
+                            <a
+                              href={p.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5 text-[10px] shrink-0"
+                            >
+                              Preview <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {p.url || 'Portfolio artifact'}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

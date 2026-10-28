@@ -2,21 +2,20 @@ import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
-import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import {
   LayoutGrid,
   PlusCircle,
   FileText,
-  History,
   UserCircle2,
   ArrowLeftRight,
-  UploadCloud,
   Wallet,
   LogOut,
   Search,
   Inbox,
-  BarChart3
+  BarChart3,
+  Bell,
+  Briefcase
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -41,12 +40,9 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { activeContractId } = useContractStore()
   const authSignOut = useAuthStore((state) => state.signOut)
   const user = useAuthStore((state) => state.user)
   const [signOutOpen, setSignOutOpen] = useState(false)
-
-  const currentContractKey = activeContractId || 'contract-1'
 
   const handleSignOut = async () => {
     setSignOutOpen(false)
@@ -64,20 +60,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
 
   // Clear, distinct persona navigation
   const clientNavItems = [
-    { label: 'Your Contracts', icon: LayoutGrid, path: ROUTES.CLIENT_CONTRACTS },
+    { label: 'Home', icon: LayoutGrid, path: ROUTES.CLIENT_HOME },
+    { label: 'My Contracts', icon: FileText, path: ROUTES.CLIENT_CONTRACTS },
+    { label: 'Applications', icon: Inbox, path: ROUTES.CLIENT_APPLICATIONS },
+    { label: 'New Contract', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
     { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
-    { label: 'New Project', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
-    { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
-    { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
+    { label: 'Notifications', icon: Bell, path: '/app/notifications' },
+    { label: 'Profile', icon: UserCircle2, path: ROUTES.CLIENT_PROFILE },
   ]
 
   const freelancerNavItems = [
     { label: 'Home', icon: LayoutGrid, path: ROUTES.FREELANCER_HOME },
-    { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
-    { label: 'Find work', icon: Search, path: ROUTES.MARKETPLACE },
+    { label: 'Find Work', icon: Search, path: ROUTES.MARKETPLACE },
     { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
-    { label: 'Active work', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
-    { label: 'Submit delivery', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },
+    { label: 'Active Work', icon: Briefcase, path: ROUTES.FREELANCER_WORK },
+    { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
+    { label: 'Notifications', icon: Bell, path: '/app/notifications' },
     { label: 'Profile', icon: UserCircle2, path: ROUTES.FREELANCER_PROFILE },
     { label: 'Earnings', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
   ]
@@ -86,8 +84,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
 
   const isItemActive = (path: string, label: string) => {
     if (location.pathname === path) return true
-    if (label === 'Your Contracts' && (location.pathname === '/app/client' || location.pathname === '/dashboard')) return true
-    if (label === 'Home' && (location.pathname === '/app/freelancer' || location.pathname === '/dashboard')) return true
+    if (label === 'Home' && currentRole === 'client' && (location.pathname === '/app/client' || location.pathname === '/dashboard')) return true
+    if (label === 'Home' && currentRole === 'freelancer' && (location.pathname === '/app/freelancer' || location.pathname === '/dashboard')) return true
     return false
   }
 

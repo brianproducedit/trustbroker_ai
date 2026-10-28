@@ -20,8 +20,15 @@ import {
   Info,
   AlertCircle,
   RefreshCw,
-  FileCheck2
+  FileCheck2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 
 export interface PayoutItem {
   id: string
@@ -47,6 +54,7 @@ export const FreelancerPayouts: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showWebhookModal, setShowWebhookModal] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(true)
 
   const loadEarnings = async () => {
     try {
@@ -288,18 +296,31 @@ export const FreelancerPayouts: React.FC = () => {
         </div>
 
         {/* Real Payout Transactions Table */}
-        <div className="bg-[#131B2E] rounded-xl border border-[#222A3D] overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-[#222A3D] flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-white">PayPal Disbursement Ledger</h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Exact payouts generated from backend <code className="text-slate-300">payouts</code> table and verified PayPal batches.
-              </p>
+        <Collapsible
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          className="bg-[#131B2E] rounded-xl border border-[#222A3D] overflow-hidden flex flex-col"
+        >
+          <CollapsibleTrigger asChild>
+            <div className="p-4 border-b border-[#222A3D] flex items-center justify-between cursor-pointer hover:bg-[#162137] transition-colors select-none">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-white">PayPal Disbursement Ledger</h2>
+                  <span className="text-xs text-slate-400 font-mono">
+                    ({payouts.length} {payouts.length === 1 ? 'Transaction' : 'Transactions'})
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Exact payouts generated from backend <code className="text-slate-300">payouts</code> table and verified PayPal batches.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-slate-400">
+                <span className="text-xs font-medium">{historyOpen ? 'Collapse' : 'Expand'}</span>
+                {historyOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              {payouts.length} {payouts.length === 1 ? 'Transaction' : 'Transactions'}
-            </span>
-          </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
 
           {isLoading ? (
             <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center gap-3">
@@ -470,7 +491,8 @@ export const FreelancerPayouts: React.FC = () => {
           </div>
         </>
       )}
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Webhook Modal Inspection */}
         {showWebhookModal && (

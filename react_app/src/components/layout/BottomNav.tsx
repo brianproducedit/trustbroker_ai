@@ -1,41 +1,36 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ROUTES } from '@/constants'
-import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
-import { 
-  LayoutGrid, 
-  PlusCircle, 
-  FileText, 
-  History, 
-  Search, 
-  Inbox, 
-  UploadCloud, 
+import {
+  LayoutGrid,
+  PlusCircle,
+  FileText,
+  Search,
+  Inbox,
+  Briefcase,
   Wallet,
-  BarChart3 
+  BarChart3
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export const BottomNav: React.FC = () => {
   const location = useLocation()
   const { activeRole } = useAuthStore()
-  const { activeContractId } = useContractStore()
-  const currentContractKey = activeContractId || 'contract-1'
 
   const clientTabs = [
-    { label: 'Contracts', icon: LayoutGrid, path: ROUTES.CLIENT_CONTRACTS },
+    { label: 'Home', icon: LayoutGrid, path: ROUTES.CLIENT_HOME },
+    { label: 'Contracts', icon: FileText, path: ROUTES.CLIENT_CONTRACTS },
+    { label: '+ New', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
+    { label: 'Applications', icon: Inbox, path: ROUTES.CLIENT_APPLICATIONS },
     { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
-    { label: 'New Brief', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
-    { label: 'Contract', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
-    { label: 'Activity', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
   ]
 
   const freelancerTabs = [
     { label: 'Home', icon: LayoutGrid, path: ROUTES.FREELANCER_HOME },
-    { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
-    { label: 'Find Work', icon: Search, path: ROUTES.MARKETPLACE },
-    { label: 'Apps', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
-    { label: 'Deliver', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },
+    { label: 'Find', icon: Search, path: ROUTES.MARKETPLACE },
+    { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
+    { label: 'Work', icon: Briefcase, path: ROUTES.FREELANCER_WORK },
     { label: 'Earnings', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
   ]
 
@@ -45,15 +40,14 @@ export const BottomNav: React.FC = () => {
   const checkIsActive = (tab: { label: string; path: string }) => {
     const cur = location.pathname
     if (cur === tab.path) return true
-    if (tab.label === 'Contracts' && (cur === '/dashboard' || cur === '/app/client' || cur === '/app/client/contracts')) return true
-    if (tab.label === 'Home' && (cur === '/dashboard' || cur === '/app/freelancer')) return true
-    if (tab.path.includes('/contracts/') && cur.includes('/contracts/')) return true
-    if (tab.path.includes('/deliver') && cur.includes('/deliver')) return true
+    if (tab.label === 'Home' && (cur === '/dashboard' || cur === '/app/client' || cur === '/app/freelancer')) return true
+    if (tab.label === 'Contracts' && cur === '/app/client/contracts') return true
+    if (tab.label === 'Work' && cur.startsWith('/app/freelancer/work')) return true
     return false
   }
 
   return (
-    <nav 
+    <nav
       aria-label="Mobile Navigation"
       className="fixed bottom-0 left-0 right-0 z-40 bg-[#0B1326]/95 backdrop-blur-md border-t border-[#222A3D] px-2 py-1.5 flex items-center justify-around md:hidden shadow-lg"
     >

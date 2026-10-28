@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
-import { api } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { AgStudioProvider } from 'ag-studio-react'
 import { AgGridReact } from 'ag-grid-react'
 import {
@@ -23,13 +23,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
   BarChart3,
-  Bot,
-  Send,
-  Sparkles,
   ShieldCheck,
   DollarSign,
   Briefcase,
@@ -39,6 +35,7 @@ import {
   TrendingUp,
   Award,
 } from 'lucide-react'
+import { AICopilotFAB } from '@/components/operations/AICopilotFAB'
 
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -55,21 +52,6 @@ const freelancerStudioTheme = themeQuartz.withPart(colorSchemeDark).withParams({
   fontSize: 13,
 })
 
-interface Message {
-  id: string
-  sender: 'user' | 'assistant'
-  text: string
-  timestamp: string
-  suggestedActions?: string[]
-  dataSummary?: Record<string, any>
-}
-
-const PROMPT_STARTERS = [
-  'Which applicants are new talent with strong portfolios?',
-  'Show my upcoming milestone deadlines',
-  'How much have I earned this month?',
-]
-
 export const FreelancerOperations: React.FC = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
@@ -78,23 +60,6 @@ export const FreelancerOperations: React.FC = () => {
   const [applications, setApplications] = useState<any[]>([])
   const [earnings, setEarnings] = useState<any[]>([])
   const [activeFilter, setActiveFilter] = useState<'all' | 'in_progress' | 'settled' | 'verifying'>('all')
-
-  // Studio Copilot Agent State
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'init-1',
-      sender: 'assistant',
-      text: "👋 Welcome to **Freelancer Operations Studio**. I'm connected to your active contracts, deliverable deadlines, and PayPal Payouts history. Ask me about upcoming milestones, win rates, or monthly earnings.",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      suggestedActions: [
-        'Show my upcoming milestone deadlines',
-        'How much have I earned this month?',
-      ],
-    },
-  ])
-  const [inputText, setInputText] = useState('')
-  const [isAgentThinking, setIsAgentThinking] = useState(false)
-  const chatScrollRef = useRef<HTMLDivElement>(null)
 
   // Fetch telemetry on mount
   useEffect(() => {
@@ -113,13 +78,6 @@ export const FreelancerOperations: React.FC = () => {
     }
     loadExtraData()
   }, [fetchContracts])
-
-  // Auto-scroll chat
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
-    }
-  }, [messages, isAgentThinking])
 
   // Calculated Metrics
   const metrics = useMemo(() => {
@@ -152,51 +110,6 @@ export const FreelancerOperations: React.FC = () => {
       verifiedCount,
     }
   }, [contracts, applications, earnings])
-
-  // Handle Studio Agent prompt send
-  const handleSendMessage = async (queryText?: string) => {
-    const textToSend = queryText || inputText
-    if (!textToSend.trim() || isAgentThinking) return
-
-    const userMsg: Message = {
-      id: `usr-${Date.now()}`,
-      sender: 'user',
-      text: textToSend.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }
-
-    setMessages((prev) => [...prev, userMsg])
-    if (!queryText) setInputText('')
-    setIsAgentThinking(true)
-
-    try {
-      const res = await api.ai.studioTurn({
-        message: textToSend.trim(),
-        workspace: 'freelancer',
-      })
-
-      const botMsg: Message = {
-        id: `bot-${Date.now()}`,
-        sender: 'assistant',
-        text: res.response || 'Analysis complete.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedActions: res.suggested_actions,
-        dataSummary: res.data_summary,
-      }
-      setMessages((prev) => [...prev, botMsg])
-    } catch (err: any) {
-      const errMsg: Message = {
-        id: `err-${Date.now()}`,
-        sender: 'assistant',
-        text: `Unable to complete AI analysis: ${err?.message || 'Connection error'}. Using local operations summary.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedActions: PROMPT_STARTERS,
-      }
-      setMessages((prev) => [...prev, errMsg])
-    } finally {
-      setIsAgentThinking(false)
-    }
-  }
 
   // Flatten milestones for high-density delivery & payout ledger
   const milestoneRows = useMemo(() => {
@@ -449,181 +362,68 @@ export const FreelancerOperations: React.FC = () => {
             </Card>
           </div>
 
-          {/* 2-Column Split: AG Studio AI Agent Copilot & Deliverables Ledger */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Column (5 cols): AG Studio Agent Copilot */}
-            <div className="lg:col-span-5 space-y-4">
-              <Card className="border-[#1C3831] bg-[#0E1F1B] text-white shadow-sm flex flex-col h-[560px]">
-                <CardHeader className="p-4 border-b border-[#1C3831] bg-[#0C1916]/50">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-white">
-                      <Bot className="w-4 h-4 text-emerald-400" />
-                      Freelancer Operations Copilot
-                    </CardTitle>
-                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[9px] font-mono">
-                      Live Telemetry
-                    </Badge>
-                  </div>
+          {/* Full-Width AG Grid Dense Telemetry Ledger */}
+          <Card className="border-[#1C3831] bg-[#0E1F1B] text-white shadow-sm flex flex-col h-[600px]">
+            <CardHeader className="p-4 border-b border-[#1C3831] bg-[#0C1916]/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2 text-white">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    Milestone Deliverables & Payouts Ledger
+                  </CardTitle>
                   <CardDescription className="text-xs text-slate-400">
-                    Track deadline risk, estimate monthly payouts, and inspect proposal ratings.
+                    High-density AG Grid ledger showing delivery verification stages, client counterparties, and target deadlines.
                   </CardDescription>
-                </CardHeader>
+                </div>
 
-                {/* Chat Scroll Container */}
-                <div ref={chatScrollRef} className="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
-                  {messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1 bg-[#0C1916] p-1 rounded-lg border border-[#1C3831]">
+                  {(['all', 'in_progress', 'verifying', 'settled'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setActiveFilter(filter)}
+                      className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${
+                        activeFilter === filter
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      <div
-                        className={`max-w-[88%] p-3 rounded-2xl ${
-                          m.sender === 'user'
-                            ? 'bg-emerald-600 text-white rounded-br-xs'
-                            : 'bg-[#122622] border border-[#1C3831] text-slate-200 rounded-bl-xs'
-                        }`}
-                      >
-                        <div className="leading-relaxed whitespace-pre-wrap">{m.text}</div>
-
-                        {/* Suggested Action Chips */}
-                        {m.suggestedActions && m.suggestedActions.length > 0 && (
-                          <div className="mt-2.5 pt-2 border-t border-slate-700/40 space-y-1">
-                            <span className="text-[10px] text-slate-400 font-medium block">
-                              Suggested queries:
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                              {m.suggestedActions.map((act, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={() => handleSendMessage(act)}
-                                  className="text-[10px] text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md px-2 py-0.5 transition-colors text-left"
-                                >
-                                  {act}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-[9px] text-slate-500 mt-1 px-1">
-                        {m.timestamp}
-                      </span>
-                    </div>
+                      {filter.replace('_', ' ')}
+                    </button>
                   ))}
-
-                  {isAgentThinking && (
-                    <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#122622] border border-[#1C3831] text-slate-400 text-xs w-fit">
-                      <Sparkles className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                      <span>Copilot is querying deadlines & PayPal telemetry...</span>
-                    </div>
-                  )}
                 </div>
+              </div>
+            </CardHeader>
 
-                {/* Prompt Starters */}
-                <div className="p-3 border-t border-[#1C3831] bg-[#0C1916]/60">
-                  <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">
-                    Prompt Starters:
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {PROMPT_STARTERS.map((starter, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSendMessage(starter)}
-                        disabled={isAgentThinking}
-                        className="text-[11px] text-slate-300 hover:text-white bg-[#122622] hover:bg-[#18332E] border border-[#1C3831] rounded-lg px-2.5 py-1 transition-colors text-left disabled:opacity-50"
-                      >
-                        {starter}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Input Bar */}
-                <div className="p-3 border-t border-[#1C3831] bg-[#0C1916]">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      handleSendMessage()
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Input
-                      placeholder="Ask about deadlines, payouts, or proposal vetting..."
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      disabled={isAgentThinking}
-                      className="bg-[#122622] border-[#1C3831] text-white text-xs h-9 focus-visible:ring-emerald-500"
-                    />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={!inputText.trim() || isAgentThinking}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-3 shrink-0"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </Button>
-                  </form>
-                </div>
-              </Card>
+            {/* AG Grid Container */}
+            <div className="flex-1 w-full overflow-hidden p-2">
+              <div className="w-full h-full rounded-lg overflow-hidden border border-[#1C3831]">
+                <AgGridReact
+                  theme={freelancerStudioTheme}
+                  rowData={milestoneRows}
+                  columnDefs={colDefs}
+                  pagination={true}
+                  paginationPageSize={12}
+                  paginationPageSizeSelector={[12, 25, 50]}
+                  rowHeight={48}
+                  headerHeight={38}
+                  suppressCellFocus={true}
+                  animateRows={true}
+                />
+              </div>
             </div>
+          </Card>
 
-            {/* Right Column (7 cols): AG Grid Dense Telemetry Ledger */}
-            <div className="lg:col-span-7 space-y-4">
-              <Card className="border-[#1C3831] bg-[#0E1F1B] text-white shadow-sm flex flex-col h-[560px]">
-                <CardHeader className="p-4 border-b border-[#1C3831] bg-[#0C1916]/50">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2 text-white">
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
-                        Milestone Deliverables & Payouts Ledger
-                      </CardTitle>
-                      <CardDescription className="text-xs text-slate-400">
-                        High-density AG Grid ledger showing delivery verification stages and target deadlines.
-                      </CardDescription>
-                    </div>
-
-                    {/* Filter Pills */}
-                    <div className="flex items-center gap-1 bg-[#0C1916] p-1 rounded-lg border border-[#1C3831]">
-                      {(['all', 'in_progress', 'verifying', 'settled'] as const).map((filter) => (
-                        <button
-                          key={filter}
-                          type="button"
-                          onClick={() => setActiveFilter(filter)}
-                          className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize transition-colors ${
-                            activeFilter === filter
-                              ? 'bg-emerald-600 text-white shadow-xs'
-                              : 'text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          {filter.replace('_', ' ')}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                {/* AG Grid Container */}
-                <div className="flex-1 w-full overflow-hidden p-2">
-                  <div className="w-full h-full rounded-lg overflow-hidden border border-[#1C3831]">
-                    <AgGridReact
-                      theme={freelancerStudioTheme}
-                      rowData={milestoneRows}
-                      columnDefs={colDefs}
-                      pagination={true}
-                      paginationPageSize={10}
-                      paginationPageSizeSelector={[10, 20, 50]}
-                      rowHeight={48}
-                      headerHeight={36}
-                      suppressCellFocus={true}
-                      animateRows={true}
-                    />
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
+          {/* Floating AI Operations Copilot */}
+          <AICopilotFAB
+            workspace="freelancer"
+            promptStarters={[
+              'Which applicants are new talent with strong portfolios?',
+              'Show my upcoming milestone deadlines',
+              'How much have I earned this month via PayPal?',
+            ]}
+          />
         </div>
       </DashboardLayout>
     </AgStudioProvider>
