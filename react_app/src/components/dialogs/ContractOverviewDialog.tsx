@@ -62,6 +62,13 @@ export const ContractOverviewDialog: React.FC<ContractOverviewDialogProps> = ({
   const statusCls = statusColors[contract.status] || 'border-slate-600 bg-slate-700/50 text-slate-300'
   const statusLabel = statusLabels[contract.status] || contract.status
 
+  const totalBudget =
+    Number(contract.totalAmount ?? (contract as any).budget) ||
+    (contract.milestones || []).reduce(
+      (sum: number, m: any) => sum + (Number(m.amount) || 0),
+      0
+    )
+
   const handleOpenFull = () => {
     onOpenChange(false)
     navigate(ROUTES.CONTRACT_DETAIL(contract.id))
@@ -69,9 +76,9 @@ export const ContractOverviewDialog: React.FC<ContractOverviewDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-[#131B2E] border-[#222A3D] text-white p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl bg-[#131B2E] border-[#222A3D] text-white p-0 gap-0 overflow-hidden shadow-2xl">
         {/* Dialog Header */}
-        <DialogHeader className="p-5 pb-4 border-b border-[#222A3D] bg-[#0E1528]/60">
+        <DialogHeader className="p-6 pb-4 border-b border-[#222A3D] bg-[#0E1528]/80">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
@@ -85,7 +92,7 @@ export const ContractOverviewDialog: React.FC<ContractOverviewDialogProps> = ({
                   {statusLabel}
                 </Badge>
               </div>
-              <DialogTitle className="text-base font-semibold text-white leading-snug line-clamp-2">
+              <DialogTitle className="text-lg font-bold text-white leading-snug line-clamp-2">
                 {contract.title}
               </DialogTitle>
               {contract.category && (
@@ -94,42 +101,42 @@ export const ContractOverviewDialog: React.FC<ContractOverviewDialogProps> = ({
                 </DialogDescription>
               )}
             </div>
-            <FileText className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+            <FileText className="w-6 h-6 text-slate-500 shrink-0 mt-0.5" />
           </div>
         </DialogHeader>
 
         {/* Body */}
-        <div className="p-5 space-y-5 overflow-y-auto max-h-[60vh]">
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
           {/* 3 Info Cards: Budget | Staged | Released */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg border border-[#222A3D] bg-[#0B1120] p-3 space-y-1">
+            <div className="rounded-xl border border-[#222A3D] bg-[#0B1120] p-4 space-y-1">
               <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                <DollarSign className="w-3 h-3" />
+                <DollarSign className="w-3.5 h-3.5 text-blue-400" />
                 Budget
               </div>
-              <div className="font-mono text-base font-bold text-white">
-                {formatCurrency(Number(contract.budget) || 0, contract.currency)}
+              <div className="font-mono text-lg font-bold text-white">
+                {formatCurrency(totalBudget, contract.currency)}
               </div>
               <div className="text-[10px] text-slate-500">Total contract value</div>
             </div>
 
-            <div className="rounded-lg border border-[#222A3D] bg-[#0B1120] p-3 space-y-1">
+            <div className="rounded-xl border border-[#222A3D] bg-[#0B1120] p-4 space-y-1">
               <div className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400/80 uppercase tracking-wider">
-                <DollarSign className="w-3 h-3" />
+                <DollarSign className="w-3.5 h-3.5 text-amber-400" />
                 Staged
               </div>
-              <div className="font-mono text-base font-bold text-amber-400">
+              <div className="font-mono text-lg font-bold text-amber-400">
                 {formatCurrency(Number(contract.stagedAmount) || 0, contract.currency)}
               </div>
               <div className="text-[10px] text-slate-500">In escrow</div>
             </div>
 
-            <div className="rounded-lg border border-[#222A3D] bg-[#0B1120] p-3 space-y-1">
+            <div className="rounded-xl border border-[#222A3D] bg-[#0B1120] p-4 space-y-1">
               <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-400/80 uppercase tracking-wider">
-                <DollarSign className="w-3 h-3" />
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
                 Released
               </div>
-              <div className="font-mono text-base font-bold text-emerald-400">
+              <div className="font-mono text-lg font-bold text-emerald-400">
                 {formatCurrency(Number(contract.releasedAmount) || 0, contract.currency)}
               </div>
               <div className="text-[10px] text-slate-500">Disbursed</div>

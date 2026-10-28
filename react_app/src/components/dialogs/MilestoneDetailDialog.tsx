@@ -205,7 +205,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="max-w-2xl bg-[#131B2E] border-[#222A3D] text-white overflow-y-auto max-h-[90vh]"
+          className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl bg-[#131B2E] border-[#222A3D] text-white overflow-y-auto max-h-[88vh] p-6 sm:p-8 shadow-2xl"
           style={{ backgroundColor: '#131B2E', borderColor: '#222A3D', color: 'white' }}
         >
           <DialogHeader className="pb-2">
