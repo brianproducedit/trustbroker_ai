@@ -18,10 +18,37 @@ export const ActivityHistory: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { contracts } = useContractStore()
 
-  const contract = contracts.find((c) => c.id === id || c.code === id) || contracts[0]
+  const contract = id 
+    ? contracts.find((c) => c.id === id || c.code === id)
+    : (contracts[0] || null)
+
   const [copiedHash, setCopiedHash] = useState<string | null>(null)
   const [filterAction, setFilterAction] = useState<string>('all')
   const [liveLogs, setLiveLogs] = useState<any[] | null>(null)
+
+  if (!contract) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-md mx-auto my-16 p-8 rounded-xl bg-[#131B2E] border border-[#222A3D] text-center flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#1E293B] border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <ShieldCheck className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-bold text-white">Activity Log Not Found</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              No audit trail found for contract <span className="text-blue-400 font-mono">{id}</span> or your account is not authorized to inspect it.
+            </p>
+          </div>
+          <Link
+            to={ROUTES.DASHBOARD}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-colors"
+          >
+            Return to Dashboard
+          </Link>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   useEffect(() => {
     if (contract?.id) {

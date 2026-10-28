@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 import { Sidebar } from './Sidebar'
+import { BottomNav } from './BottomNav'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
-import { 
-  Search, 
-  ChevronDown, 
-  Bell, 
-  Menu, 
+import {
+  Search,
+  ChevronDown,
+  Bell,
+  Menu,
   X,
   UserCheck,
   LogOut,
@@ -39,7 +40,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const { activeContractId, contracts } = useContractStore()
   const { user, activeRole, toggleActiveRole, signOut: authSignOut } = useAuthStore()
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore()
-  
+
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [notifsOpen, setNotifsOpen] = useState(false)
@@ -61,6 +62,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     setProfileOpen(false)
     const nextRole = activeRole === 'client' ? 'freelancer' : 'client'
     toast.info(`Switched to ${nextRole} workspace`)
+    navigate(nextRole === 'client' ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME)
   }
 
   // Generate breadcrumb text from location
@@ -101,16 +103,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   return (
     <div className="min-h-screen bg-[#0B1326] text-[#DAE2FD] font-sans antialiased flex flex-col">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      {/* Desktop Sidebar (md+) */}
+      <div className="hidden md:block">
         <Sidebar currentRole={activeRole} onToggleRole={toggleActiveRole} />
       </div>
 
       {/* Mobile Drawer Sidebar */}
       {mobileSidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs" 
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             onClick={() => setMobileSidebarOpen(false)}
           />
           <div className="relative w-64 max-w-full z-10">
@@ -127,14 +129,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       )}
 
       {/* Main Area */}
-      <div className="lg:pl-64 flex flex-col min-h-screen flex-1">
+      <div className="md:pl-64 flex flex-col min-h-screen flex-1">
         {/* Top Header */}
         <header className="sticky top-0 z-40 h-16 bg-[#0E172E]/95 backdrop-blur-md border-b border-[#222A3D] px-4 sm:px-6 flex items-center justify-between gap-4">
           {/* Mobile menu trigger & Breadcrumb */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 lg:hidden cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 md:hidden cursor-pointer"
               aria-label="Open menu"
             >
               <Menu className="w-6 h-6" />
@@ -235,11 +237,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                               navigate(n.link)
                             }
                           }}
-                          className={`p-3 rounded-lg border transition-all flex flex-col gap-1 text-left cursor-pointer ${
-                            !n.read
+                          className={`p-3 rounded-lg border transition-all flex flex-col gap-1 text-left cursor-pointer ${!n.read
                               ? 'bg-[#172038] border-blue-900/60 hover:border-blue-500/60'
                               : 'bg-[#0E1528] border-[#222A3D] hover:border-slate-700'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">{n.title}</span>
@@ -273,7 +274,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* User profile dropdown button */}
             <div className="relative">
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   setProfileOpen(!profileOpen)
@@ -282,11 +283,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 title="Account menu"
                 className="flex items-center gap-2.5 pl-1 cursor-pointer group text-left"
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-800 transition-transform group-hover:scale-105 ${
-                  activeRole === 'client'
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-800 transition-transform group-hover:scale-105 ${activeRole === 'client'
                     ? 'bg-gradient-to-tr from-blue-600 to-indigo-500'
                     : 'bg-gradient-to-tr from-emerald-600 to-teal-500'
-                }`}>
+                  }`}>
                   {user?.name
                     ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
                     : 'TB'}
@@ -393,10 +393,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         </div>
 
         {/* Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav />
     </div>
   )
 }

@@ -51,8 +51,17 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
 }
 
 export const api = {
-  // Health
-  health: () => apiFetch<{ status: string }>('/health'),
+  // Health & Ping
+  health: () => apiFetch<{
+    status: string
+    service?: string
+    environment?: string
+    database?: string
+    database_type?: string
+    server_host?: string
+    timestamp?: string
+  }>('/health'),
+  ping: () => apiFetch<{ ping: string; server?: string; environment?: string }>('/health/ping'),
 
   // Contracts
   contracts: {

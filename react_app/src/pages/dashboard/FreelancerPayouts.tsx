@@ -6,16 +6,16 @@ import { useAuthStore } from '@/hooks/useAuthStore'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ROUTES } from '@/constants'
 import { api } from '@/lib/api'
-import { 
-  Wallet, 
-  CheckCircle2, 
-  Clock, 
-  ExternalLink, 
-  ShieldCheck, 
-  ArrowUpRight, 
-  Building2, 
-  Copy, 
-  Check, 
+import {
+  Wallet,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  ShieldCheck,
+  ArrowUpRight,
+  Building2,
+  Copy,
+  Check,
   Zap,
   Info,
   AlertCircle,
@@ -325,7 +325,8 @@ export const FreelancerPayouts: React.FC = () => {
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-[#222A3D] bg-[#0E1528] text-slate-400 font-mono uppercase text-[10px] tracking-wider">
@@ -414,7 +415,61 @@ export const FreelancerPayouts: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          )}
+
+            {/* Mobile Cards View (Below md screen size) */}
+          <div className="md:hidden divide-y divide-[#222A3D]">
+            {payouts.map((p) => {
+              const matchedContract = contractMap.get(p.contract_id)
+              const matchedMilestone = matchedContract?.milestones.find(
+                (m) => m.id === p.milestone_id
+              )
+              const milestoneTitle = matchedMilestone?.title || 'Milestone Delivery'
+              const contractCode = matchedContract?.code || p.contract_id.slice(0, 8)
+              const clientName = matchedContract?.client?.name || 'Client'
+              const batchId = p.paypal_batch_id || 'PENDING_BATCH'
+
+              return (
+                <div key={p.id} className="p-4 space-y-2.5 bg-[#0E1528]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-semibold text-emerald-400">{contractCode}</span>
+                    {getStatusBadge(p.status)}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">{milestoneTitle}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">Client: {clientName}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-400">Amount:</span>
+                    <span className="font-mono font-bold text-emerald-400 text-sm">
+                      {formatCurrency(Number(p.amount) || 0, p.currency || 'USD')}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded bg-[#090E1A] border border-[#222A3D] text-[11px] font-mono flex items-center justify-between">
+                    <span className="text-slate-500 truncate mr-2">Batch: {batchId}</span>
+                    <button
+                      onClick={() => copyToClipboard(batchId, `m-${p.id}`)}
+                      className="text-slate-400 hover:text-white flex-shrink-0"
+                    >
+                      {copiedId === `m-${p.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500">
+                    <span>{formatDate(p.created_at)}</span>
+                    {matchedContract && (
+                      <Link
+                        to={ROUTES.CONTRACT_DETAIL(matchedContract.id)}
+                        className="text-blue-400 hover:underline inline-flex items-center gap-1 font-sans text-xs"
+                      >
+                        View Contract &rarr;
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
         </div>
 
         {/* Webhook Modal Inspection */}
@@ -441,7 +496,7 @@ export const FreelancerPayouts: React.FC = () => {
               <div className="space-y-3 font-mono text-[11px]">
                 <div className="text-xs font-sans font-bold text-slate-200">1. Payout Batch Success Event</div>
                 <div className="bg-[#0B1326] p-3 rounded-xl border border-[#222A3D] text-slate-300 overflow-x-auto leading-relaxed">
-{`{
+                  {`{
   "event_type": "PAYMENT.PAYOUTSBATCH.SUCCESS",
   "resource_type": "payouts",
   "summary": "Payout batch completed successfully",
@@ -457,7 +512,7 @@ export const FreelancerPayouts: React.FC = () => {
 
                 <div className="text-xs font-sans font-bold text-slate-200">2. Orders v2 Milestone Capture Event</div>
                 <div className="bg-[#0B1326] p-3 rounded-xl border border-[#222A3D] text-slate-300 overflow-x-auto leading-relaxed">
-{`{
+                  {`{
   "event_type": "PAYMENT.CAPTURE.COMPLETED",
   "resource_type": "capture",
   "resource": {

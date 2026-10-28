@@ -38,9 +38,9 @@ export const AppRoutes: React.FC = () => {
       <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
       <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmail />} />
 
-      {/* Authenticated Dashboard Pages (Protected Dark Shell Theme) */}
+      {/* Authenticated Client Workspace Routes */}
       <Route
-        path={ROUTES.DASHBOARD}
+        path="/app/client"
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -48,7 +48,15 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path={ROUTES.NEW_PROJECT}
+        path="/app/client/contracts"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/contracts/new"
         element={
           <ProtectedRoute>
             <CreateProject />
@@ -56,15 +64,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path={ROUTES.CLIENT_NEW_CONTRACT}
-        element={
-          <ProtectedRoute>
-            <CreateProject />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.CONTRACT_DETAIL(':id')}
+        path="/app/client/contracts/:id"
         element={
           <ProtectedRoute>
             <ContractDetail />
@@ -79,11 +79,115 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Authenticated Freelancer Workspace Routes */}
       <Route
-        path={ROUTES.DELIVERY_VERIFICATION(':id')}
+        path="/app/freelancer"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/contracts"
+        element={
+          <ProtectedRoute>
+            <Marketplace />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/contracts/:id"
+        element={
+          <ProtectedRoute>
+            <ListingDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/applications"
+        element={
+          <ProtectedRoute>
+            <MyApplications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/work"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/work/:id/deliver"
         element={
           <ProtectedRoute>
             <DeliveryVerification />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/earnings"
+        element={
+          <ProtectedRoute>
+            <FreelancerPayouts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/profile"
+        element={
+          <ProtectedRoute>
+            <FreelancerProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Legacy / Shared Dashboard Routes (backward-compatible) */}
+      <Route
+        path={ROUTES.DASHBOARD}
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/create-project"
+        element={
+          <ProtectedRoute>
+            <CreateProject />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/contracts"
+        element={<Navigate to="/app/client/contracts" replace />}
+      />
+      <Route
+        path="/dashboard/contracts/:id"
+        element={
+          <ProtectedRoute>
+            <ContractDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/deliveries/:id"
+        element={
+          <ProtectedRoute>
+            <DeliveryVerification />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/payouts"
+        element={
+          <ProtectedRoute>
+            <FreelancerPayouts />
           </ProtectedRoute>
         }
       />
@@ -95,51 +199,11 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path={ROUTES.FREELANCER_PAYOUTS}
-        element={
-          <ProtectedRoute>
-            <FreelancerPayouts />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.MARKETPLACE}
-        element={
-          <ProtectedRoute>
-            <Marketplace />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.LISTING_DETAIL(':id')}
-        element={
-          <ProtectedRoute>
-            <ListingDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.FREELANCER_APPLICATIONS}
-        element={
-          <ProtectedRoute>
-            <MyApplications />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path={ROUTES.FREELANCER_PROFILE}
-        element={
-          <ProtectedRoute>
-            <FreelancerProfile />
-          </ProtectedRoute>
-        }
-      />
 
       {/* Backwards Compatibility / Legacy URL Redirects */}
-      <Route path="/create-project" element={<Navigate to={ROUTES.NEW_PROJECT} replace />} />
-      <Route path="/contract/:id" element={<Navigate to="/dashboard/contracts/:id" replace />} />
-      <Route path="/deliver/:id" element={<Navigate to="/dashboard/deliveries/:id" replace />} />
+      <Route path="/create-project" element={<Navigate to="/app/client/contracts/new" replace />} />
+      <Route path="/contract/:id" element={<Navigate to="/app/client/contracts/:id" replace />} />
+      <Route path="/deliver/:id" element={<Navigate to="/app/freelancer/work/:id/deliver" replace />} />
 
       {/* Catch-all Fallback */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />

@@ -47,7 +47,9 @@ export const DeliveryVerification: React.FC = () => {
   } = useContractStore()
   const { addNotification } = useNotificationStore()
 
-  const contract = contracts.find((c) => c.id === id || c.code === id) || contracts[0]
+  const contract = id 
+    ? contracts.find((c) => c.id === id || c.code === id)
+    : (contracts[0] || null)
   
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>(
     contract?.milestones.find((m) => m.status === 'verifying' || m.status === 'submitted')?.id ||
