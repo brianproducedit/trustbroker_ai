@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { useContractStore } from '@/hooks/useContractStore'
@@ -39,7 +39,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const location = useLocation()
   const { activeContractId, contracts } = useContractStore()
   const { user, activeRole, toggleActiveRole, signOut: authSignOut } = useAuthStore()
-  const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore()
+  const { notifications, unreadCount, markAllAsRead, markAsRead, fetchNotifications } = useNotificationStore()
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -256,13 +260,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     )}
                   </div>
 
-                  <div className="pt-2 border-t border-[#222A3D] text-center">
+                  <div className="pt-2 border-t border-[#222A3D] flex items-center justify-between text-xs">
                     <Link
-                      to={ROUTES.ACTIVITY_HISTORY(activeContract?.id || 'contract-1')}
+                      to="/app/notifications"
                       onClick={() => setNotifsOpen(false)}
-                      className="text-xs text-blue-400 hover:text-blue-300 font-semibold inline-flex items-center gap-1"
+                      className="text-blue-400 hover:text-blue-300 font-semibold inline-flex items-center gap-1"
                     >
-                      <span>View audit history</span>
+                      <span>All notifications</span>
+                      <ChevronDown className="w-3 h-3 -rotate-90" />
+                    </Link>
+                    <Link
+                      to={ROUTES.ACTIVITY_HISTORY(activeContract?.id || 'TB-2026-001')}
+                      onClick={() => setNotifsOpen(false)}
+                      className="text-slate-400 hover:text-slate-200 inline-flex items-center gap-1"
+                    >
+                      <span>Audit trail</span>
                       <ChevronDown className="w-3 h-3 -rotate-90" />
                     </Link>
                   </div>

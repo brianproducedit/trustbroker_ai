@@ -21,6 +21,9 @@ import { Marketplace } from '@/pages/freelancer/Marketplace'
 import { ListingDetail } from '@/pages/freelancer/ListingDetail'
 import { MyApplications } from '@/pages/freelancer/MyApplications'
 import { FreelancerProfile } from '@/pages/freelancer/FreelancerProfile'
+import { ClientOperations } from '@/pages/client/ClientOperations'
+import { FreelancerOperations } from '@/pages/freelancer/FreelancerOperations'
+import { NotificationsPage } from '@/pages/Notifications'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export const AppRoutes: React.FC = () => {
@@ -76,6 +79,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <ContractDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/operations"
+        element={
+          <ProtectedRoute>
+            <ClientOperations />
           </ProtectedRoute>
         }
       />
@@ -145,6 +156,14 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/app/freelancer/operations"
+        element={
+          <ProtectedRoute>
+            <FreelancerOperations />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Legacy / Shared Dashboard Routes (backward-compatible) */}
       <Route
@@ -190,6 +209,22 @@ export const AppRoutes: React.FC = () => {
             <FreelancerPayouts />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/dashboard/operations"
+        element={<Navigate to="/app/client/operations" replace />}
+      />
+      <Route
+        path="/app/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/notifications"
+        element={<Navigate to="/app/notifications" replace />}
       />
       <Route
         path={ROUTES.ACTIVITY_HISTORY(':id')}

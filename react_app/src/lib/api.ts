@@ -189,6 +189,21 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    studioTurn: (data: {
+      message: string
+      workspace: 'client' | 'freelancer'
+      context?: Record<string, any>
+    }) =>
+      apiFetch<{
+        response: string
+        workspace: string
+        type: string
+        suggested_actions?: string[]
+        data_summary?: Record<string, any>
+      }>('/ai/studio-turn', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   // Deliveries
@@ -291,5 +306,22 @@ export const api = {
   audit: {
     getAuditTrail: (contractId: string) =>
       apiFetch<any[]>(`/audit/${contractId}`),
+  },
+
+  notifications: {
+    list: (params?: { unread_only?: boolean; page?: number; per_page?: number }) => {
+      const q = new URLSearchParams()
+      if (params?.unread_only) q.set('unread_only', 'true')
+      if (params?.page) q.set('page', String(params.page))
+      if (params?.per_page) q.set('per_page', String(params.per_page))
+      const qs = q.toString()
+      return apiFetch<{ notifications: any[]; unread_count: number; total: number }>(
+        `/notifications${qs ? `?${qs}` : ''}`
+      )
+    },
+    markRead: (id: string) =>
+      apiFetch<any>(`/notifications/${id}/read`, { method: 'POST' }),
+    markAllRead: () =>
+      apiFetch<{ updated: number }>('/notifications/read-all', { method: 'POST' }),
   },
 }

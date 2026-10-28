@@ -15,7 +15,8 @@ import {
   Wallet,
   LogOut,
   Search,
-  Inbox
+  Inbox,
+  BarChart3
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -64,6 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
   // Clear, distinct persona navigation
   const clientNavItems = [
     { label: 'Your Contracts', icon: LayoutGrid, path: ROUTES.CLIENT_CONTRACTS },
+    { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
     { label: 'New Project', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
     { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
     { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
@@ -71,6 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
 
   const freelancerNavItems = [
     { label: 'Home', icon: LayoutGrid, path: ROUTES.FREELANCER_HOME },
+    { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
     { label: 'Find work', icon: Search, path: ROUTES.MARKETPLACE },
     { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
     { label: 'Active work', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },

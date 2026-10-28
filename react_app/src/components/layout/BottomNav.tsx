@@ -11,7 +11,8 @@ import {
   Search, 
   Inbox, 
   UploadCloud, 
-  Wallet 
+  Wallet,
+  BarChart3 
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +24,7 @@ export const BottomNav: React.FC = () => {
 
   const clientTabs = [
     { label: 'Contracts', icon: LayoutGrid, path: ROUTES.CLIENT_CONTRACTS },
+    { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
     { label: 'New Brief', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
     { label: 'Contract', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
     { label: 'Activity', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
@@ -30,6 +32,7 @@ export const BottomNav: React.FC = () => {
 
   const freelancerTabs = [
     { label: 'Home', icon: LayoutGrid, path: ROUTES.FREELANCER_HOME },
+    { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
     { label: 'Find Work', icon: Search, path: ROUTES.MARKETPLACE },
     { label: 'Apps', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
     { label: 'Deliver', icon: UploadCloud, path: ROUTES.DELIVERY_VERIFICATION(currentContractKey) },

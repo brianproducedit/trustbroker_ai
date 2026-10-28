@@ -47,3 +47,17 @@ class DeliveryVerificationRequest(BaseModel):
     contract_id: uuid.UUID
     milestone_id: uuid.UUID
     delivery_id: uuid.UUID
+
+
+class StudioTurnRequest(BaseModel):
+    message: str = Field(..., description="Natural language query or instruction for operations agent")
+    workspace: str = Field("client", description="Active workspace: 'client' or 'freelancer'")
+    context: Optional[Dict[str, Any]] = Field(default=None, description="Optional active contract or filter context")
+
+
+class StudioTurnResponse(BaseModel):
+    response: str
+    workspace: str
+    type: str = "text"
+    suggested_actions: Optional[List[str]] = None
+    data_summary: Optional[Dict[str, Any]] = None
