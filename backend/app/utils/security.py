@@ -199,7 +199,11 @@ def require_contract_party(user: UserProfile, contract: Contract) -> None:
     is_client = contract.client_id == user.id
     is_freelancer = (
         (contract.freelancer_id is not None and contract.freelancer_id == user.id)
-        or (contract.freelancer_email is not None and contract.freelancer_email == user.email)
+        or (
+            contract.freelancer_email is not None
+            and user.email is not None
+            and contract.freelancer_email.strip().lower() == user.email.strip().lower()
+        )
     )
     if not (is_client or is_freelancer):
         raise HTTPException(

@@ -52,7 +52,7 @@ export const DeliveryVerification: React.FC = () => {
     : (contracts[0] || null)
   
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>(
-    contract?.milestones.find((m) => m.status === 'verifying' || m.status === 'submitted')?.id ||
+    contract?.milestones.find((m) => ['in_progress', 'submitted', 'verifying', 'revision_requested', 'verified'].includes(m.status))?.id ||
     contract?.milestones[0]?.id ||
     'ms-1'
   )
