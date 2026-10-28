@@ -37,7 +37,11 @@ class PolicyEngine:
     def is_freelancer(user: UserProfile, contract: Contract) -> bool:
         return (
             contract.freelancer_id == user.id
-            or (contract.freelancer_email and contract.freelancer_email.lower() == user.email.lower())
+            or (
+                bool(contract.freelancer_email)
+                and bool(user.email)
+                and contract.freelancer_email.strip().lower() == user.email.strip().lower()
+            )
         )
 
     @classmethod
@@ -166,7 +170,7 @@ class PolicyEngine:
         contract: Contract,
         milestone: Milestone,
     ) -> PolicyResult:
-        """Freelancer only, contract active or pending, milestone must be in progress or revision requested."""
+        """Freelancer only, contract active or in verification, milestone must not be already settled."""
         if not cls.is_freelancer(user, contract):
             return PolicyResult(False, "Only the assigned freelancer can submit deliverable evidence.")
         if contract.status == ContractStatus.CANCELLED:
@@ -176,8 +180,8 @@ class PolicyEngine:
                 False,
                 f"Deliveries can only be submitted on an active contract (current: '{contract.status.value}').",
             )
-        if milestone.status in (MilestoneStatus.VERIFIED, MilestoneStatus.SETTLED):
-            return PolicyResult(False, f"Milestone is already {milestone.status.value}.")
+        if milestone.status == MilestoneStatus.SETTLED or milestone.payment_status == PaymentStatus.RELEASED:
+            return PolicyResult(False, "Milestone payment has already been settled and released.")
         return PolicyResult(True)
 
     @classmethod

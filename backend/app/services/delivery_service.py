@@ -61,8 +61,7 @@ def submit_delivery(
         raise HTTPException(status_code=404, detail="Contract not found")
 
     # Verify caller is the freelancer or email match
-    is_freelancer = contract.freelancer_id == freelancer.id or contract.freelancer_email == freelancer.email
-    if not is_freelancer:
+    if not PolicyEngine.is_freelancer(freelancer, contract):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the assigned freelancer can submit deliveries for this contract.",
