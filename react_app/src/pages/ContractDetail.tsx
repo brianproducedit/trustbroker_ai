@@ -58,7 +58,8 @@ export const ContractDetail: React.FC = () => {
     requestRevision,
     addMilestone,
     removeMilestone,
-    fetchContractById
+    fetchContractById,
+    isLoading
   } = useContractStore()
   const { addNotification } = useNotificationStore()
 
@@ -68,7 +69,40 @@ export const ContractDetail: React.FC = () => {
     }
   }, [id, fetchContractById])
 
-  const contract = contracts.find((c) => c.id === id || c.code === id) || contracts[0]
+  const contract = id 
+    ? contracts.find((c) => c.id === id || c.code === id)
+    : (contracts[0] || null)
+
+  if (id && !contract) {
+    if (isLoading) {
+      return (
+        <DashboardLayout>
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
+            <RefreshCw className="w-8 h-8 animate-spin text-blue-400" />
+            <p className="text-sm">Loading contract details...</p>
+          </div>
+        </DashboardLayout>
+      )
+    }
+    return (
+      <DashboardLayout>
+        <div className="max-w-md mx-auto my-16 p-8 rounded-xl bg-[#131B2E] border border-[#222A3D] text-center flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#1E293B] border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-bold text-white">Contract Not Found or Access Restricted</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Contract <span className="text-blue-400 font-mono">{id}</span> could not be found, or your active account is not authorized to inspect it.
+            </p>
+          </div>
+          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9">
+            <Link to={ROUTES.DASHBOARD}>Return to Dashboard</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   // View States
   const [activeTab, setActiveTab] = useState<'contract' | 'sow' | 'payments' | 'activity' | 'applicants'>(

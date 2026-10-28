@@ -4,7 +4,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { formatCurrency } from '@/lib/utils'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ROUTES } from '@/constants'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { AgGridReact } from 'ag-grid-react'
 import { ModuleRegistry, AllCommunityModule, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { ColDef, ICellRendererParams } from 'ag-grid-community'
@@ -60,7 +60,16 @@ const darkLedgerTheme = themeQuartz.withPart(colorSchemeDark).withParams({
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate()
-  const { contracts, activeRole, toggleActiveRole, getRoleContracts, getRoleMetrics, releasePayment, fetchContracts } = useContractStore()
+  const location = useLocation()
+  const { contracts, activeRole, setActiveRole, toggleActiveRole, getRoleContracts, getRoleMetrics, releasePayment, fetchContracts } = useContractStore()
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/app/freelancer') && activeRole !== 'freelancer') {
+      setActiveRole('freelancer')
+    } else if (location.pathname.startsWith('/app/client') && activeRole !== 'client') {
+      setActiveRole('client')
+    }
+  }, [location.pathname, activeRole, setActiveRole])
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'needs_action' | 'in_verification' | 'settled'>('all')
   const [selectedContractId, setSelectedContractId] = useState<string>('contract-1')
@@ -405,22 +414,67 @@ export const Dashboard: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div
-                  className="w-full rounded-lg overflow-hidden border border-[#222A3D] bg-[#0E1528]"
-                  style={{ minHeight: '260px', height: '360px', width: '100%', backgroundColor: '#0E1528' }}
-                >
-                  <AgGridReact
-                    theme={darkLedgerTheme}
-                    rowData={filteredContracts}
-                    columnDefs={columnDefs}
-                    defaultColDef={defaultColDef}
-                    rowSelection="single"
-                    onRowClicked={handleRowClick}
-                    headerHeight={40}
-                    rowHeight={52}
-                    animateRows={true}
-                  />
-                </div>
+                <>
+                  {/* AG Grid Container (Desktop & Tablet md+) */}
+                  <div
+                    className="hidden md:block w-full rounded-lg overflow-hidden border border-[#222A3D] bg-[#0E1528]"
+                    style={{ minHeight: '260px', height: '360px', width: '100%', backgroundColor: '#0E1528' }}
+                  >
+                    <AgGridReact
+                      theme={darkLedgerTheme}
+                      rowData={filteredContracts}
+                      columnDefs={columnDefs}
+                      defaultColDef={defaultColDef}
+                      rowSelection="single"
+                      onRowClicked={handleRowClick}
+                      headerHeight={40}
+                      rowHeight={52}
+                      animateRows={true}
+                    />
+                  </div>
+
+                  {/* Mobile Cards (Below md screen size) */}
+                  <div className="md:hidden space-y-3">
+                    {filteredContracts.map((c) => (
+                      <div
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedContractId(c.id)
+                          navigate(ROUTES.CONTRACT_DETAIL(c.id))
+                        }}
+                        className="p-3.5 rounded-lg border border-[#222A3D] bg-[#0E1528] active:bg-[#172036] transition-colors cursor-pointer space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-semibold text-blue-400">{c.code}</span>
+                          <StatusBadge status={c.status} size="sm" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-semibold text-white line-clamp-1">{c.title}</h4>
+                          <p className="text-xs text-slate-400">
+                            Counterparty: {activeRole === 'client' ? (c.freelancer?.name || 'Open for applicants') : (c.client?.name || 'Client')}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-[#1C253B] text-xs">
+                          <div>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Staged</span>
+                            <span className="font-mono font-bold text-emerald-400">{formatCurrency(c.stagedAmount, c.currency)}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(ROUTES.CONTRACT_DETAIL(c.id))
+                            }}
+                            className="px-2.5 py-1 text-xs bg-blue-600/30 text-blue-300 rounded font-medium inline-flex items-center gap-1"
+                          >
+                            <span>Open</span>
+                            <ArrowUpRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 

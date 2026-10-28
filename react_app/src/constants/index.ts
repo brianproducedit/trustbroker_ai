@@ -17,19 +17,31 @@ export const ROUTES = {
 
   // Authenticated Portal Pages (All contained inside DashboardLayout)
   DASHBOARD: '/dashboard',
-  NEW_PROJECT: '/dashboard/create-project',
+  CLIENT_HOME: '/app/client',
   CLIENT_NEW_CONTRACT: '/app/client/contracts/new',
-  CONTRACTS: '/dashboard/contracts',
-  CONTRACT_DETAIL: (id: string = ':id') => `/dashboard/contracts/${id}`,
-  CONTRACT_APPLICANTS: (id: string = ':id') => `/dashboard/contracts/${id}?tab=applicants`,
-  DELIVERIES: '/dashboard/deliveries',
-  DELIVERY_VERIFICATION: (id: string = ':id') => `/dashboard/deliveries/${id}`,
-  ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
-  FREELANCER_PAYOUTS: '/dashboard/payouts',
+  CLIENT_CONTRACTS: '/app/client/contracts',
+  NEW_PROJECT: '/app/client/contracts/new',
+  CONTRACTS: '/app/client/contracts',
+  CONTRACT_DETAIL: (id: string = ':id') => `/app/client/contracts/${id}`,
+  CONTRACT_APPLICANTS: (id: string = ':id') => `/app/client/contracts/${id}/applicants`,
+  CLIENT_OPERATIONS: '/app/client/operations',
+
+  // Freelancer Workspace
+  FREELANCER_HOME: '/app/freelancer',
   MARKETPLACE: '/app/freelancer/contracts',
   LISTING_DETAIL: (id: string = ':id') => `/app/freelancer/contracts/${id}`,
   FREELANCER_APPLICATIONS: '/app/freelancer/applications',
   FREELANCER_PROFILE: '/app/freelancer/profile',
+  FREELANCER_WORK: '/app/freelancer/work',
+  FREELANCER_DELIVER: (id: string = ':id') => `/app/freelancer/work/${id}/deliver`,
+  DELIVERY_VERIFICATION: (id: string = ':id') => `/app/freelancer/work/${id}/deliver`,
+  DELIVERIES: '/app/freelancer/work',
+  FREELANCER_PAYOUTS: '/app/freelancer/earnings',
+  FREELANCER_EARNINGS: '/app/freelancer/earnings',
+  FREELANCER_OPERATIONS: '/app/freelancer/operations',
+
+  // Common & Legacy Routes
+  ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
 }
 
 export const STATUS_COLORS = {

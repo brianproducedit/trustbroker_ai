@@ -64,4 +64,14 @@ def root():
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/api/v1/health",
+        "ping": "/ping",
+    }
+
+
+@app.get("/ping", tags=["Root"])
+def ping():
+    return {
+        "ping": "pong",
+        "service": "TrustBroker AI API",
+        "database": "PostgreSQL (Local)" if "localhost" in settings.database_url or "127.0.0.1" in settings.database_url else "PostgreSQL (Remote)",
     }

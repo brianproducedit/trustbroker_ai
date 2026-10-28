@@ -4,12 +4,12 @@ import { Logo } from '@/components/common/Logo'
 import { ROUTES } from '@/constants'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
-import { 
-  LayoutGrid, 
-  PlusCircle, 
-  FileText, 
-  History, 
-  UserCircle2, 
+import {
+  LayoutGrid,
+  PlusCircle,
+  FileText,
+  History,
+  UserCircle2,
   ArrowLeftRight,
   UploadCloud,
   Wallet,
@@ -58,18 +58,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
     onToggleRole()
     const nextRole = currentRole === 'client' ? 'freelancer' : 'client'
     toast.info(`Switched to ${nextRole} workspace`)
+    navigate(nextRole === 'client' ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME)
   }
 
   // Clear, distinct persona navigation
   const clientNavItems = [
-    { label: 'Your Contracts', icon: LayoutGrid, path: ROUTES.DASHBOARD },
+    { label: 'Your Contracts', icon: LayoutGrid, path: ROUTES.CLIENT_CONTRACTS },
     { label: 'New Project', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
     { label: 'Contract Details', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
     { label: 'Activity Log', icon: History, path: ROUTES.ACTIVITY_HISTORY(currentContractKey) },
   ]
 
   const freelancerNavItems = [
-    { label: 'Home', icon: LayoutGrid, path: ROUTES.DASHBOARD },
+    { label: 'Home', icon: LayoutGrid, path: ROUTES.FREELANCER_HOME },
     { label: 'Find work', icon: Search, path: ROUTES.MARKETPLACE },
     { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
     { label: 'Active work', icon: FileText, path: ROUTES.CONTRACT_DETAIL(currentContractKey) },
@@ -80,12 +81,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
 
   const navItems = currentRole === 'client' ? clientNavItems : freelancerNavItems
 
+  const isItemActive = (path: string, label: string) => {
+    if (location.pathname === path) return true
+    if (label === 'Your Contracts' && (location.pathname === '/app/client' || location.pathname === '/dashboard')) return true
+    if (label === 'Home' && (location.pathname === '/app/freelancer' || location.pathname === '/dashboard')) return true
+    return false
+  }
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-[#0B1326] border-r border-[#222A3D] z-50 flex flex-col justify-between select-none">
       {/* Top Header */}
       <div className="flex flex-col">
         <div className="h-16 px-4 flex items-center justify-between border-b border-[#222A3D] bg-[#060E20]">
-          <Link to={ROUTES.DASHBOARD} className="flex items-center">
+          <Link to={currentRole === 'client' ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME} className="flex items-center">
             <Logo isDark hideSubtitle={false} />
           </Link>
         </div>
@@ -100,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
 
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path
+              const isActive = isItemActive(item.path, item.label)
               const Icon = item.icon
               return (
                 <Link
@@ -118,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
                   <Icon
                     className={cn(
                       'w-4 h-4 flex-shrink-0',
-                      isActive 
+                      isActive
                         ? currentRole === 'client' ? 'text-blue-400' : 'text-emerald-400'
                         : 'text-slate-400'
                     )}
@@ -185,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-2 py-1 text-xs">
+        <div className="flex flex-col gap-1 px-2 py-1 text-xs">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="font-mono text-[11px] text-slate-300">PayPal connected</span>
