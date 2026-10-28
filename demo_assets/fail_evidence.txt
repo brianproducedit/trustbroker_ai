@@ -1,0 +1,31 @@
+================================================================================
+TRUSTBROKER AI — DELIVERABLE VERIFICATION EVIDENCE (FAIL SPECIFICATION)
+================================================================================
+Contract Code: TB-2026-001
+Milestone 2: Storefront & Cart Checkout Integration
+Status: REJECTED / CRITERIA DEFICIENCY DETECTED
+
+1. DEFICIENCIES IDENTIFIED:
+--------------------------------------------------------------------------------
+[CRITERION 1] Next.js App Router implementation with sub-second page loads:
+- FAIL: Heavy unoptimized bundle size detected (3.8 MB First Load JS).
+- Largest Contentful Paint (LCP): 3,840ms (Target: < 1000ms) - FAILED.
+- Server response times exceed 1,400ms under load.
+
+[CRITERION 2] PayPal Sandbox orders v2 integration with server-side capture:
+- FAIL: Client-side capture detected in frontend component; bypasses server validation.
+- Missing PayPal webhook signature verification (vulnerable to spoofed webhook payloads).
+- Idempotency check missing; duplicate click creates duplicate uncaptured orders.
+
+2. FAILED TEST SUITE LOGS:
+--------------------------------------------------------------------------------
+FAIL tests/e2e/checkout.spec.ts (14.2s)
+  ✕ PayPal modal launches with currency USD and calculated tax (timeout 5000ms)
+  ✕ Server receives and captures PayPal Order ID (expected 200, received 500 Internal Error)
+  ✕ Webhook verification failed: invalid auth-algo header
+
+Test Suites: 2 failed, 6 passed, 8 total
+Tests:       4 failed, 38 passed, 42 total
+Time:        14.82 s
+================================================================================
+

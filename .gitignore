@@ -1,5 +1,5 @@
-docs/
 html_version/
+/md_artefacts/
 dist/
 node_modules/
 .env
@@ -15,4 +15,3 @@ ENV/
 .pytest_cache/
 dev.db
 alembic.log
-

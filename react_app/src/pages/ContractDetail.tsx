@@ -882,6 +882,72 @@ export const ContractDetail: React.FC = () => {
 
               {/* TAB 1: MILESTONES & DELIVERABLES */}
               <TabsContent value="contract" className="space-y-4 outline-none">
+                {/* CSS Milestone Lifecycle Timeline (Roadmap §10 / §13 P1) */}
+                <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-blue-400" />
+                      Milestone Execution & Payment Lifecycle
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      {contract.milestones.filter(m => m.status === 'settled' || m.paymentStatus === 'released').length} of {contract.milestones.length} Settled
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-0 overflow-x-auto pb-2 pt-1">
+                    {contract.milestones.map((m, idx) => {
+                      const isPaid = m.status === 'settled' || m.paymentStatus === 'released'
+                      const isVerified = m.status === 'verified'
+                      const isFunded = ['staged_in_sandbox', 'release_authorized'].includes(m.paymentStatus)
+                      const isPrevPaid = idx > 0 && (contract.milestones[idx - 1].status === 'settled' || contract.milestones[idx - 1].paymentStatus === 'released')
+
+                      let circleBg = 'bg-slate-800 border-slate-700 text-slate-400'
+                      let statusBadgeText = 'Draft / Pending'
+                      let statusBadgeColor = 'text-slate-400'
+
+                      if (isPaid) {
+                        circleBg = 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                        statusBadgeText = '✓ Released'
+                        statusBadgeColor = 'text-emerald-400'
+                      } else if (isVerified) {
+                        circleBg = 'bg-purple-500/20 border-purple-500 text-purple-400'
+                        statusBadgeText = 'Verified'
+                        statusBadgeColor = 'text-purple-400'
+                      } else if (isFunded) {
+                        circleBg = 'bg-blue-500/20 border-blue-500 text-blue-400'
+                        statusBadgeText = 'Funded in Escrow'
+                        statusBadgeColor = 'text-blue-400'
+                      }
+
+                      return (
+                        <React.Fragment key={m.id || idx}>
+                          {idx > 0 && (
+                            <div
+                              className={`h-0.5 flex-1 min-w-[28px] transition-colors ${
+                                isPrevPaid ? 'bg-emerald-500' : isPaid || isFunded ? 'bg-blue-500/60' : 'bg-slate-800'
+                              }`}
+                            />
+                          )}
+                          <div className="flex flex-col items-center shrink-0 text-center px-1">
+                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-mono font-bold transition-all ${circleBg}`}>
+                              {isPaid ? '✓' : `M${idx + 1}`}
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-200 mt-1.5 max-w-[90px] truncate block">
+                              {m.title}
+                            </span>
+                            <span className={`text-[10px] font-mono mt-0.5 block ${statusBadgeColor}`}>
+                              {statusBadgeText}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400 block">
+                              {formatCurrency(m.amount, contract.currency)}
+                            </span>
+                          </div>
+                        </React.Fragment>
+                      )
+                    })}
+                  </div>
+                </div>
+
                 {/* Filter Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#101726] p-2.5 rounded-xl border border-[#222A3D]">
                   <div className="flex items-center gap-1.5 flex-wrap">

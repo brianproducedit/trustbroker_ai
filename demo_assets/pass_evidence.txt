@@ -1,0 +1,43 @@
+================================================================================
+TRUSTBROKER AI — DELIVERABLE VERIFICATION EVIDENCE (PASS SPECIFICATION)
+================================================================================
+Contract Code: TB-2026-001
+Milestone 2: Storefront & Cart Checkout Integration
+Freelancer: Tariro Moyo (Senior Full-Stack & API Architect)
+Repository: https://github.com/devstudio/next-commerce-demo
+Live Staging: https://commerce-demo.devstudio.co.zw
+
+1. ACCEPTANCE CRITERIA COMPLIANCE:
+--------------------------------------------------------------------------------
+[CRITERION 1] Next.js App Router implementation with sub-second page loads:
+- Production Next.js 15 App Router deployed on Edge network.
+- Google Lighthouse Mobile Score: 96 / 100
+- Google Lighthouse Desktop Score: 99 / 100
+- Largest Contentful Paint (LCP): 640ms (Target: < 1000ms) - PASS
+- First Input Delay (FID): 12ms - PASS
+- Cumulative Layout Shift (CLS): 0.002 - PASS
+- Automated bundle analysis: First Load JS: 84.2 kB shared by all chunks.
+
+[CRITERION 2] PayPal Sandbox orders v2 integration with server-side capture:
+- Client-side PayPal JS SDK v5 integration with Orders v2.
+- Server-side capture endpoint: POST /api/checkout/capture
+- PayPal Webhook verification implemented with SHA256withRSA signature validation.
+- Idempotency test suite: 50 concurrent duplicate requests resolved with identical transaction ID and zero double captures.
+- Unit Test Coverage: 42/42 passing (100% coverage on payment router).
+
+2. VERIFICATION TEST SUITE LOGS:
+--------------------------------------------------------------------------------
+PASS tests/e2e/checkout.spec.ts (6.42s)
+  ✓ Guest adds product to cart and selects shipping (840ms)
+  ✓ PayPal modal launches with currency USD and calculated tax (1120ms)
+  ✓ Server receives and captures PayPal Order ID (450ms)
+  ✓ Webhook PAYMENT.CAPTURE.COMPLETED received and verified (310ms)
+  ✓ Database milestone escrow reflects COMPLETED status (120ms)
+
+Test Suites: 8 passed, 8 total
+Tests:       42 passed, 42 total
+Snapshots:   0 total
+Time:        9.842 s
+Ran all test suites.
+================================================================================
+
