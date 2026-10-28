@@ -23,6 +23,13 @@ import { MyApplications } from '@/pages/freelancer/MyApplications'
 import { FreelancerProfile } from '@/pages/freelancer/FreelancerProfile'
 import { ClientOperations } from '@/pages/client/ClientOperations'
 import { FreelancerOperations } from '@/pages/freelancer/FreelancerOperations'
+import { ClientHome } from '@/pages/client/ClientHome'
+import { ClientContracts } from '@/pages/client/ClientContracts'
+import { ClientContractPage } from '@/pages/client/ClientContractPage'
+import { ClientApplications } from '@/pages/client/ClientApplications'
+import { ClientProfile } from '@/pages/client/ClientProfile'
+import { ClientProfilePublic } from '@/pages/client/ClientProfilePublic'
+import { FreelancerWork } from '@/pages/freelancer/FreelancerWork'
 import { NotificationsPage } from '@/pages/Notifications'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
@@ -46,7 +53,7 @@ export const AppRoutes: React.FC = () => {
         path="/app/client"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <ClientHome />
           </ProtectedRoute>
         }
       />
@@ -54,7 +61,7 @@ export const AppRoutes: React.FC = () => {
         path="/app/client/contracts"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <ClientContracts />
           </ProtectedRoute>
         }
       />
@@ -70,7 +77,7 @@ export const AppRoutes: React.FC = () => {
         path="/app/client/contracts/:id"
         element={
           <ProtectedRoute>
-            <ContractDetail />
+            <ClientContractPage />
           </ProtectedRoute>
         }
       />
@@ -78,7 +85,31 @@ export const AppRoutes: React.FC = () => {
         path="/app/client/contracts/:id/applicants"
         element={
           <ProtectedRoute>
-            <ContractDetail />
+            <ClientContractPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/applications"
+        element={
+          <ProtectedRoute>
+            <ClientApplications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/profile"
+        element={
+          <ProtectedRoute>
+            <ClientProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/profile/:clientId"
+        element={
+          <ProtectedRoute>
+            <ClientProfilePublic />
           </ProtectedRoute>
         }
       />
@@ -128,7 +159,7 @@ export const AppRoutes: React.FC = () => {
         path="/app/freelancer/work"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <FreelancerWork />
           </ProtectedRoute>
         }
       />

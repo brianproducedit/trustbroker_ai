@@ -20,6 +20,8 @@ export const ROUTES = {
   CLIENT_HOME: '/app/client',
   CLIENT_NEW_CONTRACT: '/app/client/contracts/new',
   CLIENT_CONTRACTS: '/app/client/contracts',
+  CLIENT_APPLICATIONS: '/app/client/applications',
+  CLIENT_PROFILE: '/app/client/profile',
   NEW_PROJECT: '/app/client/contracts/new',
   CONTRACTS: '/app/client/contracts',
   CONTRACT_DETAIL: (id: string = ':id') => `/app/client/contracts/${id}`,
