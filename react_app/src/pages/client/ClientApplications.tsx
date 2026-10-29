@@ -49,9 +49,15 @@ export const ClientApplications: React.FC = () => {
     try {
       await fetchContracts()
       const allApps: any[] = []
-      // Query applications for each contract
+      // Standard UUID validator to prevent 422 errors on mock contract IDs
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+      // Query applications for each valid backend contract
       await Promise.all(
         contracts.map(async (c) => {
+          if (!c.id || !UUID_REGEX.test(c.id)) {
+            return
+          }
           try {
             const res = await api.contracts.listApplications(c.id)
             const apps = res?.applications || []
@@ -65,8 +71,8 @@ export const ClientApplications: React.FC = () => {
                 contractCurrency: c.currency,
               })
             })
-          } catch (err) {
-            console.warn(`Error loading apps for contract ${c.id}:`, err)
+          } catch {
+            // Silently ignore individual non-existent contract applications
           }
         })
       )

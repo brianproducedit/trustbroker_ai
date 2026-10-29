@@ -66,7 +66,7 @@ print(f"Created contract: {contract.id} with {len(contract.milestones)} mileston
               TrustBroker Developer Platform
             </h1>
             <p className="text-sm text-[#5D6B82] max-w-2xl leading-relaxed">
-              Integrate AI contract drafting, PayPal milestone payments, and automated delivery evaluation directly into your marketplace or agency workflow.
+              Integrate AI contract drafting, PayPal milestone payments and automated delivery evaluation directly into your marketplace or agency workflow.
             </p>
           </div>
         </section>

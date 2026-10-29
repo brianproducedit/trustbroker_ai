@@ -123,7 +123,7 @@ function mapSowMilestones(res: any, fallbackBudget: number, targetDate: string):
       {
         id: `m-2-${Date.now()}`,
         title: 'Milestone 2: Final delivery',
-        description: 'Remaining scope, QA, and handover.',
+        description: 'Remaining scope, QA and handover.',
         amount: Math.max(0, fallbackBudget - half),
         deadline: targetDate || defaultDeadline(14),
         criteria: [{ title: 'Final assets delivered', evidenceType: 'file' }],
@@ -138,9 +138,9 @@ function mapSowMilestones(res: any, fallbackBudget: number, targetDate: string):
     deadline: targetDate || defaultDeadline((idx + 1) * 7),
     criteria: Array.isArray(m.acceptance_criteria) && m.acceptance_criteria.length > 0
       ? m.acceptance_criteria.map((c: any) => ({
-          title: typeof c === 'string' ? c : c.title || c.description || 'Verifiable criterion',
-          evidenceType: c.evidence_type || 'text',
-        }))
+        title: typeof c === 'string' ? c : c.title || c.description || 'Verifiable criterion',
+        evidenceType: c.evidence_type || 'text',
+      }))
       : [{ title: 'Deliverable meets the written scope', evidenceType: 'text' }],
   }))
 }
@@ -495,13 +495,12 @@ export const CreateProject: React.FC = () => {
                 type="button"
                 disabled={!isCompleted}
                 onClick={() => isCompleted && setStep(s.num as WizardStep)}
-                className={`py-2 px-1 rounded-lg border transition-all ${
-                  isActive
+                className={`py-2 px-1 rounded-lg border transition-all ${isActive
                     ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-semibold'
                     : isCompleted
                       ? 'bg-[#171F33] border-[#2D3449] text-emerald-400 hover:bg-[#222A3D]'
                       : 'bg-[#131B2E] border-[#222A3D] text-slate-500 opacity-60'
-                }`}
+                  }`}
               >
                 <span className="truncate block">{s.label}</span>
               </button>
@@ -545,11 +544,10 @@ export const CreateProject: React.FC = () => {
                       key={c.value}
                       type="button"
                       onClick={() => setCategory(c.value)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors cursor-pointer ${
-                        category === c.value
+                      className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors cursor-pointer ${category === c.value
                           ? 'border-blue-500 bg-blue-600/30 text-blue-300 font-semibold'
                           : 'border-[#222A3D] bg-[#0E1528] text-slate-400 hover:text-white hover:border-slate-600'
-                      }`}
+                        }`}
                     >
                       {c.label}
                     </button>
@@ -595,7 +593,7 @@ export const CreateProject: React.FC = () => {
                   rows={6}
                   value={brief}
                   onChange={(e) => setBrief(e.target.value)}
-                  placeholder="Describe the work, constraints, and what good looks like..."
+                  placeholder="Describe the work, constraints and what good looks like..."
                   className="bg-[#0B1326] border-[#2D3449] text-white placeholder:text-slate-500 text-xs leading-relaxed"
                 />
               </div>

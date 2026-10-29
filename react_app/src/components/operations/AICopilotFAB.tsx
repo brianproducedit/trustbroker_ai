@@ -15,6 +15,51 @@ import {
   RefreshCw,
 } from 'lucide-react'
 
+function renderMarkdownContent(text: string) {
+  const lines = text.split('\n')
+  return lines.map((line, idx) => {
+    const isBullet = line.trim().startsWith('- ') || line.trim().startsWith('* ')
+    const cleanLine = isBullet ? line.trim().slice(2) : line
+
+    const parts = cleanLine.split(/(\*\*.*?\*\*|`.*?`)/g)
+    const formatted = parts.map((part, pIdx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={pIdx} className="font-semibold text-white">
+            {part.slice(2, -2)}
+          </strong>
+        )
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code
+            key={pIdx}
+            className="bg-blue-950/80 text-blue-300 font-mono text-[11px] px-1 py-0.5 rounded border border-blue-800/40"
+          >
+            {part.slice(1, -1)}
+          </code>
+        )
+      }
+      return part
+    })
+
+    if (isBullet) {
+      return (
+        <div key={idx} className="flex items-start gap-2 my-1 pl-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+          <span className="flex-1">{formatted}</span>
+        </div>
+      )
+    }
+
+    return (
+      <p key={idx} className={line.trim() === '' ? 'h-2' : 'my-0.5'}>
+        {formatted}
+      </p>
+    )
+  })
+}
+
 interface Message {
   id: string
   sender: 'user' | 'assistant'
@@ -163,11 +208,15 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
               >
                 <div
                   className={`max-w-[88%] p-3.5 rounded-2xl text-xs leading-relaxed ${m.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-xs shadow-md'
-                      : 'bg-[#131B2E] border border-[#1E293B] text-slate-200 rounded-bl-xs'
+                    ? 'bg-blue-600 text-white rounded-br-xs shadow-md'
+                    : 'bg-[#131B2E] border border-[#1E293B] text-slate-200 rounded-bl-xs'
                     }`}
                 >
-                  <div className="whitespace-pre-wrap">{m.text}</div>
+                  {m.sender === 'user' ? (
+                    <div className="whitespace-pre-wrap">{m.text}</div>
+                  ) : (
+                    <div>{renderMarkdownContent(m.text)}</div>
+                  )}
 
                   {/* Suggested Query Buttons */}
                   {m.suggestedActions && m.suggestedActions.length > 0 && (
@@ -200,7 +249,7 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
               <div className="flex items-start gap-2">
                 <div className="bg-[#131B2E] border border-[#1E293B] p-3 rounded-2xl text-slate-400 flex items-center gap-2 text-xs">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                  <span>Analyzing PostgreSQL telemetry &amp; generating insights...</span>
+                  <span>Working...</span>
                 </div>
               </div>
             )}

@@ -1,6 +1,6 @@
 """
 HTTP Probe Adapter for Live Staging & Deployed Web URLs.
-Probes reachable status, HTTP status code, TLS security, page title, and latency.
+Probes reachable status, HTTP status code, TLS security, page title and latency.
 """
 import re
 import time

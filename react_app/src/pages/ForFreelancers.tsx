@@ -55,7 +55,7 @@ export const ForFreelancers: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-[#475569] max-w-2xl leading-relaxed">
-              Browse open listings, apply with your real portfolio artifacts, work with pre-funded escrow protection, and receive disbursements immediately after AI inspection.
+              Browse open listings, apply with your real portfolio artifacts, work with pre-funded escrow protection and receive disbursements immediately after AI inspection.
             </p>
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
@@ -80,7 +80,7 @@ export const ForFreelancers: React.FC = () => {
           <div className="text-center max-w-xl mx-auto mb-10">
             <h2 className="text-2xl font-bold text-[#0B1B33]">Built for Fair, Transparent Freelancing</h2>
             <p className="text-xs sm:text-sm text-[#475569] mt-1.5">
-              Clear milestone parameters protect your time, code, and revenue.
+              Clear milestone parameters protect your time, code and revenue.
             </p>
           </div>
 
@@ -113,7 +113,7 @@ export const ForFreelancers: React.FC = () => {
                 Funded Milestones &amp; PayPal Earnings
               </h2>
               <p className="text-xs sm:text-sm text-[#475569] mt-1">
-                Deliver evidence, watch multimodal AI pass criteria, and review verified PayPal disbursements in your earnings ledger.
+                Deliver evidence, watch multimodal AI pass criteria and review verified PayPal disbursements in your earnings ledger.
               </p>
             </div>
 

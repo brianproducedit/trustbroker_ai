@@ -1,6 +1,6 @@
 # TrustBroker AI — Backend Service
 
-FastAPI backend for **TrustBroker AI**: contract lifecycle, PayPal-secured milestone payments, AI delivery verification via Groq (OpenRouter fallback), and audit logging.
+FastAPI backend for **TrustBroker AI**: contract lifecycle, PayPal-secured milestone payments, AI delivery verification via Groq (OpenRouter fallback) and audit logging.
 
 ---
 
@@ -41,7 +41,7 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Fill in your credentials from Supabase, PayPal Developer, and Groq Console (or OpenRouter).
+Fill in your credentials from Supabase, PayPal Developer and Groq Console (or OpenRouter).
 
 ### 3. Run the Development Server
 

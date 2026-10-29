@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="TrustBroker AI Engine",
-    description="Trust layer between clients and freelancers: open contracts, applications, PayPal-secured milestone payments, and AI verification.",
+    description="Trust layer between clients and freelancers: open contracts, applications, PayPal-secured milestone payments and AI verification.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

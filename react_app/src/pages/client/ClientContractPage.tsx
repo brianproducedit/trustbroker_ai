@@ -329,22 +329,20 @@ export const ClientContractPage: React.FC = () => {
               {pipelineSteps.map((step) => (
                 <div
                   key={step.num}
-                  className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 transition-all ${
-                    step.done
+                  className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 transition-all ${step.done
                       ? 'bg-blue-950/40 border-blue-800/60 text-blue-200'
                       : step.active
-                      ? 'bg-blue-600/20 border-blue-500 text-white ring-1 ring-blue-500/50'
-                      : 'bg-[#0E1528] border-[#222A3D] text-slate-500'
-                  }`}
+                        ? 'bg-blue-600/20 border-blue-500 text-white ring-1 ring-blue-500/50'
+                        : 'bg-[#0E1528] border-[#222A3D] text-slate-500'
+                    }`}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                      step.done
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${step.done
                         ? 'bg-blue-600 text-white'
                         : step.active
-                        ? 'bg-blue-500 text-white animate-pulse'
-                        : 'bg-[#1C263B] text-slate-400'
-                    }`}
+                          ? 'bg-blue-500 text-white animate-pulse'
+                          : 'bg-[#1C263B] text-slate-400'
+                      }`}
                   >
                     {step.done ? '✓' : step.num}
                   </div>
@@ -541,15 +539,14 @@ export const ClientContractPage: React.FC = () => {
                             </td>
                             <td className="py-3.5 px-4">
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-medium inline-flex items-center gap-1 ${
-                                  isVerified
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-medium inline-flex items-center gap-1 ${isVerified
                                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                     : m.status === 'in_progress'
-                                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                                    : m.status === 'in_verification' || m.status === 'submitted'
-                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
-                                    : 'bg-slate-700/50 text-slate-300 border border-slate-600/40'
-                                }`}
+                                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                      : m.status === 'in_verification' || m.status === 'submitted'
+                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+                                        : 'bg-slate-700/50 text-slate-300 border border-slate-600/40'
+                                  }`}
                               >
                                 {m.status || 'pending'}
                               </span>
@@ -562,13 +559,12 @@ export const ClientContractPage: React.FC = () => {
                             </td>
                             <td className="py-3.5 px-4">
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
-                                  isReleased
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${isReleased
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                     : isStaged
-                                    ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                                    : 'bg-slate-800 text-slate-400 border border-slate-700'
-                                }`}
+                                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                                  }`}
                               >
                                 {isReleased ? 'Released' : isStaged ? 'Staged' : 'Unfunded'}
                               </span>
@@ -637,13 +633,12 @@ export const ClientContractPage: React.FC = () => {
                               ({app.freelancer?.email || 'verified'})
                             </span>
                             <Badge
-                              className={`text-[10px] uppercase font-mono ${
-                                app.status === 'awarded'
+                              className={`text-[10px] uppercase font-mono ${app.status === 'awarded'
                                   ? 'bg-emerald-600 text-white'
                                   : app.status === 'shortlisted'
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-800 text-slate-300'
-                              }`}
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-800 text-slate-300'
+                                }`}
                             >
                               {app.status}
                             </Badge>
@@ -660,13 +655,12 @@ export const ClientContractPage: React.FC = () => {
                             </div>
                             <span className="text-slate-600">•</span>
                             <span
-                              className={`font-semibold text-[11px] ${
-                                rec === 'HIRE'
+                              className={`font-semibold text-[11px] ${rec === 'HIRE'
                                   ? 'text-emerald-400'
                                   : rec === 'CONSIDER'
-                                  ? 'text-amber-400'
-                                  : 'text-red-400'
-                              }`}
+                                    ? 'text-amber-400'
+                                    : 'text-red-400'
+                                }`}
                             >
                               Recommendation: {rec}
                             </span>
@@ -712,7 +706,7 @@ export const ClientContractPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-bold text-white mb-2">Statement of Work (SOW)</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  This legally binding smart contract governance agreement specifies dual cryptographic acceptance, milestone evidence submission standards, automated AI verification thresholds, and PayPal sandbox escrow release triggers.
+                  This legally binding smart contract governance agreement specifies dual cryptographic acceptance, milestone evidence submission standards, automated AI verification thresholds and PayPal sandbox escrow release triggers.
                 </p>
               </div>
 

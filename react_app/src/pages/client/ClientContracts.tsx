@@ -190,7 +190,7 @@ export const ClientContracts: React.FC = () => {
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight">My Contracts</h1>
               <p className="text-xs text-slate-400 mt-0.5">
-                Manage, track, and review all your contracts
+                Manage, track and review all your contracts
               </p>
             </div>
           </div>
@@ -227,11 +227,10 @@ export const ClientContracts: React.FC = () => {
                     key={opt.value}
                     type="button"
                     onClick={() => setActiveFilter(opt.value)}
-                    className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${
-                      activeFilter === opt.value
+                    className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${activeFilter === opt.value
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-slate-400 hover:text-slate-200'
-                    }`}
+                      }`}
                   >
                     {opt.label}
                   </button>

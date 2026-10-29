@@ -1,6 +1,6 @@
 """
 ZIP Listing Adapter for Source Code & Deliverable Archives.
-Safely inspects member filenames, directory structure, and uncompressed sizes.
+Safely inspects member filenames, directory structure and uncompressed sizes.
 Never extracts files to disk or executes archive contents.
 """
 import io

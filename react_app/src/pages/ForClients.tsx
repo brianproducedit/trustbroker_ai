@@ -18,7 +18,7 @@ export const ForClients: React.FC = () => {
   const benefits = [
     {
       title: 'AI Drafts Clear Contracts in Seconds',
-      desc: 'Describe your project in natural language. TrustBroker structures milestones, deadlines, and measurable acceptance criteria with assigned evidence types before you publish.',
+      desc: 'Describe your project in natural language. TrustBroker structures milestones, deadlines and measurable acceptance criteria with assigned evidence types before you publish.',
       icon: Sparkles,
       color: 'bg-blue-50 text-blue-600 border-blue-200',
     },
@@ -55,7 +55,7 @@ export const ForClients: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-[#475569] max-w-2xl leading-relaxed">
-              Publish open contracts, evaluate AI-ranked applicant proposals with portfolio proof, fund milestones through PayPal, and authorize payouts only after multimodal inspection.
+              Publish open contracts, evaluate AI-ranked applicant proposals with portfolio proof, fund milestones through PayPal and authorize payouts only after multimodal inspection.
             </p>
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">

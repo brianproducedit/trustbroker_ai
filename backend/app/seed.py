@@ -44,7 +44,7 @@ def seed_database():
                 "full_name": "Elena Rostova (Client)",
                 "organization": "Acme Global Ventures LLC",
                 "headline": "Fintech & Marketplace Product Lead",
-                "bio": "Product and operations lead specializing in autonomous escrow, cross-border settlements, and developer tooling.",
+                "bio": "Product and operations lead specializing in autonomous escrow, cross-border settlements and developer tooling.",
                 "skills": ["Product Strategy", "FinTech", "Milestone Escrow", "Vendor Management"],
                 "portfolio": [],
                 "profile_completeness": 100,
@@ -57,7 +57,7 @@ def seed_database():
                 "full_name": "Tariro Moyo (Freelancer)",
                 "organization": "DevStudio Zimbabwe",
                 "headline": "Senior Full-Stack & API Architect",
-                "bio": "Experienced systems architect specializing in high-throughput FastAPI microservices, React/Next.js frontend, and PayPal payment automation.",
+                "bio": "Experienced systems architect specializing in high-throughput FastAPI microservices, React/Next.js frontend and PayPal payment automation.",
                 "skills": ["Python", "FastAPI", "React", "TypeScript", "PostgreSQL", "PayPal API", "Docker", "AG Grid"],
                 "portfolio": [
                     {
@@ -81,7 +81,7 @@ def seed_database():
                 "full_name": "Kuda Nyamuda (Newcomer)",
                 "organization": "Independent Fullstack",
                 "headline": "UI/UX & React Systems Engineer",
-                "bio": "Specialized in accessible design systems, fluid motion, and responsive component libraries. Eager to take on milestone-verified projects.",
+                "bio": "Specialized in accessible design systems, fluid motion and responsive component libraries. Eager to take on milestone-verified projects.",
                 "skills": ["React", "Tailwind CSS", "UI/UX", "Next.js", "Figma", "Design Systems"],
                 "portfolio": [
                     {
@@ -242,7 +242,7 @@ def seed_database():
                 id=m1_id,
                 contract_id=contract_id,
                 title="Design System, Wireframes & Component Specs",
-                description="Comprehensive Figma design system with mobile/desktop responsiveness, accessible tokens, and UI specs.",
+                description="Comprehensive Figma design system with mobile/desktop responsiveness, accessible tokens and UI specs.",
                 amount=Decimal("4000.00"),
                 currency="USD",
                 deadline=(now - timedelta(days=7)).strftime("%Y-%m-%d"),
@@ -258,7 +258,7 @@ def seed_database():
                 id=uuid.uuid4(),
                 milestone_id=m1_id,
                 title="Complete Figma design tokens & dark/light theme specification",
-                description="Exportable Tailwind tokens covering colors, spacing, and typography.",
+                description="Exportable Tailwind tokens covering colors, spacing and typography.",
                 evidence_type="url",
                 status=CriterionStatus.PASS,
                 ai_confidence=0.98,
@@ -269,7 +269,7 @@ def seed_database():
                 id=uuid.uuid4(),
                 milestone_id=m1_id,
                 title="Interactive prototype for desktop and mobile viewpoints",
-                description="Clickable Figma flow covering catalog, product detail, and cart drawer.",
+                description="Clickable Figma flow covering catalog, product detail and cart drawer.",
                 evidence_type="url",
                 status=CriterionStatus.PASS,
                 ai_confidence=0.95,
@@ -285,7 +285,7 @@ def seed_database():
                 id=m2_id,
                 contract_id=contract_id,
                 title="Storefront & Cart Checkout Integration",
-                description="Production Next.js storefront with dynamic product routing, stateful cart, and PayPal sandbox checkout.",
+                description="Production Next.js storefront with dynamic product routing, stateful cart and PayPal sandbox checkout.",
                 amount=Decimal("6000.00"),
                 currency="USD",
                 deadline=(now + timedelta(days=5)).strftime("%Y-%m-%d"),
@@ -345,7 +345,7 @@ def seed_database():
                 milestone_id=m2_id,
                 overall_score=94,
                 passed=True,
-                summary_analysis="Groq LPU evaluated all deliverables against agreed criteria. High code quality, complete test coverage, and responsive UX verified.",
+                summary_analysis="Groq LPU evaluated all deliverables against agreed criteria. High code quality, complete test coverage and responsive UX verified.",
                 model_used="openai/gpt-oss-120b",
                 requires_human_review=False,
                 assessed_at=now - timedelta(hours=3),
@@ -494,7 +494,7 @@ def seed_database():
             {
                 "code": "TB-2026-002",
                 "title": "Cross-Border B2B FinTech Invoice Settlement Portal",
-                "description": "Automated payment routing, multi-currency invoicing, and real-time reconciliation platform connecting global suppliers with instant milestone releases.",
+                "description": "Automated payment routing, multi-currency invoicing and real-time reconciliation platform connecting global suppliers with instant milestone releases.",
                 "category": "software",
                 "total_amount": Decimal("12000.00"),
                 "required_skills": ["Python", "FastAPI", "React", "TypeScript", "PayPal API"],
@@ -520,7 +520,7 @@ def seed_database():
                     },
                     {
                         "title": "Supplier Ledger UI & Automated Settlement Reports",
-                        "description": "Responsive React frontend with AG Grid ledger view, filtering, and PDF export.",
+                        "description": "Responsive React frontend with AG Grid ledger view, filtering and PDF export.",
                         "amount": Decimal("7000.00"),
                         "deadline": (now + timedelta(days=28)).strftime("%Y-%m-%d"),
                         "criteria": [
@@ -541,7 +541,7 @@ def seed_database():
             {
                 "code": "TB-2026-003",
                 "title": "Mobile-First Design System & Micro-Interactions Spec",
-                "description": "Production-ready accessible UI component library, tokens, and fluid animated states for the TrustBroker mobile and tablet experience.",
+                "description": "Production-ready accessible UI component library, tokens and fluid animated states for the TrustBroker mobile and tablet experience.",
                 "category": "design",
                 "total_amount": Decimal("6500.00"),
                 "required_skills": ["Figma", "Design Systems", "Tailwind CSS", "Accessibility"],
@@ -549,7 +549,7 @@ def seed_database():
                 "milestones": [
                     {
                         "title": "Accessible Token Architecture & Component Specs",
-                        "description": "Design system variables, WCAG AA compliance palettes, and typography scales.",
+                        "description": "Design system variables, WCAG AA compliance palettes and typography scales.",
                         "amount": Decimal("3000.00"),
                         "deadline": (now + timedelta(days=10)).strftime("%Y-%m-%d"),
                         "criteria": [

@@ -1,7 +1,7 @@
 # TrustBroker AI — Judge Demo & Sandbox Money Loop Guide
 
 > **Competition:** [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)  
-> **Target Audience:** Hackathon Judges, Evaluators, and Technical Reviewers  
+> **Target Audience:** Hackathon Judges, Evaluators and Technical Reviewers  
 > **Key Innovation:** Autonomous AI milestone verification paired with real PayPal Orders v2 escrow captures and PayPal Payouts API disbursements.
 
 ---
@@ -68,7 +68,7 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 ### Step 2: Review or Open a Contract
 1. From the Contracts list, click into an active or awarded contract (e.g. `TB-2026-001`).
 2. Notice the navigation tabs:
-   - **Milestones**: Breakdown of deliverables, acceptance criteria, and status badges.
+   - **Milestones**: Breakdown of deliverables, acceptance criteria and status badges.
    - **Legal SOW**: Plain-language AI-drafted statement of work and exclusions.
    - **Payments**: The PayPal Escrow & Disbursement Hub.
    - **Audit Activity**: Immutable chronological event log.
@@ -83,7 +83,7 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 5. Upon approval:
    - Server executes `POST /api/v1/payments/capture-order` and validates status `COMPLETED`.
    - Milestone status updates to `funded` (`staged_in_sandbox`).
-   - The **PayPal Orders & Captures** ledger immediately records the **PayPal Order ID**, **Capture ID**, amount, and timestamp.
+   - The **PayPal Orders & Captures** ledger immediately records the **PayPal Order ID**, **Capture ID**, amount and timestamp.
    - Audit trail registers `payment_capture_completed`.
 
 ### Step 4: Switch to Freelancer & Submit Work
@@ -128,12 +128,12 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 ### Step 8: Test AG Studio Financial Operations & AI Copilot
 1. In either the **Client** or **Freelancer** workspace, click **Operations** in the sidebar (or navigate to `/app/client/operations` or `/app/freelancer/operations`).
 2. Observe live KPI widgets:
-   - Total Committed, Staged in Escrow, Cleared Payouts, and Pending Verification.
+   - Total Committed, Staged in Escrow, Cleared Payouts and Pending Verification.
 3. Test the **AG Studio Copilot Agent**:
    - Click one of the 3 prompt starters (e.g. *"Summarize total escrow funds and pending milestone verifications"* or *"Which milestone is currently in verification and what is its status?"*).
    - Notice the agent answers with real-time database context queried directly from PostgreSQL.
 4. Inspect the **AG Grid Financial Ledger**:
-   - Filter and sort across milestone amounts, counterparty names, and lifecycle status pills.
+   - Filter and sort across milestone amounts, counterparty names and lifecycle status pills.
 
 ### Step 9: Verify Impartial AI Vetting (Newcomers vs. Experienced)
 1. Sign in as Client (`client.demo@trustbroker.ai`).
@@ -161,7 +161,7 @@ To independently confirm money movement in your own sandbox:
 3. Check the **Notifications** or log into the Sandbox Business / Personal accounts at [sandbox.paypal.com](https://www.sandbox.paypal.com):
    - **Platform Business Account**: Shows the incoming Capture for the milestone and the outgoing Payout.
    - **Freelancer Personal Account**: Shows payment received from TrustBroker AI with the note: *"TrustBroker payout for {contract_code} — {milestone_title}"*.
-4. Match the **Order ID**, **Capture ID**, and **Payout Batch ID** displayed in TrustBroker's UI with the PayPal dashboard entries.
+4. Match the **Order ID**, **Capture ID** and **Payout Batch ID** displayed in TrustBroker's UI with the PayPal dashboard entries.
 
 ---
 

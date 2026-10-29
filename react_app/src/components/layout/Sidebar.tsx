@@ -93,9 +93,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
     <aside className="fixed left-0 top-0 h-screen w-64 bg-[#0B1326] border-r border-[#222A3D] z-50 flex flex-col justify-between select-none">
       {/* Top Header */}
       <div className="flex flex-col">
-        <div className="h-16 px-4 flex items-center justify-between border-b border-[#222A3D] bg-[#060E20]">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-[#222A3D] bg-[#0E1528]">
           <Link to={currentRole === 'client' ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME} className="flex items-center">
-            <Logo isDark hideSubtitle={false} />
+            <Logo isDark hideSubtitle={false} linkToHome={false} />
           </Link>
         </div>
 

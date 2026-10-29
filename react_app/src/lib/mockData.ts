@@ -5,7 +5,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
     id: 'contract-1',
     code: 'TB-2026-084',
     title: 'High-Converting React 18 Landing Page with Tailwind CSS',
-    description: 'Design and deliver production-grade responsive landing page with strict TypeScript checks, Tailwind CSS v4, and automated Lighthouse audit verification (>95 score).',
+    description: 'Design and deliver production-grade responsive landing page with strict TypeScript checks, Tailwind CSS v4 and automated Lighthouse audit verification (>95 score).',
     version: 3,
     status: 'in_verification',
     totalAmount: 3200,
@@ -34,7 +34,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
       {
         id: 'ms-1',
         title: 'M1: Architecture, Design System & UX Wireframes',
-        description: 'Complete Figma design system tokens, responsive mobile/desktop wireframes, and approved component hierarchy.',
+        description: 'Complete Figma design system tokens, responsive mobile/desktop wireframes and approved component hierarchy.',
         amount: 800,
         currency: 'USD',
         deadline: '2026-10-24',
@@ -53,7 +53,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
           {
             id: 'c-2',
             title: 'Responsive Wireframe Deliverables',
-            description: 'Mobile (375px), Tablet (768px), and Desktop (1440px) layout specifications included.',
+            description: 'Mobile (375px), Tablet (768px) and Desktop (1440px) layout specifications included.',
             status: 'pass',
             aiConfidence: 0.95,
             evidenceMatchSnippet: 'Exported wireframes confirm 3 breakpoints tested with zero element collisions.',
@@ -75,7 +75,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
       {
         id: 'ms-2',
         title: 'M2: Core React Components & Automated Performance Audit',
-        description: 'Deliver GitHub repository with clean React TypeScript code, Tailwind styling, zero TypeScript errors, and Lighthouse score >95.',
+        description: 'Deliver GitHub repository with clean React TypeScript code, Tailwind styling, zero TypeScript errors and Lighthouse score >95.',
         amount: 1400,
         currency: 'USD',
         deadline: '2026-10-31',
@@ -125,7 +125,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
       {
         id: 'ms-3',
         title: 'M3: PayPal Sandbox Integration & Production Deployment',
-        description: 'Working PayPal Orders API sandbox checkout, live production URL, and verified post-checkout confirmation hook.',
+        description: 'Working PayPal Orders API sandbox checkout, live production URL and verified post-checkout confirmation hook.',
         amount: 1000,
         currency: 'USD',
         deadline: '2026-11-08',

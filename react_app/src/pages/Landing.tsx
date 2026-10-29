@@ -6,18 +6,23 @@ import { ROUTES } from '@/constants'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  CreditCard, 
-  Sparkles, 
-  ArrowRight, 
-  UserCheck, 
+import {
+  CreditCard,
+  Sparkles,
+  ArrowRight,
+  UserCheck,
   Lock,
   CheckCircle2,
   Search,
   ChevronDown,
   ChevronUp,
   Cpu,
-  Check
+  Check,
+  FileCode,
+  Globe,
+  Send,
+  ShieldCheck,
+  Zap
 } from 'lucide-react'
 
 export const Landing: React.FC = () => {
@@ -28,13 +33,13 @@ export const Landing: React.FC = () => {
   }
 
   const steps = [
-    { n: '1', title: 'Draft SOW', desc: 'AI turns your brief into testable acceptance criteria & milestones.' },
-    { n: '2', title: 'Publish listing', desc: 'Listing opens to vetted freelancers in the marketplace.' },
-    { n: '3', title: 'Apply with proof', desc: 'Talent applies with portfolio evidence and tailored proposals.' },
-    { n: '4', title: 'AI vetting', desc: 'AI ranks applicants on skills, portfolio, and past delivery.' },
-    { n: '5', title: 'Fund milestone', desc: 'Client funds the next milestone via secure PayPal checkout.' },
-    { n: '6', title: 'Verify deliverables', desc: 'Multimodal AI inspects HTTP endpoints, screenshots & code.' },
-    { n: '7', title: 'PayPal payout', desc: 'Policy engine unlocks automated PayPal disbursement to freelancer.' },
+    { n: '1', icon: FileCode, title: 'Draft SOW', desc: 'AI turns your brief into testable acceptance criteria and milestones.' },
+    { n: '2', icon: Globe, title: 'Publish listing', desc: 'Listing opens to vetted freelancers in the marketplace.' },
+    { n: '3', icon: Send, title: 'Apply with proof', desc: 'Talent applies with portfolio evidence and tailored proposals.' },
+    { n: '4', icon: Sparkles, title: 'AI vetting', desc: 'AI ranks applicants on skills, portfolio and past delivery.' },
+    { n: '5', icon: CreditCard, title: 'Fund milestone', desc: 'Client funds the next milestone via secure PayPal checkout.' },
+    { n: '6', icon: ShieldCheck, title: 'Verify deliverables', desc: 'Multimodal AI inspects HTTP endpoints, screenshots and code.' },
+    { n: '7', icon: CheckCircle2, title: 'PayPal payout', desc: 'Policy engine unlocks automated PayPal disbursement to freelancer.' },
   ]
 
   const faqs = [
@@ -44,7 +49,7 @@ export const Landing: React.FC = () => {
     },
     {
       q: 'What deliverables can the AI verification engine inspect?',
-      a: 'TrustBroker features specialized multimodal adapters: live URLs are probed via TLS/HTTP status checks, UI screenshots are analyzed with vision models, code archives (.zip) are scanned for file structure and security issues, and documents (.pdf) are extracted and compared against requirements.'
+      a: 'TrustBroker features specialized multimodal adapters: live URLs are probed via TLS/HTTP status checks, UI screenshots are analyzed with vision models, code archives (.zip) are scanned for file structure and security issues and documents (.pdf) are extracted and compared against requirements.'
     },
     {
       q: 'What happens if a milestone requires subjective creative review?',
@@ -52,20 +57,24 @@ export const Landing: React.FC = () => {
     },
     {
       q: 'Can new freelancers with no past platform history win contracts?',
-      a: 'Yes. TrustBroker includes dedicated newcomer vetting logic: past delivery score is treated as insufficient evidence rather than zero. New talent is evaluated primarily on skills match, verified portfolio relevance, and proposal strength.'
+      a: 'Yes. TrustBroker includes dedicated newcomer vetting logic: past delivery score is treated as insufficient evidence rather than zero. New talent is evaluated primarily on skills match, verified portfolio relevance and proposal strength.'
     }
   ]
 
   return (
     <div className="min-h-screen bg-[#F7F9FC] text-[#0E172E] flex flex-col font-sans relative overflow-x-hidden">
-      {/* Background Subtle Mesh & Radial Gradients */}
-      <div 
-        aria-hidden="true" 
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40" 
+      {/* Background Subtle Mesh & Glow Orbs */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40"
       />
-      <div 
-        aria-hidden="true" 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-blue-100/60 via-indigo-50/20 to-transparent pointer-events-none blur-3xl -z-10" 
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none -z-10"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-20 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none -z-10"
       />
 
       <Header />
@@ -74,8 +83,8 @@ export const Landing: React.FC = () => {
         {/* Hero Section */}
         <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-16 sm:pb-20">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto gap-6">
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className="px-3.5 py-1 rounded-full bg-white/80 border-blue-200/80 text-blue-700 text-xs font-semibold gap-2 shadow-xs backdrop-blur-xs"
             >
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
@@ -91,7 +100,7 @@ export const Landing: React.FC = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-[#475569] leading-relaxed max-w-2xl font-normal">
-              TrustBroker AI is the trust layer for global freelance contracts. AI drafts clear statements of work, vets applicants on proof, and inspects deliverables before releasing PayPal payouts.
+              TrustBroker AI is the trust layer for global freelance contracts. AI drafts clear statements of work, vets applicants on proof and inspects deliverables before releasing PayPal payouts.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 w-full sm:w-auto">
@@ -112,7 +121,7 @@ export const Landing: React.FC = () => {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-xs text-slate-500 font-medium">
+            <div className="flex flex-wrap items-center justify-center gap-6 pt-2 text-xs text-slate-500 font-medium">
               <span className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
                 100% PayPal Sandbox Verified
@@ -126,6 +135,46 @@ export const Landing: React.FC = () => {
                 Automated Multimodal Proof Checks
               </span>
             </div>
+
+            {/* Live Interactive Verification Preview Card */}
+            <div className="w-full max-w-2xl mt-4 p-4 sm:p-5 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xl shadow-blue-900/5 text-left transition-all">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-mono text-xs font-bold text-[#0B1B33]">TB-2026-LIVE-ESCROW</span>
+                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-mono">
+                    PayPal Escrow Staged
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono font-semibold text-slate-700">
+                  <span className="text-slate-400 font-normal">Escrow Staged:</span> $8,500 USD
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3">
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-800 truncate">Multimodal Proof</p>
+                    <p className="text-[10px] text-slate-500">Live URL & Vision Pass</p>
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center gap-2.5">
+                  <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-800 truncate">DeepSeek & Groq</p>
+                    <p className="text-[10px] text-slate-500">Dual Vetting Engine</p>
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-800 truncate">PayPal Payouts</p>
+                    <p className="text-[10px] text-slate-500">Automated Release</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -136,27 +185,38 @@ export const Landing: React.FC = () => {
               The 7-Step Verified Loop
             </h2>
             <p className="text-xs sm:text-sm text-[#475569] mt-2">
-              Every milestone is structured, pre-funded in PayPal escrow, verified on live evidence, and settled automatically.
+              Every milestone is structured, pre-funded in PayPal escrow, verified on live evidence and settled automatically.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
-            {steps.map((step) => (
-              <Card key={step.n} className="border-[#E2E8F0] bg-white hover:border-blue-400 hover:shadow-md transition-all">
-                <CardContent className="p-4 flex flex-col justify-between h-full space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-mono font-bold text-xs border border-blue-100">
-                      0{step.n}
-                    </span>
-                    <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Step</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-xs sm:text-sm text-[#0B1B33]">{step.title}</h3>
-                    <p className="text-[11px] text-[#64748B] mt-1 leading-relaxed">{step.desc}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {steps.map((step) => {
+              const StepIcon = step.icon
+              return (
+                <Card
+                  key={step.n}
+                  className="group relative border-[#E2E8F0] bg-white hover:border-blue-500 hover:shadow-lg transition-all duration-300 rounded-xl overflow-hidden hover:-translate-y-1"
+                >
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="w-8 h-8 rounded-lg bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white flex items-center justify-center font-mono font-bold text-xs border border-blue-100 group-hover:border-blue-600 transition-colors shadow-xs">
+                        0{step.n}
+                      </span>
+                      <StepIcon className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-xs sm:text-sm text-[#0B1B33] group-hover:text-blue-600 transition-colors">
+                        {step.title}
+                      </h3>
+                      <p className="text-[11px] text-[#64748B] mt-1 leading-relaxed">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </section>
 
@@ -174,7 +234,7 @@ export const Landing: React.FC = () => {
                   Pay only when milestones pass.
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md">
-                  Stop writing vague proposals and arguing over incomplete deliveries. AI drafts your SOW, ranks candidates fairly, and evaluates actual code, screenshots, and live staging URLs before you release payment.
+                  Stop writing vague proposals and arguing over incomplete deliveries. AI drafts your SOW, ranks candidates fairly and evaluates actual code, screenshots and live staging URLs before you release payment.
                 </p>
 
                 <ul className="space-y-2.5 pt-2 text-xs text-slate-200">
@@ -214,7 +274,7 @@ export const Landing: React.FC = () => {
                   Get paid without invoice chasing.
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md">
-                  Never start working on an empty promise. Clients fund milestones through PayPal before you start. Submit your work, pass automated multimodal verification, and receive immediate payouts directly to your PayPal email.
+                  Never start working on an empty promise. Clients fund milestones through PayPal before you start. Submit your work, pass automated multimodal verification and receive immediate payouts directly to your PayPal email.
                 </p>
 
                 <ul className="space-y-2.5 pt-2 text-xs text-slate-200">
@@ -342,7 +402,7 @@ export const Landing: React.FC = () => {
               Frequently Asked Questions
             </h2>
             <p className="text-xs sm:text-sm text-[#475569]">
-              Everything you need to know about TrustBroker AI contracts, PayPal milestone escrow, and payouts.
+              Everything you need to know about TrustBroker AI contracts, PayPal milestone escrow and payouts.
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 """
 Vision Adapter for Screenshots and Design Files.
-Inspects UI renders, screenshots, and visual assets via Groq Vision API.
+Inspects UI renders, screenshots and visual assets via Groq Vision API.
 """
 import base64
 import json

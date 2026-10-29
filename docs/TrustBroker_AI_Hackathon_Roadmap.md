@@ -35,16 +35,16 @@ These are locked unless the project owner explicitly changes them.
 | Money control | AI never moves money. FastAPI **policy engine** + verified PayPal state do. | Original guide; also safer for judging. |
 | Currency | USD only for the demo. No ZiG/ZAR settlement claims. | PayPal sandbox + country limits. |
 | Cost | **$0 paid APIs.** Groq / OpenRouter free tiers, Supabase free, Render free, PayPal sandbox, AG Studio trial. | Owner constraint. |
-| Prize stacking | Build to win **Grand Prize or Best Use of PayPal + AI**, and remain eligible for **one sponsor prize** (primary target: **AG Grid / AG Studio**). Use extra sponsors to raise Technological Implementation score even if only one sponsor prize can be won. | Official Rules §8: one Grand **or** one Honorable Mention, plus at most one Sponsor Prize. |
+| Prize stacking | Build to win **Grand Prize or Best Use of PayPal + AI** and remain eligible for **one sponsor prize** (primary target: **AG Grid / AG Studio**). Use extra sponsors to raise Technological Implementation score even if only one sponsor prize can be won. | Official Rules §8: one Grand **or** one Honorable Mention, plus at most one Sponsor Prize. |
 
 ### 0.1 What this product is (pitch in one paragraph)
 
-TrustBroker AI is the trust layer between **clients** and **freelancers**. A client describes work in plain language. AI drafts a milestone contract with testable acceptance criteria. The contract is published so freelancers can apply. AI ranks applicants using profile, portfolio, and past TrustBroker work (with a fair path for newcomers). The client awards the contract, funds the next milestone through PayPal, and the freelancer delivers. AI inspects the actual evidence (files, screenshots, live URLs, documents) against each criterion. When verification passes, the policy engine allows a PayPal disbursement to the freelancer. Every step is recorded.
+TrustBroker AI is the trust layer between **clients** and **freelancers**. A client describes work in plain language. AI drafts a milestone contract with testable acceptance criteria. The contract is published so freelancers can apply. AI ranks applicants using profile, portfolio and past TrustBroker work (with a fair path for newcomers). The client awards the contract, funds the next milestone through PayPal and the freelancer delivers. AI inspects the actual evidence (files, screenshots, live URLs, documents) against each criterion. When verification passes, the policy engine allows a PayPal disbursement to the freelancer. Every step is recorded.
 
 ### 0.2 What this product is not
 
 - Not a licensed bank, escrow company, or legal arbitrator.
-- Not Upwork clone with reviews, disputes courts, and global tax forms.
+- Not Upwork clone with reviews, disputes courts and global tax forms.
 - Not an autonomous agent that pays people without a policy check.
 - Not a shopping app (do **not** bolt on Channel3).
 
@@ -66,7 +66,7 @@ Judges score five equal criteria. Every phase below maps to at least one.
 
 1. **Grand Prize** ($12k / $8k / $5k) — complete product experience.
 2. **Best Use of PayPal + AI** ($5k honorable mention) — checkout, capture, webhook, payout after AI pass.
-3. **Best Use of AG Grid** ($5k / $2k / $1k) — AG Studio dashboard with custom theme, widgets, and a custom agent, **not** a plain table.
+3. **Best Use of AG Grid** ($5k / $2k / $1k) — AG Studio dashboard with custom theme, widgets and a custom agent, **not** a plain table.
 4. **Most Impactful** ($5k) — freelancer/client trust story.
 5. **Best Demo Delivery** ($5k) — polished 3-minute video + hosted demo.
 6. **Best Use of Render** (credits) — hosted frontend + API + a **Render Workflow** for verification jobs.
@@ -198,7 +198,7 @@ Keep each screen to **one job**. Never put brief + milestones + freelancer picke
 ### 4.3 Dual-role journey
 
 - Header/sidebar control: **Workspace: Client | Freelancer**.
-- Same person, same email, different home, nav, empty states, and accent (blue vs emerald).
+- Same person, same email, different home, nav, empty states and accent (blue vs emerald).
 - Never swap display name to a demo character.
 
 ### 4.4 Extra workflows to add (after core loop)
@@ -382,7 +382,7 @@ Do **not** add `kernel_browse.py` or any KERNEL SDK.
 - Needs review: taste, copywriting quality, “professional look”, inaccessible URL, video too long, new file type.
 - Overall Pass only if **every** required criterion is Pass **and** no adapter hard-failed.
 - Subjective criteria default to Needs review unless the client marked them `auto_pass_allowed`.
-- Always store `model_used`, adapter names, and a short citation (filename, URL, screenshot crop note).
+- Always store `model_used`, adapter names and a short citation (filename, URL, screenshot crop note).
 
 **Newcomer / sparse-history vetting rules:**
 
@@ -520,7 +520,7 @@ Owner lock 27 Oct 2026: **do not install Bryntum or KERNEL.** Milestone schedule
 
 ---
 
-## 12. Demo, seed data, and $0 ops
+## 12. Demo, seed data and $0 ops
 
 ### 12.1 Judge accounts (document in `docs/JUDGE_DEMO.md`)
 
@@ -536,7 +536,7 @@ Password in JUDGE_DEMO only. Seed:
 
 - 3 open contracts (React landing page, logo pack, SEO audit) so marketplace is not empty.
 - 1 in-progress funded milestone ready to deliver.
-- Sample screenshot + live URL that **will pass**, and one broken URL that **fails**.
+- Sample screenshot + live URL that **will pass** and one broken URL that **fails**.
 
 ### 12.2 Render / Supabase free-tier survival
 
@@ -556,7 +556,7 @@ Legend: **P0** must ship · **P1** should ship · **P2** stretch.
 
 ---
 
-### Phase 0 — Freeze language, routes, and demo honesty
+### Phase 0 — Freeze language, routes and demo honesty
 
 **Dates:** 27 Oct  
 **Goal:** Every later phase speaks Client/Freelancer and does not impersonate users.  
@@ -580,7 +580,7 @@ Legend: **P0** must ship · **P1** should ship · **P2** stretch.
 
 ---
 
-### Phase 1 — Schema, APIs, and policy for the marketplace
+### Phase 1 — Schema, APIs and policy for the marketplace
 
 **Dates:** 28–29 Oct  
 **Goal:** Backend can represent open contracts, applications, vetting reports, notifications, payouts.
@@ -621,7 +621,7 @@ Rewrite `CreateProject.tsx` (or replace with `pages/client/NewContractWizard.tsx
 - [x] **P0** Step 3: editable milestones; live sum vs budget (block Next if mismatch); each criterion has evidence type select.
 - [x] **P0** Step 4: read-only freelancer preview.
 - [x] **P0** Step 5: Publish open contract **or** Save draft. **No freelancer name/email fields.**
-- [x] **P0** Loading, error, and empty-AI-fallback states.
+- [x] **P0** Loading, error and empty-AI-fallback states.
 - [x] **P0** After publish, go to contract **Applicants** tab with empty state “Waiting for applications”.
 - [x] **P1** Save draft and resume wizard at last step.
 
@@ -766,7 +766,7 @@ Rewrite `CreateProject.tsx` (or replace with `pages/client/NewContractWizard.tsx
 ### Phase 9 — Public GitHub README (repo landing page)
 
 **Dates:** 9 Nov  
-**Goal:** The GitHub repository page is the first thing judges open. The root `README.md` must look complete, scannable, and production-like when viewed on github.com (title, badges, screenshots, run instructions). This is a dedicated phase — not a leftover bullet.
+**Goal:** The GitHub repository page is the first thing judges open. The root `README.md` must look complete, scannable and production-like when viewed on github.com (title, badges, screenshots, run instructions). This is a dedicated phase — not a leftover bullet.
 
 Write **`README.md` at the repository root** (not only `react_app/README.md` or `backend/README.md`). GitHub renders only the root README on the repo home.
 
@@ -787,7 +787,7 @@ Write **`README.md` at the repository root** (not only `react_app/README.md` or 
 
 **Phase 9 gate**
 
-- [x] Opening the GitHub repo in a logged-out browser shows a complete README with pitch, screenshots, and how to run.
+- [x] Opening the GitHub repo in a logged-out browser shows a complete README with pitch, screenshots and how to run.
 - [x] No buyer/supplier wording. No Gemini. No “sandbox demo” as the hero sentence.
 
 ---
@@ -884,7 +884,7 @@ When implementing, prefer these paths. Do not create parallel apps.
 The project is submission-ready when **all** of these are true:
 
 - [ ] Client can publish an open contract from a step-by-step AI wizard.
-- [ ] Freelancers can browse, apply, and see status.
+- [ ] Freelancers can browse, apply and see status.
 - [ ] AI vetting ranks applicants and treats newcomers fairly.
 - [ ] Client awards one freelancer; others are notified of rejection.
 - [ ] Both parties accept the same version.

@@ -6,12 +6,54 @@ export class ApiError extends Error {
   status: number
   detail: string
 
-  constructor(status: number, detail: string) {
-    super(`API Error ${status}: ${detail}`)
+  constructor(status: number, detail: any) {
+    let cleanDetail = ''
+    if (typeof detail === 'string') {
+      cleanDetail = detail
+    } else if (Array.isArray(detail)) {
+      cleanDetail = detail.map((d: any) => d.msg || d.message || JSON.stringify(d)).join('; ')
+    } else if (detail && typeof detail === 'object') {
+      cleanDetail = detail.detail || detail.message || JSON.stringify(detail)
+    } else {
+      cleanDetail = String(detail || 'Unknown error occurred')
+    }
+
+    super(cleanDetail)
     this.name = 'ApiError'
     this.status = status
-    this.detail = detail
+    this.detail = cleanDetail
   }
+}
+
+export function formatApiError(err: any): string {
+  if (!err) return 'An unexpected error occurred. Please try again.'
+  if (typeof err === 'string') return err
+  
+  const detail = err.detail || err.message || ''
+  
+  if (err.status === 401) {
+    return 'Your session has expired. Please sign in again.'
+  }
+  if (err.status === 403) {
+    if (detail.includes('Contract must be active')) {
+      return 'Milestones can only be funded once the contract is awarded and active.'
+    }
+    return detail || 'You do not have permission to perform this action.'
+  }
+  if (err.status === 404) {
+    return detail || 'The requested item or contract was not found.'
+  }
+  if (err.status === 422) {
+    return 'Invalid data submitted. Please check the contract information and try again.'
+  }
+  if (err.status === 429) {
+    return 'AI request limit reached. Switching to backup AI provider, please wait a moment...'
+  }
+  if (err.status >= 500) {
+    return 'Server error occurred. Please try again or check connection.'
+  }
+  
+  return detail.replace(/^API Error \d+:\s*/, '') || 'Operation failed. Please try again.'
 }
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {

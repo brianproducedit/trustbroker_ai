@@ -46,7 +46,7 @@ class PolicyEngine:
 
     @classmethod
     def can_edit_contract(cls, user: UserProfile, contract: Contract) -> PolicyResult:
-        """Only the client can edit, and only when the contract is in draft status."""
+        """Only the client can edit and only when the contract is in draft status."""
         if not cls.is_client(user, contract):
             return PolicyResult(False, "Only the client who created the contract can modify it.")
         if contract.status != ContractStatus.DRAFT:
@@ -103,7 +103,7 @@ class PolicyEngine:
 
     @classmethod
     def can_accept_contract(cls, user: UserProfile, contract: Contract) -> PolicyResult:
-        """Must be a contracted party, and contract must be draft, awarded, or pending_acceptance."""
+        """Must be a contracted party and contract must be draft, awarded, or pending_acceptance."""
         if not cls.is_party(user, contract):
             return PolicyResult(False, "You are not an authorized party on this contract.")
         if contract.status not in (

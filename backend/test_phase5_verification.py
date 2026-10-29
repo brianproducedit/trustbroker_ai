@@ -1,7 +1,7 @@
 """
 Automated Test Suite for Phase 5 — Multimodal Milestone Verification Engine.
 Verifies adapters (http_probe, vision, document, repo_meta, zip_listing),
-safety validations, scoring rules, and orchestrator execution.
+safety validations, scoring rules and orchestrator execution.
 """
 import io
 import sys

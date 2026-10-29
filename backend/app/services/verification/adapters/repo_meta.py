@@ -1,6 +1,6 @@
 """
 Repository Metadata Adapter for GitHub & GitLab Repositories.
-Inspects public repo metadata, root directory tree, and README via GitHub API.
+Inspects public repo metadata, root directory tree and README via GitHub API.
 Does not clone arbitrary repositories into the web server process.
 """
 import base64
@@ -29,7 +29,7 @@ def parse_github_coords(repo_url: str) -> Optional[Tuple[str, str]]:
 
 
 def inspect_repository(repo_url: str, timeout: float = 6.0) -> Dict[str, Any]:
-    """Inspect repository metadata, directory structure, and README."""
+    """Inspect repository metadata, directory structure and README."""
     clean_url = (repo_url or "").strip()
     coords = parse_github_coords(clean_url)
 

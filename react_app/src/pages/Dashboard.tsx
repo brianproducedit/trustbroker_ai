@@ -21,18 +21,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { 
-  FileText, 
-  DollarSign, 
-  CheckCircle2, 
-  Layers, 
-  Sparkles, 
-  ArrowUpRight, 
-  Plus, 
-  Filter, 
-  Clock, 
-  ExternalLink, 
-  UploadCloud, 
+import {
+  FileText,
+  DollarSign,
+  CheckCircle2,
+  Layers,
+  Sparkles,
+  ArrowUpRight,
+  Plus,
+  Filter,
+  Clock,
+  ExternalLink,
+  UploadCloud,
   Briefcase,
   Inbox
 } from 'lucide-react'
@@ -135,7 +135,7 @@ export const Dashboard: React.FC = () => {
       field: activeRole === 'client' ? 'freelancer.name' : 'client.name',
       width: 170,
       cellRenderer: (params: ICellRendererParams) => {
-        const party = activeRole === 'client' 
+        const party = activeRole === 'client'
           ? params.data.freelancer
           : params.data.client
         return (
@@ -156,8 +156,8 @@ export const Dashboard: React.FC = () => {
             {formatCurrency(params.value, params.data.currency)}
           </span>
           <span className="text-[10px] text-slate-400">
-            {params.data.releasedAmount > 0 
-              ? `${formatCurrency(params.data.releasedAmount)} released` 
+            {params.data.releasedAmount > 0
+              ? `${formatCurrency(params.data.releasedAmount)} released`
               : activeRole === 'client' ? 'Milestone funded' : 'Funds staged'}
           </span>
         </div>
@@ -226,8 +226,8 @@ export const Dashboard: React.FC = () => {
             </h1>
             <p className="text-xs text-slate-400">
               {activeRole === 'client'
-                ? 'Fund milestones with PayPal, monitor active work, and authorize payouts after verification.'
-                : 'Review contracted milestones, submit deliverable evidence for verification, and receive disbursements.'}
+                ? 'Fund milestones with PayPal, monitor active work and authorize payouts after verification.'
+                : 'Review contracted milestones, submit deliverable evidence for verification and receive disbursements.'}
             </p>
           </div>
 
@@ -343,11 +343,10 @@ export const Dashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveFilter(tab.id as any)}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors cursor-pointer ${
-                    activeFilter === tab.id
+                  className={`px-3 py-1 text-xs rounded-md transition-colors cursor-pointer ${activeFilter === tab.id
                       ? activeRole === 'client' ? 'bg-blue-600 text-white font-medium shadow-xs' : 'bg-emerald-600 text-white font-medium shadow-xs'
                       : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>

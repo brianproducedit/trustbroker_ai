@@ -41,10 +41,10 @@ export const FreelancerProfile: React.FC = () => {
       setPortfolio(
         Array.isArray(me.portfolio) && me.portfolio.length
           ? me.portfolio.map((p: any) => ({
-              title: p.title || '',
-              url: p.url || '',
-              kind: p.kind || 'link',
-            }))
+            title: p.title || '',
+            url: p.url || '',
+            kind: p.kind || 'link',
+          }))
           : [{ title: '', url: '', kind: 'link' }]
       )
       setCompleteness(me.profile_completeness || 0)
@@ -99,7 +99,7 @@ export const FreelancerProfile: React.FC = () => {
             <Progress value={completeness} className="h-2" />
             {completeness < 40 && (
               <p className="text-[11px] text-amber-300 mt-2">
-                Below 40 — clients will see a “Needs profile” badge until you add bio, skills, and portfolio.
+                Below 40 — clients will see a “Needs profile” badge until you add bio, skills and portfolio.
               </p>
             )}
           </CardContent>
