@@ -50,14 +50,28 @@ contract = client.contracts.create_from_brief(
 print(f"Created contract: {contract.id} with {len(contract.milestones)} milestones")`
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] text-[#1A2940] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F6F8FC] text-[#1A2940] flex flex-col font-sans relative overflow-x-hidden">
+      {/* Background Subtle Mesh & Glow Orbs */}
+      <div 
+        aria-hidden="true" 
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="absolute top-24 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      />
+
       <Header />
 
-      <main className="w-full pt-[68px] flex-1">
+      <main className="w-full pt-[68px] flex-1 z-10">
         {/* Hero */}
-        <section className="py-12 bg-white border-b border-[#DDE4EF]">
+        <section className="py-12 bg-white/80 backdrop-blur-md border-b border-[#DDE4EF]">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5">
+            <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5 shadow-xs">
               <Code2 className="w-3.5 h-3.5 text-blue-600" />
               REST API &amp; SDKs
             </Badge>
