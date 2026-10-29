@@ -28,11 +28,13 @@ router = APIRouter(prefix="/ai", tags=["AI Verification & Drafting"])
 def ai_status():
     """Return model status and readiness."""
     return {
-        "service": "Groq LPU (Primary) + OpenRouter (Fallback)",
+        "service": "Groq LPU (Primary) + OpenRouter (Secondary) + DeepSeek Official (Tier 3 Fallback)",
         "primary_model": ai_provider.settings.groq_model,
         "fallback_model": ai_provider.settings.openrouter_model,
+        "deepseek_model": ai_provider.settings.deepseek_model,
         "groq_configured": bool(ai_provider.settings.groq_api_key),
         "openrouter_configured": bool(ai_provider.settings.openrouter_api_key),
+        "deepseek_configured": bool(ai_provider.settings.deepseek_api_key),
         "status": "ready",
     }
 
@@ -75,7 +77,7 @@ def clarify_brief(
 @router.post(
     "/vet-application",
     response_model=ApplicationRead,
-    summary="AI-vet a freelancer application using profile, portfolio, cover, and past work",
+    summary="AI-vet a freelancer application using profile, portfolio, cover and past work",
 )
 def vet_application_endpoint(
     req: VetApplicationRequest,
@@ -111,7 +113,7 @@ def studio_turn(
     """
     Receives a natural language message from the AG Studio agent framework,
     gathers live contract/milestone/payout stats from PostgreSQL, queries Groq/OpenRouter
-    with live context, and returns a structured response that updates the Studio dashboard.
+    with live context and returns a structured response that updates the Studio dashboard.
     """
     # 1. Fetch live contextual metrics for this user and workspace
     live_context = {}
@@ -205,7 +207,7 @@ def studio_turn(
         "You have direct access to the live PostgreSQL database state for this user:\n"
         f"DATABASE CONTEXT: {json.dumps(live_context, default=str)}\n\n"
         "Instructions:\n"
-        "1. Answer user questions directly, accurately, and authoritatively based on the database context.\n"
+        "1. Answer user questions directly, accurately and authoritatively based on the database context.\n"
         "2. If asked about unpaid funded milestones, earnings, win rates, or contract health, quote the exact figures.\n"
         "3. Provide 2-3 concise, actionable next steps or suggested actions.\n"
         "4. Format your response strictly as a JSON object with keys:\n"

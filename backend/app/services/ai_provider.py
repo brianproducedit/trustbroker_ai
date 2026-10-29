@@ -38,6 +38,12 @@ OPENROUTER_MODELS = [
     "openrouter/auto",
 ]
 
+DEEPSEEK_MODELS = [
+    "deepseek-chat",
+    "deepseek-flash",
+    "deepseek-reasoner",
+]
+
 
 # ==============================================================================
 # Retry & Resilience Utilities
@@ -237,7 +243,75 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
 
 
 # ==============================================================================
-# Unified Fallback Chain — Groq → OpenRouter → Deterministic
+# DeepSeek Provider — Paid Robust Fallback (api.deepseek.com)
+# ==============================================================================
+
+def call_deepseek(system_prompt: str, user_prompt: str, model_override: str = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Execute JSON completion via official DeepSeek API (api.deepseek.com).
+    
+    Tries each model in DEEPSEEK_MODELS cascade until one succeeds.
+    Utilizes DeepSeek's automatic server-side context caching to drastically minimize token billing.
+    """
+    if not settings.deepseek_api_key or not settings.deepseek_api_key.strip():
+        logger.debug("DeepSeek API key not configured, skipping.")
+        return None, None
+
+    models_to_try = [model_override] if model_override else DEEPSEEK_MODELS
+
+    for model in models_to_try:
+        def _attempt():
+            url = "https://api.deepseek.com/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {settings.deepseek_api_key.strip()}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": f"{system_prompt}\nIMPORTANT: Respond ONLY with valid JSON. No markdown, no explanation.",
+                    },
+                    {"role": "user", "content": user_prompt},
+                ],
+                "response_format": {"type": "json_object"},
+                "temperature": 0.2,
+                "max_tokens": 3500,
+            }
+            with httpx.Client(timeout=60.0) as client:
+                res = client.post(url, headers=headers, json=payload)
+
+                if res.status_code == 429:
+                    logger.warning(f"DeepSeek rate-limited on {model}")
+                    raise Exception(f"Rate limited (429) on {model}")
+
+                if res.status_code == 200:
+                    data = res.json()
+                    choices = data.get("choices", [])
+                    if not choices:
+                        logger.warning(f"DeepSeek [{model}] returned empty choices")
+                        return None
+                    content = choices[0]["message"]["content"]
+                    parsed = _safe_parse_json(content)
+                    if parsed:
+                        logger.info(f"✅ DeepSeek [{model}] returned valid JSON")
+                        return parsed
+                    logger.warning(f"DeepSeek [{model}] returned non-JSON content")
+                    return None
+                else:
+                    logger.warning(f"DeepSeek [{model}] returned HTTP {res.status_code}: {res.text[:200]}")
+                    return None
+
+        result = _retry_with_backoff(_attempt, max_retries=1, base_delay=2.0)
+        if result:
+            return result, model
+        logger.info(f"DeepSeek [{model}] exhausted, trying next model...")
+
+    return None, None
+
+
+# ==============================================================================
+# Unified Fallback Chain — Groq → OpenRouter → DeepSeek → Deterministic
 # ==============================================================================
 
 def call_ai_with_fallbacks(system_prompt: str, user_prompt: str) -> Tuple[Optional[Dict[str, Any]], str]:
@@ -246,9 +320,10 @@ def call_ai_with_fallbacks(system_prompt: str, user_prompt: str) -> Tuple[Option
     Priority:
       1. Groq (openai/gpt-oss-120b → qwen/qwen3.8-27b → openai/gpt-oss-20b)
       2. OpenRouter (gemma-4-27b → nemotron-3-super → llama-3.3-70b → auto)
-      3. Returns None — caller handles deterministic fallback
+      3. DeepSeek Official API (deepseek-chat → deepseek-flash → deepseek-reasoner)
+      4. Returns None — caller handles deterministic fallback
     """
-    # 1. Groq — fastest, most reliable free tier
+    # 1. Groq — fastest, free tier
     groq_res, groq_model = call_groq(system_prompt, user_prompt)
     if groq_res:
         return groq_res, f"groq:{groq_model}"
@@ -259,6 +334,13 @@ def call_ai_with_fallbacks(system_prompt: str, user_prompt: str) -> Tuple[Option
     openrouter_res, openrouter_model = call_openrouter(system_prompt, user_prompt)
     if openrouter_res:
         return openrouter_res, f"openrouter:{openrouter_model}"
+
+    logger.info("⚠️ OpenRouter models exhausted, falling back to Official DeepSeek API...")
+
+    # 3. DeepSeek Official API — paid robust fallback
+    deepseek_res, deepseek_model = call_deepseek(system_prompt, user_prompt)
+    if deepseek_res:
+        return deepseek_res, f"deepseek:{deepseek_model}"
 
     logger.warning("❌ All AI providers exhausted. Using deterministic fallback.")
     return None, "fallback:none"
@@ -276,14 +358,20 @@ def generate_sow_draft(
 ) -> Dict[str, Any]:
     """Generate structured Statement of Work (SOW) with milestones and acceptance criteria."""
     system_instruction = (
-        "You are an expert technical project manager and legal engineering consultant for TrustBroker AI. "
-        "Your task is to take a client's project description and decompose it into a professional, clear, "
-        "and unambiguous Statement of Work (SOW). "
-        "Divide the project into 2 to 4 sequential milestones. Each milestone must have realistic budget allocation "
-        "such that the sum of all milestone amounts EXACTLY equals the total budget. "
-        "Each milestone MUST contain 2 to 4 concrete, verifiable acceptance criteria with an evidence_type: "
-        "'text', 'file', 'url', or 'screenshot'. "
-        "Respond ONLY with valid JSON matching the requested structure."
+        "You are an elite legal engineering consultant and principal technical architect for TrustBroker AI. "
+        "Your task is to take a client's project description and decompose it into an authoritative, comprehensive "
+        "and production-grade Statement of Work (SOW) with exceptional technical depth.\n\n"
+        "LINGUISTIC STYLE INSTRUCTIONS (MANDATORY):\n"
+        "- Write in polished, professional English (consistently applied).\n"
+        "- STRICT RULE: Never use the Oxford comma before words like 'and' or 'or' in enumerations of three or more items "
+        "(e.g., write 'architecture, development and deployment' instead of 'architecture, development and deployment'; "
+        "write 'React, TypeScript or Python' instead of 'React, TypeScript, or Python').\n\n"
+        "STATEMENT OF WORK SPECIFICATIONS:\n"
+        "- Generate an exhaustive, clear project description (400 to 600 words) defining functional objectives, system architecture and non-functional requirements (security, performance, test coverage and responsive cross-browser compatibility).\n"
+        "- Divide the project into 3 to 5 realistic, sequential milestones with logical deadlines.\n"
+        "- Exact Budget Allocation: The sum of all milestone amounts must EXACTLY equal the total budget.\n"
+        "- Verifiable Criteria: Each milestone MUST contain 2 to 4 concrete, testable acceptance criteria with an evidence_type of 'url', 'screenshot', 'file' or 'text'.\n"
+        "- Respond ONLY with valid JSON matching the requested structure."
     )
 
     user_content = f"""
@@ -337,13 +425,13 @@ Generate a JSON object with:
         "milestones": [
             {
                 "title": "Milestone 1: Core Architecture & Prototype Setup",
-                "description": f"Initial foundation, environment setup, and baseline deliverables for: {project_prompt[:50]}.",
+                "description": f"Initial foundation, environment setup and baseline deliverables for: {project_prompt[:50]}.",
                 "amount": half_budget,
                 "deadline_days": 7,
                 "acceptance_criteria": [
                     {
                         "title": "Repository & Environment Initialization",
-                        "description": "Repository created with clean commit history, configuration templates, and README documentation.",
+                        "description": "Repository created with clean commit history, configuration templates and README documentation.",
                         "evidence_type": "url",
                     },
                     {
@@ -355,13 +443,13 @@ Generate a JSON object with:
             },
             {
                 "title": "Milestone 2: Final Implementation, Verification & Handover",
-                "description": "Complete feature completion, integration testing, documentation, and live demonstration.",
+                "description": "Complete feature completion, integration testing, documentation and live demonstration.",
                 "amount": remainder,
                 "deadline_days": 14,
                 "acceptance_criteria": [
                     {
                         "title": "End-to-End Feature Complete Verification",
-                        "description": "All requested requirements fully implemented, functional, and meeting project criteria.",
+                        "description": "All requested requirements fully implemented, functional and meeting project criteria.",
                         "evidence_type": "url",
                     },
                     {
@@ -383,9 +471,11 @@ def generate_clarify_questions(
 ) -> Dict[str, Any]:
     """Ask 3–6 clarifying questions before the client reviews the SOW."""
     system_instruction = (
-        "You are a senior contracting advisor for TrustBroker AI. "
-        "Ask 3 to 6 short clarification questions a client should answer before a freelance SOW is finalized. "
-        "Do not repeat facts already stated in the brief or in prior answers. "
+        "You are a senior contracting advisor and technical scoping consultant for TrustBroker AI. "
+        "Ask 3 to 6 insightful clarification questions a client should answer before a freelance SOW is finalized. "
+        "Cover architectural constraints, hosting preferences, credentials and acceptance requirements. "
+        "Do not repeat facts already stated in the brief or in prior answers.\n"
+        "STRICT LINGUISTIC RULE: Do NOT use Oxford commas before 'and' or 'or' in any sentence or list. "
         "Return ONLY JSON: {\"questions\": [{\"id\": \"q1\", \"question\": \"...\"}]}"
     )
     prior = ""
@@ -464,7 +554,7 @@ def evaluate_delivery_against_criteria(
         "You are an impartial, deterministic AI verification inspector for TrustBroker AI. "
         "Your role is to rigorously evaluate whether the freelancer's submitted evidence fulfills "
         "each acceptance criterion defined in the contract milestone. "
-        "Be objective, thorough, and fair. "
+        "Be objective, thorough and fair. "
         "For each criterion, assign: "
         "- score: 0 to 100 "
         "- passed: true if score >= 80, else false "

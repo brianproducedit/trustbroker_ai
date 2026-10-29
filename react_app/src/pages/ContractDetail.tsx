@@ -18,10 +18,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import type { Milestone } from '@/types/contract'
-import { 
-  CheckCircle2, 
-  CreditCard, 
-  History, 
+import {
+  CheckCircle2,
+  CreditCard,
+  History,
   Sparkles,
   AlertCircle,
   UploadCloud,
@@ -51,10 +51,10 @@ export const ContractDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
-  const { 
-    contracts, 
-    activeRole, 
-    acceptContract, 
+  const {
+    contracts,
+    activeRole,
+    acceptContract,
     requestRevision,
     addMilestone,
     removeMilestone,
@@ -69,7 +69,7 @@ export const ContractDetail: React.FC = () => {
     }
   }, [id, fetchContractById])
 
-  const contract = id 
+  const contract = id
     ? contracts.find((c) => c.id === id || c.code === id)
     : (contracts[0] || null)
 
@@ -352,8 +352,8 @@ export const ContractDetail: React.FC = () => {
     const fundedAmount = Number(details?.amount ?? nextFundMilestone?.amount ?? 0)
     if (id) {
       fetchContractById(id)
-      api.payments.getHistory(id).then(setPaymentAttempts).catch(() => {})
-      api.payments.payouts(id).then(setPayouts).catch(() => {})
+      api.payments.getHistory(id).then(setPaymentAttempts).catch(() => { })
+      api.payments.payouts(id).then(setPayouts).catch(() => { })
     }
     toast.success(`Milestone funded: ${formatCurrency(fundedAmount)} USD via PayPal.`)
     addNotification({
@@ -379,8 +379,8 @@ export const ContractDetail: React.FC = () => {
       })
       if (id) {
         fetchContractById(id)
-        api.payments.getHistory(id).then(setPaymentAttempts).catch(() => {})
-        api.payments.payouts(id).then(setPayouts).catch(() => {})
+        api.payments.getHistory(id).then(setPaymentAttempts).catch(() => { })
+        api.payments.payouts(id).then(setPayouts).catch(() => { })
       }
       setReleaseDialogOpen(false)
       toast.success(
@@ -526,7 +526,7 @@ export const ContractDetail: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Top Breadcrumb & Metadata Action Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[#222A3D]">
           <div className="flex items-center gap-2 text-xs">
@@ -608,23 +608,20 @@ export const ContractDetail: React.FC = () => {
               return (
                 <div
                   key={step.id}
-                  className={`p-2.5 rounded-lg border text-xs transition-all ${
-                    isCompleted
+                  className={`p-2.5 rounded-lg border text-xs transition-all ${isCompleted
                       ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
                       : isCurrent
-                      ? 'bg-blue-950/30 border-blue-500/60 text-white ring-1 ring-blue-500/20 shadow-sm'
-                      : 'bg-[#0B1326] border-[#222A3D] text-slate-500'
-                  }`}
+                        ? 'bg-blue-950/30 border-blue-500/60 text-white ring-1 ring-blue-500/20 shadow-sm'
+                        : 'bg-[#0B1326] border-[#222A3D] text-slate-500'
+                    }`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                      isCompleted ? 'bg-emerald-500/20 text-emerald-400' : isCurrent ? 'bg-blue-500/30 text-blue-400' : 'bg-slate-800 text-slate-500'
-                    }`}>
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${isCompleted ? 'bg-emerald-500/20 text-emerald-400' : isCurrent ? 'bg-blue-500/30 text-blue-400' : 'bg-slate-800 text-slate-500'
+                      }`}>
                       {step.id}
                     </span>
-                    <Icon className={`w-3.5 h-3.5 ${
-                      isCompleted ? 'text-emerald-400' : isCurrent ? 'text-blue-400' : 'text-slate-600'
-                    }`} />
+                    <Icon className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : isCurrent ? 'text-blue-400' : 'text-slate-600'
+                      }`} />
                   </div>
                   <div className="font-semibold text-[11px] truncate leading-tight">{step.title}</div>
                   <div className="text-[10px] text-slate-400 truncate">{step.desc}</div>
@@ -636,7 +633,7 @@ export const ContractDetail: React.FC = () => {
 
         {/* ASYMMETRIC 70/30 MASTER WORKSPACE LAYOUT (Deel & Stripe Benchmark) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
+
           {/* MAIN WORKSPACE CANVAS (Left 70% / 8 columns) */}
           <div className="lg:col-span-8 space-y-6">
 
@@ -704,28 +701,28 @@ export const ContractDetail: React.FC = () => {
                     Applicants ({applications.length})
                   </TabsTrigger>
                 )}
-                <TabsTrigger 
-                  value="contract" 
+                <TabsTrigger
+                  value="contract"
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
                 >
                   Milestones &amp; Deliverables ({contract.milestones.length})
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="sow" 
+                <TabsTrigger
+                  value="sow"
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
                 >
                   Legal SOW &amp; Terms
                 </TabsTrigger>
                 {contract.status !== 'draft' && contract.status !== 'open' && (
-                <TabsTrigger 
-                  value="payments" 
-                  className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
-                >
-                  PayPal
-                </TabsTrigger>
+                  <TabsTrigger
+                    value="payments"
+                    className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                  >
+                    PayPal
+                  </TabsTrigger>
                 )}
-                <TabsTrigger 
-                  value="activity" 
+                <TabsTrigger
+                  value="activity"
                   className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
                 >
                   Audit Activity Trail ({(contract.auditLogs || []).length})
@@ -762,82 +759,82 @@ export const ContractDetail: React.FC = () => {
                                 : null
                       const reasons = app.vetting?.reasons || {}
                       return (
-                      <Card key={app.id} className="border-[#222A3D] bg-[#131B2E] text-white">
-                        <CardContent className="py-4 space-y-3">
-                          <div className="flex justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-sm">
-                                {app.freelancer?.full_name || 'Freelancer'}
-                              </p>
-                              <p className="text-xs text-slate-400">{app.freelancer?.headline || app.status}</p>
-                              {badge && (
-                                <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded border ${badge.className}`}>
-                                  {badge.label}
-                                </span>
+                        <Card key={app.id} className="border-[#222A3D] bg-[#131B2E] text-white">
+                          <CardContent className="py-4 space-y-3">
+                            <div className="flex justify-between gap-3">
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  {app.freelancer?.full_name || 'Freelancer'}
+                                </p>
+                                <p className="text-xs text-slate-400">{app.freelancer?.headline || app.status}</p>
+                                {badge && (
+                                  <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded border ${badge.className}`}>
+                                    {badge.label}
+                                  </span>
+                                )}
+                              </div>
+                              {app.vetting && (
+                                <div className="text-right text-xs">
+                                  <p className="font-mono text-emerald-400">{app.vetting.score}/100</p>
+                                  <p className="text-slate-400">{app.status}</p>
+                                </div>
                               )}
                             </div>
-                            {app.vetting && (
-                              <div className="text-right text-xs">
-                                <p className="font-mono text-emerald-400">{app.vetting.score}/100</p>
-                                <p className="text-slate-400">{app.status}</p>
+                            {app.cover_note && (
+                              <p className="text-xs text-slate-300">{app.cover_note}</p>
+                            )}
+                            <button
+                              type="button"
+                              className="text-[11px] text-blue-400"
+                              onClick={() => setExpandedApp(expandedApp === app.id ? null : app.id)}
+                            >
+                              {expandedApp === app.id ? 'Hide rationale' : 'Show AI rationale'}
+                            </button>
+                            {expandedApp === app.id && (
+                              <div className="text-[11px] text-slate-400 bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
+                                <p>{reasons.rationale || 'No rationale stored.'}</p>
+                                {reasons.dimension_scores && (
+                                  <p>
+                                    Skills {reasons.dimension_scores.skills_match} · Portfolio {reasons.dimension_scores.portfolio_relevance} · Past {String(reasons.dimension_scores.past_delivery)}
+                                  </p>
+                                )}
+                                {reasons.newcomer && <p>Newcomer: past delivery is insufficient evidence, not zero.</p>}
+                                {reasons.trial_milestone_suggestion && (
+                                  <p className="text-emerald-300">
+                                    Trial milestone suggestion: {formatCurrency(Number(reasons.trial_milestone_suggestion.amount) || 0)} — {reasons.trial_milestone_suggestion.reason}
+                                  </p>
+                                )}
                               </div>
                             )}
-                          </div>
-                          {app.cover_note && (
-                            <p className="text-xs text-slate-300">{app.cover_note}</p>
-                          )}
-                          <button
-                            type="button"
-                            className="text-[11px] text-blue-400"
-                            onClick={() => setExpandedApp(expandedApp === app.id ? null : app.id)}
-                          >
-                            {expandedApp === app.id ? 'Hide rationale' : 'Show AI rationale'}
-                          </button>
-                          {expandedApp === app.id && (
-                            <div className="text-[11px] text-slate-400 bg-[#0B1326] border border-[#222A3D] rounded-lg p-3 space-y-1">
-                              <p>{reasons.rationale || 'No rationale stored.'}</p>
-                              {reasons.dimension_scores && (
-                                <p>
-                                  Skills {reasons.dimension_scores.skills_match} · Portfolio {reasons.dimension_scores.portfolio_relevance} · Past {String(reasons.dimension_scores.past_delivery)}
-                                </p>
-                              )}
-                              {reasons.newcomer && <p>Newcomer: past delivery is insufficient evidence, not zero.</p>}
-                              {reasons.trial_milestone_suggestion && (
-                                <p className="text-emerald-300">
-                                  Trial milestone suggestion: {formatCurrency(Number(reasons.trial_milestone_suggestion.amount) || 0)} — {reasons.trial_milestone_suggestion.reason}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          {contract.status === 'open' && app.status !== 'rejected' && app.status !== 'awarded' && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-[#2D3449] text-slate-200 text-xs h-7"
-                                onClick={async () => {
-                                  try {
-                                    const updated = await api.applications.shortlist(app.id)
-                                    setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, ...updated } : a)))
-                                    toast.success('Shortlisted')
-                                  } catch (err: any) {
-                                    toast.error(err?.detail || 'Shortlist failed')
-                                  }
-                                }}
-                              >
-                                Shortlist
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
-                                onClick={() => setAwardTarget(app)}
-                              >
-                                Award
-                              </Button>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                            {contract.status === 'open' && app.status !== 'rejected' && app.status !== 'awarded' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-[#2D3449] text-slate-200 text-xs h-7"
+                                  onClick={async () => {
+                                    try {
+                                      const updated = await api.applications.shortlist(app.id)
+                                      setApplications((prev) => prev.map((a) => (a.id === app.id ? { ...a, ...updated } : a)))
+                                      toast.success('Shortlisted')
+                                    } catch (err: any) {
+                                      toast.error(err?.detail || 'Shortlist failed')
+                                    }
+                                  }}
+                                >
+                                  Shortlist
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
+                                  onClick={() => setAwardTarget(app)}
+                                >
+                                  Award
+                                </Button>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       )
                     })}
                     <Dialog open={Boolean(awardTarget)} onOpenChange={(o) => !o && setAwardTarget(null)}>
@@ -923,9 +920,8 @@ export const ContractDetail: React.FC = () => {
                         <React.Fragment key={m.id || idx}>
                           {idx > 0 && (
                             <div
-                              className={`h-0.5 flex-1 min-w-[28px] transition-colors ${
-                                isPrevPaid ? 'bg-emerald-500' : isPaid || isFunded ? 'bg-blue-500/60' : 'bg-slate-800'
-                              }`}
+                              className={`h-0.5 flex-1 min-w-[28px] transition-colors ${isPrevPaid ? 'bg-emerald-500' : isPaid || isFunded ? 'bg-blue-500/60' : 'bg-slate-800'
+                                }`}
                             />
                           )}
                           <div className="flex flex-col items-center shrink-0 text-center px-1">
@@ -961,11 +957,10 @@ export const ContractDetail: React.FC = () => {
                       <button
                         key={f.key}
                         onClick={() => setMilestoneFilter(f.key as any)}
-                        className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                          milestoneFilter === f.key
+                        className={`px-2.5 py-1 rounded text-xs transition-colors ${milestoneFilter === f.key
                             ? 'bg-blue-600 text-white font-medium shadow-sm'
                             : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
-                        }`}
+                          }`}
                       >
                         {f.label}
                       </button>
@@ -1098,13 +1093,12 @@ export const ContractDetail: React.FC = () => {
                                       </div>
                                       <Badge
                                         variant="outline"
-                                        className={`text-[10px] font-mono uppercase px-2 py-0.5 shrink-0 ${
-                                          isPass
+                                        className={`text-[10px] font-mono uppercase px-2 py-0.5 shrink-0 ${isPass
                                             ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                                             : isFail
-                                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                            : 'bg-slate-800 text-slate-400 border-slate-700'
-                                        }`}
+                                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                              : 'bg-slate-800 text-slate-400 border-slate-700'
+                                          }`}
                                       >
                                         {c.status || 'pending'}
                                       </Badge>
@@ -1180,19 +1174,18 @@ export const ContractDetail: React.FC = () => {
                               <span className="text-slate-400">Escrow:</span>
                               <Badge
                                 variant="outline"
-                                className={`text-[11px] font-mono capitalize ${
-                                  isReleased
+                                className={`text-[11px] font-mono capitalize ${isReleased
                                     ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                                     : isStaged
-                                    ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                                    : 'bg-slate-800 text-slate-400 border-slate-700'
-                                }`}
+                                      ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                                  }`}
                               >
-                                {isReleased 
-                                  ? 'Disbursed to Freelancer' 
-                                  : isStaged 
-                                  ? 'Staged in Escrow' 
-                                  : 'Pending Funding'}
+                                {isReleased
+                                  ? 'Disbursed to Freelancer'
+                                  : isStaged
+                                    ? 'Staged in Escrow'
+                                    : 'Pending Funding'}
                               </Badge>
                             </div>
 
@@ -1307,7 +1300,7 @@ export const ContractDetail: React.FC = () => {
                         2. Exclusions &amp; Scope Boundaries
                       </h4>
                       <p className="leading-relaxed">
-                        Third-party API subscriptions, production domain hosting, and out-of-scope features are excluded. Material amendments require a version increment.
+                        Third-party API subscriptions, production domain hosting and out-of-scope features are excluded. Material amendments require a version increment.
                       </p>
                     </div>
 
@@ -1325,7 +1318,7 @@ export const ContractDetail: React.FC = () => {
                         4. Intellectual Property
                       </h4>
                       <p className="leading-relaxed">
-                        All source code, design assets, and deliverables transfer irrevocably to Client upon final payout release.
+                        All source code, design assets and deliverables transfer irrevocably to Client upon final payout release.
                       </p>
                     </div>
                   </div>
@@ -1652,11 +1645,10 @@ export const ContractDetail: React.FC = () => {
                         <button
                           key={filter}
                           onClick={() => setActivityFilter(filter)}
-                          className={`px-2 py-0.5 rounded text-xs capitalize transition-colors ${
-                            activityFilter === filter
+                          className={`px-2 py-0.5 rounded text-xs capitalize transition-colors ${activityFilter === filter
                               ? 'bg-blue-600 text-white font-medium'
                               : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
-                          }`}
+                            }`}
                         >
                           {filter}
                         </button>
@@ -1695,7 +1687,7 @@ export const ContractDetail: React.FC = () => {
 
           {/* ACTION & CONTEXT SIDEBAR (Right 30% / 4 columns) */}
           <div className="lg:col-span-4 space-y-4">
-            
+
             {/* 1. Next Required Action Card (Dynamic CTA) */}
             <Card className="border-blue-500/40 bg-[#131B2E] text-white p-4 shadow-md space-y-3">
               <div className="flex items-center justify-between text-xs">
@@ -1713,7 +1705,7 @@ export const ContractDetail: React.FC = () => {
                     {nextWorkMilestone ? `Submit Work for ${nextWorkMilestone.title}` : 'All Deliverables Submitted'}
                   </div>
                   <p className="text-xs text-slate-300">
-                    {nextWorkMilestone 
+                    {nextWorkMilestone
                       ? 'Upload repository links or deployment evidence for AI automated verification.'
                       : 'All milestones have been delivered and are currently in review or completed.'}
                   </p>
@@ -1911,7 +1903,7 @@ export const ContractDetail: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="text-white text-base">Add Milestone Deliverable</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
-                Specify deliverable scope, budget allocation, and measurable acceptance criteria.
+                Specify deliverable scope, budget allocation and measurable acceptance criteria.
               </DialogDescription>
             </DialogHeader>
 
@@ -2080,7 +2072,7 @@ export const ContractDetail: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="text-white">Accept Digital Contract Terms</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
-                By accepting, you agree to the milestone deliverables, deadlines, and payment terms for agreement {contract.code}.
+                By accepting, you agree to the milestone deliverables, deadlines and payment terms for agreement {contract.code}.
               </DialogDescription>
             </DialogHeader>
 

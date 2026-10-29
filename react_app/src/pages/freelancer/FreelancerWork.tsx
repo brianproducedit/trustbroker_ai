@@ -81,7 +81,7 @@ export const FreelancerWork: React.FC = () => {
               Active Work & Deliverables
             </h1>
             <p className="text-slate-400 text-xs">
-              Track project milestones, submit verification evidence, and unlock PayPal disbursements.
+              Track project milestones, submit verification evidence and unlock PayPal disbursements.
             </p>
           </div>
 
@@ -139,11 +139,10 @@ export const FreelancerWork: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                filter === tab.id
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${filter === tab.id
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-slate-400 hover:text-white hover:bg-[#122622]'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -219,13 +218,12 @@ export const FreelancerWork: React.FC = () => {
                         </td>
                         <td className="py-4 px-4">
                           <Badge
-                            className={`text-[10px] font-mono uppercase ${
-                              c.status === 'active'
+                            className={`text-[10px] font-mono uppercase ${c.status === 'active'
                                 ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
                                 : c.status === 'in_verification'
-                                ? 'bg-amber-950 text-amber-400 border-amber-800 animate-pulse'
-                                : 'bg-slate-800 text-slate-300'
-                            }`}
+                                  ? 'bg-amber-950 text-amber-400 border-amber-800 animate-pulse'
+                                  : 'bg-slate-800 text-slate-300'
+                              }`}
                           >
                             {c.status.replace('_', ' ')}
                           </Badge>

@@ -14,7 +14,7 @@ def get_my_profile(current_user: UserProfile = Depends(get_current_user)):
     return profile_service.to_read(current_user)
 
 
-@router.put("/me", response_model=ProfileRead, summary="Update profile, skills, portfolio, and PayPal payout email")
+@router.put("/me", response_model=ProfileRead, summary="Update profile, skills, portfolio and PayPal payout email")
 def update_my_profile(
     req: ProfileUpdateRequest,
     current_user: UserProfile = Depends(get_current_user),

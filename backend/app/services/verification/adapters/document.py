@@ -1,5 +1,5 @@
 """
-Document Inspection Adapter for PDFs, DOCX, and Specifications.
+Document Inspection Adapter for PDFs, DOCX and Specifications.
 Extracts text locally at $0 cost (via pypdf), evaluates compliance using Groq LLM.
 Never uploads to external proprietary document APIs (No Gemini).
 """

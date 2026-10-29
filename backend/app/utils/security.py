@@ -111,7 +111,7 @@ def get_current_user(
     authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session),
 ) -> UserProfile:
-    """Dependency that extracts, verifies the Supabase JWT, and returns or upserts the UserProfile."""
+    """Dependency that extracts, verifies the Supabase JWT and returns or upserts the UserProfile."""
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -93,7 +93,7 @@ def publish_contract(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Client publishes a complete SOW so freelancers can apply. Requires title, milestones, amounts, and criteria."""
+    """Client publishes a complete SOW so freelancers can apply. Requires title, milestones, amounts and criteria."""
     return marketplace_service.publish_contract(
         session=session,
         contract_id=contract_id,

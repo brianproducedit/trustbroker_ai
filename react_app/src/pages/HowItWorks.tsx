@@ -24,7 +24,7 @@ export const HowItWorks: React.FC = () => {
       step: '01',
       title: 'Describe the brief',
       subtitle: 'AI-drafted statement of work',
-      desc: 'The client describes the project in ordinary language. TrustBroker asks clarifying questions and drafts milestones, budgets, and testable acceptance criteria.',
+      desc: 'The client describes the project in ordinary language. TrustBroker asks clarifying questions and drafts milestones, budgets and testable acceptance criteria.',
       icon: Sparkles,
       iconColor: 'bg-blue-50 text-blue-600 border-blue-200',
       bullets: [
@@ -41,7 +41,7 @@ export const HowItWorks: React.FC = () => {
       icon: Megaphone,
       iconColor: 'bg-sky-50 text-sky-600 border-sky-200',
       bullets: [
-        'Open listing with budget, timeline, and skills',
+        'Open listing with budget, timeline and skills',
         'Drafts stay private until you publish',
         'One clear version of the statement of work',
       ],
@@ -63,7 +63,7 @@ export const HowItWorks: React.FC = () => {
       step: '04',
       title: 'AI vets applicants',
       subtitle: 'Ranked for the client',
-      desc: 'AI compares each applicant to the contract using skills, portfolio relevance, communication, and past deliveries — and flags insufficient evidence instead of inventing history.',
+      desc: 'AI compares each applicant to the contract using skills, portfolio relevance, communication and past deliveries — and flags insufficient evidence instead of inventing history.',
       icon: FileSearch,
       iconColor: 'bg-violet-50 text-violet-600 border-violet-200',
       bullets: [
@@ -74,7 +74,7 @@ export const HowItWorks: React.FC = () => {
     },
     {
       step: '05',
-      title: 'Award, accept, fund',
+      title: 'Award, accept and fund',
       subtitle: 'PayPal-secured milestone',
       desc: 'The awarded freelancer accepts the same contract version. The client funds the next milestone through PayPal. Work starts when that payment is confirmed.',
       icon: CreditCard,
@@ -89,7 +89,7 @@ export const HowItWorks: React.FC = () => {
       step: '06',
       title: 'Submit work, AI verifies',
       subtitle: 'Evidence against criteria',
-      desc: 'The freelancer submits screenshots, files, or a live URL. AI inspects the evidence against each criterion and records pass, fail, or needs review.',
+      desc: 'The freelancer submits screenshots, files or a live URL. AI inspects the evidence against each criterion and records pass, fail, or needs review.',
       icon: CheckCircle2,
       iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-200',
       bullets: [
@@ -114,12 +114,26 @@ export const HowItWorks: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] text-[#1A2940] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F6F8FC] text-[#1A2940] flex flex-col font-sans relative overflow-x-hidden">
+      {/* Background Subtle Mesh & Glow Orbs */}
+      <div 
+        aria-hidden="true" 
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="absolute top-24 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      />
+
       <Header />
 
-      <main className="w-full pt-[68px] flex-1">
+      <main className="w-full pt-[68px] flex-1 z-10">
         <section className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10 text-center">
-          <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5 mb-4">
+          <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-white/80 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5 mb-4 shadow-xs backdrop-blur-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
             From brief to payout
           </Badge>
@@ -128,7 +142,7 @@ export const HowItWorks: React.FC = () => {
             How TrustBroker Coordinates Projects
           </h1>
           <p className="text-sm sm:text-base text-[#5D6B82] max-w-2xl mx-auto mt-4 leading-relaxed">
-            AI-drafted contracts, open applications, PayPal-secured milestones, and evidence-based verification — so clients and freelancers share one trail of what was agreed and what was paid.
+            AI-drafted contracts, open applications, PayPal-secured milestones and evidence-based verification — so clients and freelancers share one trail of what was agreed and what was paid.
           </p>
         </section>
 
@@ -137,7 +151,8 @@ export const HowItWorks: React.FC = () => {
             {steps.map((item) => {
               const IconComp = item.icon
               return (
-                <Card key={item.step} className="border-[#DDE4EF] bg-white shadow-xs overflow-hidden">
+                <Card key={item.step} className="group border-[#DDE4EF] bg-white shadow-xs hover:shadow-lg hover:border-blue-400 transition-all duration-300 rounded-2xl overflow-hidden hover:-translate-y-0.5">
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <CardContent className="p-6 sm:p-8">
                     <div className="flex flex-col sm:flex-row gap-6 items-start">
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border ${item.iconColor}`}>

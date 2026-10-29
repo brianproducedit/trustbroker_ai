@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
+import { AICopilotFAB } from '@/components/operations/AICopilotFAB'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
@@ -242,8 +243,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             }
                           }}
                           className={`p-3 rounded-lg border transition-all flex flex-col gap-1 text-left cursor-pointer ${!n.read
-                              ? 'bg-[#172038] border-blue-900/60 hover:border-blue-500/60'
-                              : 'bg-[#0E1528] border-[#222A3D] hover:border-slate-700'
+                            ? 'bg-[#172038] border-blue-900/60 hover:border-blue-500/60'
+                            : 'bg-[#0E1528] border-[#222A3D] hover:border-slate-700'
                             }`}
                         >
                           <div className="flex items-center justify-between">
@@ -296,8 +297,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 className="flex items-center gap-2.5 pl-1 cursor-pointer group text-left"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-800 transition-transform group-hover:scale-105 ${activeRole === 'client'
-                    ? 'bg-gradient-to-tr from-blue-600 to-indigo-500'
-                    : 'bg-gradient-to-tr from-emerald-600 to-teal-500'
+                  ? 'bg-gradient-to-tr from-blue-600 to-indigo-500'
+                  : 'bg-gradient-to-tr from-emerald-600 to-teal-500'
                   }`}>
                   {user?.name
                     ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -392,8 +393,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 {activeRole === 'client' ? 'Client Workspace:' : 'Freelancer Workspace:'}
               </span>
               {activeRole === 'client'
-                ? 'Create contracts, fund milestones with PayPal, and review verified work.'
-                : 'Apply for work, submit deliverable evidence, and track payouts.'}
+                ? 'Create contracts, fund milestones with PayPal and review verified work.'
+                : 'Apply for work, submit deliverable evidence and track payouts.'}
             </span>
           </div>
           <div className="hidden md:flex items-center gap-3 font-mono text-[11px] text-slate-400">
@@ -409,6 +410,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           {children}
         </main>
       </div>
+
+      {/* Floating Operations Copilot in all portal pages */}
+      <AICopilotFAB workspace={activeRole} />
 
       {/* Mobile Bottom Navigation */}
       <BottomNav />

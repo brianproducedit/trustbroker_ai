@@ -23,12 +23,14 @@ class Settings(BaseSettings):
     paypal_mode: str = "sandbox"
     paypal_webhook_id: str = ""
 
-    # AI Engine Configuration (Groq → OpenRouter → Deterministic Fallback)
+    # AI Engine Configuration (Groq → OpenRouter → DeepSeek → Deterministic Fallback)
     ai_provider: str = "auto"
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
     openrouter_api_key: str = ""
     openrouter_model: str = "google/gemma-4-27b-it:free"
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-chat"
 
 
 

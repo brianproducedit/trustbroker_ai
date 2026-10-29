@@ -51,5 +51,5 @@ def get_listing(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """SOW, budget, and milestones for an open contract. Does not require being a party."""
+    """SOW, budget and milestones for an open contract. Does not require being a party."""
     return marketplace_service.get_open_listing(session, listing_id, current_user)

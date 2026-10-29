@@ -71,7 +71,7 @@ def _deterministic_vet(
 
     if completeness < 40:
         recommendation = VettingRecommendation.INSUFFICIENT_EVIDENCE.value
-        rationale = "Profile completeness is under 40%. Ask the freelancer to finish bio, skills, and portfolio before awarding."
+        rationale = "Profile completeness is under 40%. Ask the freelancer to finish bio, skills and portfolio before awarding."
         overall = min(overall, 48)
     elif newcomer and portfolio >= 70:
         recommendation = VettingRecommendation.NEW_TALENT.value
@@ -174,7 +174,7 @@ def vet_application(
     if completeness < 40:
         base["recommendation"] = VettingRecommendation.INSUFFICIENT_EVIDENCE.value
         base["rationale"] = (
-            "Profile completeness is under 40%. Ask the freelancer to finish bio, skills, and portfolio."
+            "Profile completeness is under 40%. Ask the freelancer to finish bio, skills and portfolio."
         )
         base["score"] = min(int(base["score"]), 48)
     elif past_count == 0 and int(base["dimension_scores"].get("portfolio_relevance") or 0) >= 70:

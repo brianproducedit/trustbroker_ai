@@ -256,7 +256,7 @@ export const FreelancerOperations: React.FC = () => {
                 </Badge>
               </div>
               <p className="text-sm text-slate-400 mt-1">
-                Real-time delivery milestones, PayPal Payouts tracking, and AI-vetted opportunities for {user?.email}
+                Real-time delivery milestones, PayPal Payouts tracking and AI-vetted opportunities for {user?.email}
               </p>
             </div>
 
@@ -372,7 +372,7 @@ export const FreelancerOperations: React.FC = () => {
                     Milestone Deliverables & Payouts Ledger
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-400">
-                    High-density AG Grid ledger showing delivery verification stages, client counterparties, and target deadlines.
+                    High-density AG Grid ledger showing delivery verification stages, client counterparties and target deadlines.
                   </CardDescription>
                 </div>
 
@@ -383,11 +383,10 @@ export const FreelancerOperations: React.FC = () => {
                       key={filter}
                       type="button"
                       onClick={() => setActiveFilter(filter)}
-                      className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${
-                        activeFilter === filter
+                      className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${activeFilter === filter
                           ? 'bg-emerald-600 text-white shadow-xs'
                           : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                        }`}
                     >
                       {filter.replace('_', ' ')}
                     </button>

@@ -14,17 +14,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { 
-  CheckCircle2, 
-  Sparkles, 
-  ArrowLeft, 
-  UploadCloud, 
-  ShieldCheck, 
-  DollarSign, 
-  RotateCcw, 
-  Loader2, 
-  GitBranch, 
-  Globe, 
+import {
+  CheckCircle2,
+  Sparkles,
+  ArrowLeft,
+  UploadCloud,
+  ShieldCheck,
+  DollarSign,
+  RotateCcw,
+  Loader2,
+  GitBranch,
+  Globe,
   FileCheck,
   AlertCircle,
   FileText,
@@ -37,20 +37,20 @@ import { toast } from 'sonner'
 
 export const DeliveryVerification: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const { 
-    contracts, 
-    activeRole, 
-    submitEvidence, 
-    releasePayment, 
+  const {
+    contracts,
+    activeRole,
+    submitEvidence,
+    releasePayment,
     requestRevision,
     overrideReview
   } = useContractStore()
   const { addNotification } = useNotificationStore()
 
-  const contract = id 
+  const contract = id
     ? contracts.find((c) => c.id === id || c.code === id)
     : (contracts[0] || null)
-  
+
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>(
     contract?.milestones.find((m) => ['in_progress', 'submitted', 'verifying', 'revision_requested', 'verified'].includes(m.status))?.id ||
     contract?.milestones[0]?.id ||
@@ -122,7 +122,7 @@ export const DeliveryVerification: React.FC = () => {
       const assessment = await submitEvidence(contract.id, selectedMilestone.id, {
         contractId: contract.id,
         milestoneId: selectedMilestone.id,
-        submittedBy: activeRole === 'freelancer' 
+        submittedBy: activeRole === 'freelancer'
           ? (contract.freelancer?.name || 'the freelancer')
           : 'the freelancer',
         description: notes,
@@ -206,13 +206,13 @@ export const DeliveryVerification: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {activeRole === 'client' 
-                ? 'Review Deliverables & Verify Work' 
+              {activeRole === 'client'
+                ? 'Review Deliverables & Verify Work'
                 : 'Submit Work for Verification'}
             </h1>
             <p className="text-xs text-slate-400">
               {activeRole === 'client'
-                ? 'Review submitted repositories, live preview links, and automated criterion evaluations.'
+                ? 'Review submitted repositories, live preview links and automated criterion evaluations.'
                 : 'Submit your project links and notes to run automated verification and unlock milestone payment.'}
             </p>
           </div>
@@ -223,11 +223,10 @@ export const DeliveryVerification: React.FC = () => {
               <button
                 key={m.id}
                 onClick={() => setSelectedMilestoneId(m.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  selectedMilestoneId === m.id
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${selectedMilestoneId === m.id
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
-                }`}
+                  }`}
               >
                 M{idx + 1}: ${m.amount}
               </button>
@@ -528,13 +527,12 @@ export const DeliveryVerification: React.FC = () => {
                               <span className="font-semibold text-white">{c.title}</span>
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] font-mono uppercase ${
-                                  isPass
+                                className={`text-[10px] font-mono uppercase ${isPass
                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                                     : isFail
-                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                }`}
+                                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                  }`}
                               >
                                 {c.status ? c.status.toUpperCase() : 'PENDING'}
                               </Badge>

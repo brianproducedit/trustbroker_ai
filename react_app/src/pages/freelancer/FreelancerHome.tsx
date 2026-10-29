@@ -9,12 +9,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Search, 
-  UserCircle2, 
-  Inbox, 
-  DollarSign, 
-  Briefcase, 
+import {
+  Search,
+  UserCircle2,
+  Inbox,
+  DollarSign,
+  Briefcase,
   ArrowRight,
   Sparkles,
   Layers
@@ -62,7 +62,7 @@ export const FreelancerHome: React.FC = () => {
               Work &amp; Deliverables Hub
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Browse funded milestone contracts, submit deliverables for AI inspection, and track PayPal disbursements.
+              Browse funded milestone contracts, submit deliverables for AI inspection and track PayPal disbursements.
             </p>
           </div>
 

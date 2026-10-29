@@ -21,12 +21,12 @@
 
 **TrustBroker AI** transforms freelance contracts from fragile promises into automated, policy-enforced escrow workflows. 
 
-Clients describe milestones in plain English, and AI drafts an objective Statement of Work (SOW) with verifiable acceptance criteria. Freelancers apply to open listings, where an AI vetting engine ranks candidates based on concrete portfolio evidence and skills—without penalizing talented newcomers who lack past platform contract history. 
+Clients describe milestones in plain English and AI drafts an objective Statement of Work (SOW) with verifiable acceptance criteria. Freelancers apply to open listings, where an AI vetting engine ranks candidates based on concrete portfolio evidence and skills—without penalizing talented newcomers who lack past platform contract history. 
 
 Once awarded, clients stage milestone funds using **PayPal Checkout (Orders v2)**. When freelancers submit code, live URLs, or test suites, an automated AI evaluation engine verifies each criterion. Upon successful verification, the client authorizes a single-click disbursement executed directly via the **PayPal Payouts API** into the freelancer’s registered PayPal email.
 
-> **Zero Mock Fallbacks on Payouts:** Every staged transaction generates authentic PayPal sandbox Order and Capture IDs, and payouts execute through real PayPal Payout Batch APIs.  
-> **Human Governance:** AI *never* unilaterally moves money. Funds release strictly according to an immutable **PolicyEngine** that validates cryptographic PayPal state, user authorization, and milestone criteria verification.
+> **Zero Mock Fallbacks on Payouts:** Every staged transaction generates authentic PayPal sandbox Order and Capture IDs and payouts execute through real PayPal Payout Batch APIs.  
+> **Human Governance:** AI *never* unilaterally moves money. Funds release strictly according to an immutable **PolicyEngine** that validates cryptographic PayPal state, user authorization and milestone criteria verification.
 
 ---
 
@@ -42,12 +42,12 @@ flowchart LR
     F --> G["7. Instant PayPal Payout"]
 ```
 
-1. **Brief & SOW Generation:** Client inputs a project description; the AI generates structured milestones, timelines, and measurable acceptance criteria.
-2. **Publish Open Contract:** Contract is published to the public marketplace with visibility, category, and skill tags.
+1. **Brief & SOW Generation:** Client inputs a project description; the AI generates structured milestones, timelines and measurable acceptance criteria.
+2. **Publish Open Contract:** Contract is published to the public marketplace with visibility, category and skill tags.
 3. **Apply & Impartial AI Vetting:** Freelancers submit proposals with portfolios; AI ranks candidates using skills and deliverable samples, giving newcomers a fair score (75%+) regardless of job history.
 4. **Award & Mutual Acceptance:** Client awards the contract; cryptographic acceptances are recorded for both parties.
 5. **Milestone Escrow Funding:** Client clicks the PayPal Smart Button to fund the active milestone via **PayPal Orders v2 Capture**. Funds enter sandbox escrow.
-6. **Deliverable Submission & AI Verification:** Freelancer submits GitHub links, live URLs, and test suites. Groq LPU multimodal AI scores deliverables against criteria with cited feedback.
+6. **Deliverable Submission & AI Verification:** Freelancer submits GitHub links, live URLs and test suites. Groq LPU multimodal AI scores deliverables against criteria with cited feedback.
 7. **Instant PayPal Disbursement:** Client confirms release; the backend issues an idempotent payout call via **PayPal Payouts API** (`POST /v1/payments/payouts`), disbursing funds to the freelancer's PayPal email.
 
 ---
@@ -55,7 +55,7 @@ flowchart LR
 ## Who It's For
 
 - **For Clients:** Eliminate the fear of paying upfront for unfinished work. Rest assured milestone funds stay secure in PayPal escrow until deliverables objectively pass AI verification.
-- **For Freelancers:** Never worry about unpaid invoices or scope creep again. Know that milestone funds are already secured before writing code, and receive instant payouts directly to your PayPal account upon verified delivery.
+- **For Freelancers:** Never worry about unpaid invoices or scope creep again. Know that milestone funds are already secured before writing code and receive instant payouts directly to your PayPal account upon verified delivery.
 
 ---
 
@@ -89,12 +89,12 @@ graph TD
 | **Payments** | **PayPal Orders v2 API** | Client escrow funding via PayPal Smart Buttons and server-side capture. |
 | **Disbursements** | **PayPal Payouts API** | Automated, idempotent milestone releases to freelancer PayPal emails. |
 | **Webhooks** | **PayPal Webhooks** | Server-side signature validation (`SHA256withRSA`) for payment events. |
-| **Operations** | **AG Studio React & AG Grid** | Copilot agent with prompt starters, KPI telemetry, and dense financial ledgers. |
-| **AI Inference** | **Groq LPU (Primary)** | Sub-second SOW drafting, applicant ranking, and multi-criterion evidence verification. |
+| **Operations** | **AG Studio React & AG Grid** | Copilot agent with prompt starters, KPI telemetry and dense financial ledgers. |
+| **AI Inference** | **Groq LPU (Primary)** | Sub-second SOW drafting, applicant ranking and multi-criterion evidence verification. |
 | **AI Fallback** | **OpenRouter (Free Tier)** | Resilient free-tier fallback ensuring zero API downtime without cost. |
-| **Backend** | **Python 3.12, FastAPI, SQLModel** | Async REST API, policy gatekeeper, audit trail, and Alembic migrations. |
+| **Backend** | **Python 3.12, FastAPI, SQLModel** | Async REST API, policy gatekeeper, audit trail and Alembic migrations. |
 | **Frontend** | **React 19, TypeScript, Vite, Tailwind** | Dual-persona client & freelancer workspace, mobile-first responsive bottom navigation. |
-| **Database & Auth** | **PostgreSQL & Supabase** | Relational schemas, row-level security, and JWT session verification. |
+| **Database & Auth** | **PostgreSQL & Supabase** | Relational schemas, row-level security and JWT session verification. |
 | **Hosting** | **Render** | Production deployment of static frontend and auto-restarting FastAPI web service. |
 
 ---

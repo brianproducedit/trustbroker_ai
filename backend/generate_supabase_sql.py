@@ -18,7 +18,7 @@ sql_parts.append("""-- =========================================================
 -- TrustBroker AI — Complete Supabase Database Setup & Showcase Seed Script
 -- =============================================================================
 -- Run this script in your Supabase Dashboard -> SQL Editor -> New Query -> Run.
--- It creates all required enum types, tables, foreign keys, and indexes,
+-- It creates all required enum types, tables, foreign keys and indexes,
 -- and seeds the showcase contracts linked to the real Supabase Auth users.
 -- =============================================================================
 
@@ -303,7 +303,7 @@ ON CONFLICT DO NOTHING;
 -- Contract 1 Milestones
 INSERT INTO milestones (id, contract_id, title, description, amount, currency, deadline, status, sort_order, payment_status, created_at, updated_at)
 VALUES 
-    ('{m1_1_id}', '{c1_id}', 'Design System, Wireframes & Component Specs', 'Comprehensive Figma design system with mobile/desktop responsiveness, accessible tokens, and UI specs.', 4000.00, 'USD', '2026-10-19', 'SETTLED', 0, 'RELEASED', NOW() - INTERVAL '14 days', NOW() - INTERVAL '7 days'),
+    ('{m1_1_id}', '{c1_id}', 'Design System, Wireframes & Component Specs', 'Comprehensive Figma design system with mobile/desktop responsiveness, accessible tokens and UI specs.', 4000.00, 'USD', '2026-10-19', 'SETTLED', 0, 'RELEASED', NOW() - INTERVAL '14 days', NOW() - INTERVAL '7 days'),
     ('{m1_2_id}', '{c1_id}', 'Core API & Inventory Synchronization Microservice', 'Event-driven sync microservice consuming Shopify webhooks and updating Postgres cache.', 6000.00, 'USD', '2026-11-05', 'VERIFIED', 1, 'STAGED_IN_SANDBOX', NOW() - INTERVAL '14 days', NOW() - INTERVAL '1 days'),
     ('{m1_3_id}', '{c1_id}', 'Frontend Storefront & Production Integration', 'Responsive Next.js 15 App Router storefront with Algolia instant search and PayPal/Stripe checkout.', 5000.00, 'USD', '2026-11-20', 'PENDING', 2, 'NOT_STARTED', NOW() - INTERVAL '14 days', NOW())
 ON CONFLICT (id) DO NOTHING;
@@ -311,8 +311,8 @@ ON CONFLICT (id) DO NOTHING;
 -- Contract 1 Acceptance Criteria
 INSERT INTO acceptance_criteria (id, milestone_id, title, description, evidence_type, status, ai_confidence, feedback, created_at)
 VALUES 
-    ('{crit1_1}', '{m1_1_id}', 'Complete Figma design tokens & dark/light theme specification', 'Exportable Tailwind tokens covering colors, spacing, and typography.', 'url', 'PASS', 0.98, 'All token variables validated against WCAG AA standards.', NOW() - INTERVAL '14 days'),
-    ('{crit1_2}', '{m1_1_id}', 'Interactive prototype for desktop and mobile viewpoints', 'Clickable Figma flow covering catalog, product detail, and cart drawer.', 'url', 'PASS', 0.97, 'Clickable flows verified on mobile and desktop viewports.', NOW() - INTERVAL '14 days'),
+    ('{crit1_1}', '{m1_1_id}', 'Complete Figma design tokens & dark/light theme specification', 'Exportable Tailwind tokens covering colors, spacing and typography.', 'url', 'PASS', 0.98, 'All token variables validated against WCAG AA standards.', NOW() - INTERVAL '14 days'),
+    ('{crit1_2}', '{m1_1_id}', 'Interactive prototype for desktop and mobile viewpoints', 'Clickable Figma flow covering catalog, product detail and cart drawer.', 'url', 'PASS', 0.97, 'Clickable flows verified on mobile and desktop viewports.', NOW() - INTERVAL '14 days'),
     ('{crit2_1}', '{m1_2_id}', 'REST/GraphQL API endpoints with OpenAPI 3.1 documentation', 'Comprehensive Swagger spec with 100% parameter coverage.', 'github_pr', 'PASS', 0.99, 'OpenAPI 3.1 spec adheres to schema contracts.', NOW() - INTERVAL '14 days'),
     ('{crit2_2}', '{m1_2_id}', 'Unit & integration test suite exceeding 85% code coverage', 'Automated pytest / vitest test runner output validating coverage.', 'test_output', 'PASS', 0.96, 'Coverage report confirms 89.4% statements covered.', NOW() - INTERVAL '14 days'),
     ('{crit3_1}', '{m1_3_id}', 'Lighthouse performance score >= 90 on mobile & desktop', 'Core Web Vitals LCP < 2.5s, CLS < 0.1, FID < 100ms.', 'lighthouse', 'PENDING', NULL, NULL, NOW() - INTERVAL '14 days'),

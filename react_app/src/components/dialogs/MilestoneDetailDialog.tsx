@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { useContractStore } from '@/hooks/useContractStore'
-import { api } from '@/lib/api'
+import { api, formatApiError } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
 import {
   ChevronDown,
@@ -37,6 +37,7 @@ import {
   CreditCard,
   ShieldCheck,
   Loader2,
+  Lock,
 } from 'lucide-react'
 
 interface MilestoneDetailDialogProps {
@@ -175,7 +176,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
       onMilestoneUpdated?.()
       onOpenChange(false)
     } catch (err: any) {
-      setFundingError(err?.message || 'Failed to initiate funding. Please try again.')
+      setFundingError(formatApiError(err))
     } finally {
       setIsFunding(false)
     }
@@ -191,7 +192,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
       onMilestoneUpdated?.()
       onOpenChange(false)
     } catch (err: any) {
-      setFundingError(err?.message || 'Failed to release payment.')
+      setFundingError(formatApiError(err))
     } finally {
       setIsReleasing(false)
     }
@@ -200,12 +201,13 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
   const paymentStatus = milestone.paymentStatus
   const isReleased = paymentStatus === 'released' || paymentStatus === 'release_authorized'
   const isStaged = paymentStatus === 'staged_in_sandbox'
+  const isContractActive = contract?.status === 'active'
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl bg-[#131B2E] border-[#222A3D] text-white overflow-y-auto max-h-[88vh] p-6 sm:p-8 shadow-2xl"
+          className="w-full max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-4xl bg-[#131B2E] border-[#222A3D] text-white overflow-y-auto max-h-[88vh] p-6 sm:p-8 shadow-2xl"
           style={{ backgroundColor: '#131B2E', borderColor: '#222A3D', color: 'white' }}
         >
           <DialogHeader className="pb-2">
@@ -395,6 +397,26 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                   ) : (
                     'Release Payment to Freelancer'
                   )}
+                </Button>
+              </div>
+            ) : !isContractActive ? (
+              <div className="space-y-3">
+                <div className="rounded-lg p-3 bg-blue-950/40 border border-blue-800/50 text-xs text-blue-300 flex items-start gap-3">
+                  <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-white">Escrow Staging Notice</p>
+                    <p className="text-slate-300 leading-relaxed">
+                      Milestones can be pre-funded into PayPal sandbox escrow once this contract is awarded and transitions to <strong>Active</strong> status. This contract is currently in <strong>{contract.status || 'open'}</strong> status.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  disabled
+                  className="w-full bg-slate-800/80 text-slate-400 border border-slate-700/60 cursor-not-allowed text-xs py-2"
+                >
+                  <Lock className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                  Milestone Funding Available Once Contract is Active
                 </Button>
               </div>
             ) : (

@@ -70,7 +70,7 @@ export const ClientHome: React.FC = () => {
               Client Hub
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Create contracts, fund milestones, and review verified work.
+              Create contracts, fund milestones and review verified work.
             </p>
           </div>
 
@@ -248,9 +248,8 @@ export const ClientHome: React.FC = () => {
                       {contract.code}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                        statusColors[contract.status] || 'bg-slate-700 text-slate-300'
-                      }`}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[contract.status] || 'bg-slate-700 text-slate-300'
+                        }`}
                     >
                       {statusLabels[contract.status] || contract.status}
                     </span>

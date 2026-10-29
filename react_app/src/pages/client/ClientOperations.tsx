@@ -227,7 +227,7 @@ export const ClientOperations: React.FC = () => {
                 </Badge>
               </div>
               <p className="text-sm text-slate-400 mt-1">
-                Real-time financial telemetry, escrow allocations, and AI-driven operations for {user?.email}
+                Real-time financial telemetry, escrow allocations and AI-driven operations for {user?.email}
               </p>
             </div>
 
@@ -343,7 +343,7 @@ export const ClientOperations: React.FC = () => {
                     Contracts & Milestone Escrow Ledger
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-400">
-                    High-density AG Grid ledger with live PayPal staging totals, counterparty data, and real-time status chips.
+                    High-density AG Grid ledger with live PayPal staging totals, counterparty data and real-time status chips.
                   </CardDescription>
                 </div>
 
@@ -354,11 +354,10 @@ export const ClientOperations: React.FC = () => {
                       key={filter}
                       type="button"
                       onClick={() => setActiveFilter(filter)}
-                      className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${
-                        activeFilter === filter
+                      className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${activeFilter === filter
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                        }`}
                     >
                       {filter}
                     </button>

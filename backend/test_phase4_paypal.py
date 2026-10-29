@@ -207,7 +207,7 @@ async def test_paypal_sandbox_oauth():
 def print_phase_4_summary():
     print("\n=======================================================")
     print("  Phase 4 PayPal Fund & Payout Suite Completed")
-    print("  All policy, idempotency, and database assertions: PASS")
+    print("  All policy, idempotency and database assertions: PASS")
     print("=======================================================\n")
 
 

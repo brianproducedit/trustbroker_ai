@@ -33,7 +33,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
    - **`trustbroker-ai-frontend`** (Static Site, Root: `react_app`, Build: `npm ci && npm run build`, Publish: `./dist`)
    - **`trustbroker-ai-api`** (Web Service, Root: `backend`, Build: `pip install -r requirements.txt`, Start: `alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`)
 5. Fill in the required environment variables prompted by Render (see Section 4 below).
-6. Click **Apply**. Render will run migrations, deploy the API, and compile the frontend.
+6. Click **Apply**. Render will run migrations, deploy the API and compile the frontend.
 
 ---
 

@@ -76,7 +76,7 @@ export const ContractOverviewDialog: React.FC<ContractOverviewDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl bg-[#131B2E] border-[#222A3D] text-white p-0 gap-0 overflow-hidden shadow-2xl">
+      <DialogContent className="w-full max-w-2xl sm:max-w-3xl md:max-w-3xl lg:max-w-4xl max-h-[88vh] overflow-y-auto bg-[#131B2E] border-[#222A3D] text-white p-0 gap-0 shadow-2xl">
         {/* Dialog Header */}
         <DialogHeader className="p-6 pb-4 border-b border-[#222A3D] bg-[#0E1528]/80">
           <div className="flex items-start justify-between gap-3">

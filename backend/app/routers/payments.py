@@ -108,7 +108,7 @@ async def paypal_webhook(
     request: Request,
     session: Session = Depends(get_session),
 ):
-    """Receive, verify, and idempotently process PayPal webhooks."""
+    """Receive, verify and idempotently process PayPal webhooks."""
     headers = dict(request.headers)
     payload = await request.json()
     return await payment_service.process_paypal_webhook(

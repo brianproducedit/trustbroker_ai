@@ -1,6 +1,6 @@
 """
 Production startup runner for TrustBroker AI.
-Safely runs migrations, diagnostics, schema healing, and launches Uvicorn.
+Safely runs migrations, diagnostics, schema healing and launches Uvicorn.
 """
 import os
 import sys

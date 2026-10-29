@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 flex flex-col gap-4">
             <Logo isDark />
             <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
-              The trust layer between clients and freelancers: AI-drafted contracts, PayPal-secured milestones, and evidence-based verification.
+              The trust layer between clients and freelancers: AI-drafted contracts, PayPal-secured milestones and evidence-based verification.
             </p>
             <div className="flex items-center gap-2 text-xs text-blue-400 font-mono mt-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />

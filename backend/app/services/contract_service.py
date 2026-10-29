@@ -23,7 +23,7 @@ def generate_contract_code(session: Session) -> str:
 
 
 def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
-    """Load contract with its milestones, criteria, and acceptance records."""
+    """Load contract with its milestones, criteria and acceptance records."""
     contract = session.get(Contract, contract_id)
     if not contract:
         raise HTTPException(
