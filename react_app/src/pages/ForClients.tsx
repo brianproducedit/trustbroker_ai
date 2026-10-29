@@ -37,12 +37,26 @@ export const ForClients: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F7F9FC] text-[#0E172E] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F7F9FC] text-[#0E172E] flex flex-col font-sans relative overflow-x-hidden">
+      {/* Background Subtle Mesh & Glow Orbs */}
+      <div 
+        aria-hidden="true" 
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="absolute top-24 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      />
+
       <Header />
 
-      <main className="w-full pt-[68px] flex-1">
+      <main className="w-full pt-[68px] flex-1 z-10">
         {/* Header Hero */}
-        <section className="py-14 sm:py-20 bg-white border-b border-[#DDE4EF]">
+        <section className="py-14 sm:py-20 bg-white/80 backdrop-blur-md border-b border-[#DDE4EF]">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-5">
             <Badge variant="outline" className="px-3.5 py-1 rounded-full bg-blue-50 border-blue-200 text-blue-700 text-xs font-semibold gap-1.5 shadow-xs">
               <Building2 className="w-3.5 h-3.5 text-blue-600" />
@@ -51,7 +65,9 @@ export const ForClients: React.FC = () => {
 
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#0B1B33] tracking-tight leading-tight">
               Hire global talent with <br className="hidden sm:inline" />
-              <span className="text-blue-600">verifiable confidence and transparent escrow.</span>
+              <span className="text-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                verifiable confidence and transparent escrow.
+              </span>
             </h1>
 
             <p className="text-sm sm:text-base text-[#475569] max-w-2xl leading-relaxed">
@@ -59,7 +75,7 @@ export const ForClients: React.FC = () => {
             </p>
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-11 px-6 gap-2 font-medium shadow-sm cursor-pointer">
+              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-11 px-6 gap-2 font-medium shadow-md hover:shadow-lg transition-all cursor-pointer">
                 <Link to={`${ROUTES.SIGN_UP}?role=client`}>
                   <span>Post a Contract as Client</span>
                   <ArrowRight className="w-4 h-4" />
@@ -88,12 +104,13 @@ export const ForClients: React.FC = () => {
             {benefits.map((b) => {
               const IconComp = b.icon
               return (
-                <Card key={b.title} className="border-[#E2E8F0] bg-white shadow-xs hover:shadow-md transition-shadow">
+                <Card key={b.title} className="group border-[#E2E8F0] bg-white shadow-xs hover:shadow-lg hover:border-blue-400 transition-all duration-300 rounded-xl overflow-hidden hover:-translate-y-0.5">
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <CardContent className="p-6 space-y-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${b.color}`}>
                       <IconComp className="w-6 h-6" />
                     </div>
-                    <h3 className="font-semibold text-base text-[#0B1B33]">{b.title}</h3>
+                    <h3 className="font-semibold text-base text-[#0B1B33] group-hover:text-blue-600 transition-colors">{b.title}</h3>
                     <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">{b.desc}</p>
                   </CardContent>
                 </Card>
