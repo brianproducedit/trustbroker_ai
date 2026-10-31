@@ -27,6 +27,7 @@ export const ROUTES = {
   CONTRACT_DETAIL: (id: string = ':id') => `/app/client/contracts/${id}`,
   CONTRACT_APPLICANTS: (id: string = ':id') => `/app/client/contracts/${id}/applicants`,
   CLIENT_OPERATIONS: '/app/client/operations',
+  CLIENT_STUDIO: '/app/client/studio',
 
   // Freelancer Workspace
   FREELANCER_HOME: '/app/freelancer',
@@ -41,6 +42,7 @@ export const ROUTES = {
   FREELANCER_PAYOUTS: '/app/freelancer/earnings',
   FREELANCER_EARNINGS: '/app/freelancer/earnings',
   FREELANCER_OPERATIONS: '/app/freelancer/operations',
+  FREELANCER_STUDIO: '/app/freelancer/studio',
 
   // Common & Legacy Routes
   ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,

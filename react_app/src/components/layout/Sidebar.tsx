@@ -14,7 +14,8 @@ import {
   Inbox,
   BarChart3,
   Bell,
-  Briefcase
+  Briefcase,
+  Sparkles
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -56,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
     { label: 'Applications', icon: Inbox, path: ROUTES.CLIENT_APPLICATIONS },
     { label: 'New Contract', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
     { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
+    { label: 'Analytics Studio', icon: Sparkles, path: ROUTES.CLIENT_STUDIO },
     { label: 'Notifications', icon: Bell, path: '/app/notifications' },
     { label: 'Profile', icon: UserCircle2, path: ROUTES.CLIENT_PROFILE },
   ]
@@ -66,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
     { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
     { label: 'Active Work', icon: Briefcase, path: ROUTES.FREELANCER_WORK },
     { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
+    { label: 'Analytics Studio', icon: Sparkles, path: ROUTES.FREELANCER_STUDIO },
     { label: 'Notifications', icon: Bell, path: '/app/notifications' },
     { label: 'Profile', icon: UserCircle2, path: ROUTES.FREELANCER_PROFILE },
     { label: 'Earnings', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
