@@ -115,6 +115,20 @@ class PolicyEngine:
         return PolicyResult(True)
 
     @classmethod
+    def can_decline_award(cls, user: UserProfile, contract: Contract) -> PolicyResult:
+        """Only the awarded freelancer may decline, and only before the contract is active."""
+        if not cls.is_freelancer(user, contract):
+            return PolicyResult(False, "Only the awarded freelancer can decline this award.")
+        if contract.status not in (ContractStatus.AWARDED, ContractStatus.PENDING_ACCEPTANCE):
+            return PolicyResult(
+                False,
+                f"Cannot decline an award once the contract is '{contract.status.value}'.",
+            )
+        if contract.status == ContractStatus.ACTIVE:
+            return PolicyResult(False, "Contract is already active. Use cancellation instead.")
+        return PolicyResult(True)
+
+    @classmethod
     def can_cancel_contract(cls, user: UserProfile, contract: Contract) -> PolicyResult:
         """Client can cancel draft or pending contract, or either party if in draft."""
         if not cls.is_party(user, contract):

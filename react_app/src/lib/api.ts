@@ -165,6 +165,12 @@ export const api = {
       apiFetch<any>(`/contracts/${id}/accept`, {
         method: 'POST',
       }),
+    decline: (id: string, reason?: string) => {
+      const qs = reason ? `?reason=${encodeURIComponent(reason)}` : ''
+      return apiFetch<any>(`/contracts/${id}/decline${qs}`, {
+        method: 'POST',
+      })
+    },
     cancel: (id: string, reason?: string) => {
       const qs = reason ? `?reason=${encodeURIComponent(reason)}` : ''
       return apiFetch<any>(`/contracts/${id}/cancel${qs}`, {

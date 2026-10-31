@@ -57,6 +57,7 @@ interface ContractStore {
   deleteContract: (contractId: string) => Promise<void>
   cancelContract: (contractId: string, reason?: string) => Promise<void>
   acceptContract: (contractId: string, role?: 'client' | 'freelancer') => Promise<void>
+  declineAward: (contractId: string, reason?: string) => Promise<void>
 
   // Milestone Actions
   addMilestone: (contractId: string, milestone: Milestone) => void
@@ -472,6 +473,50 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 details: bothAccepted
                   ? 'All parties signed. Contract is now ACTIVE and escrow staging is unlocked.'
                   : `${isClient ? 'Client' : 'Freelancer'} accepted contract terms.`,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
+  },
+
+  declineAward: async (contractId, reason) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+
+    if (isUuid) {
+      try {
+        const updated = await api.contracts.decline(contractId, reason)
+        if (updated) {
+          const transformed = transformContract(updated)
+          set((state) => ({
+            contracts: state.contracts.map((c) => (c.id === contractId ? transformed : c)),
+          }))
+          return
+        }
+      } catch (err) {
+        console.warn('Backend declineAward warning, applying local state update:', err)
+      }
+    }
+
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            status: 'open' as ContractStatus,
+            freelancer: { ...c.freelancer, name: '', email: '', accepted: false },
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: 'Freelancer',
+                action: 'AWARD_DECLINED',
+                details: reason
+                  ? `Freelancer declined the award. Reason: ${reason}`
+                  : 'Freelancer declined the award. The listing is open again.',
               },
             ],
           }

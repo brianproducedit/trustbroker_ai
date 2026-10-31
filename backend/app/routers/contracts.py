@@ -155,6 +155,22 @@ def accept_contract(
     )
 
 
+@router.post("/{contract_id}/decline", response_model=ContractRead, summary="Freelancer declines an awarded contract")
+def decline_award(
+    contract_id: uuid.UUID,
+    reason: Optional[str] = Query(None, description="Optional reason for declining"),
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Awarded freelancer declines before activation. The listing reopens for other applicants."""
+    return contract_service.decline_award(
+        session=session,
+        contract_id=contract_id,
+        user=current_user,
+        reason=reason,
+    )
+
+
 @router.post("/{contract_id}/cancel", response_model=ContractRead, summary="Cancel a contract")
 def cancel_contract(
     contract_id: uuid.UUID,
