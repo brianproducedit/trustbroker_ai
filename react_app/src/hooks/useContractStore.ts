@@ -98,17 +98,29 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   fetchContracts: async () => {
     set({ isSyncing: true })
     try {
-      const activeRole = get().activeRole
+      const activeRole = useAuthStore.getState().activeRole || (localStorage.getItem('tb_active_role') as 'client' | 'freelancer') || get().activeRole || 'client'
       const res = await api.contracts.list({ role: activeRole })
-      if (res && Array.isArray(res.contracts) && res.contracts.length > 0) {
-        const transformed = res.contracts.map((c) => transformContract(c))
-        set({
-          contracts: transformed,
-          activeContractId: transformed[0]?.id || get().activeContractId,
-          isSyncing: false,
-          error: null,
-        })
-        return
+      if (res && Array.isArray(res.contracts)) {
+        if (res.contracts.length > 0) {
+          const transformed = res.contracts.map((c) => transformContract(c))
+          set({
+            contracts: transformed,
+            activeContractId: transformed[0]?.id || get().activeContractId,
+            isSyncing: false,
+            error: null,
+          })
+          return
+        } else {
+          // If the backend has no contracts for this user yet, retain any active locally-created UUID drafts
+          const activeCreated = get().contracts.filter((c) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c.id))
+          set({
+            contracts: activeCreated,
+            activeContractId: activeCreated[0]?.id || '',
+            isSyncing: false,
+            error: null,
+          })
+          return
+        }
       }
     } catch (err: any) {
       console.warn('Backend list_contracts fallback to local state:', err?.message || err)

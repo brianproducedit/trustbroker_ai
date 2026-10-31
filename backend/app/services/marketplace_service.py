@@ -105,6 +105,7 @@ def _application_read(session: Session, application: Application, include_profil
         proposed_start=application.proposed_start,
         portfolio_snapshot=application.portfolio_snapshot or [],
         status=application.status,
+        rejection_reason=application.rejection_reason,
         contract_title=contract.title if contract else None,
         contract_code=contract.code if contract else None,
         created_at=application.created_at,
@@ -344,6 +345,7 @@ def award_application(
     for other in others:
         if other.status not in (ApplicationStatus.WITHDRAWN.value, ApplicationStatus.AWARDED.value):
             other.status = ApplicationStatus.REJECTED.value
+            other.rejection_reason = "Another candidate has been selected for this contract."
             other.updated_at = now
             queue_notification(
                 session,

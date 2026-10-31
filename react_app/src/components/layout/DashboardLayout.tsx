@@ -13,7 +13,6 @@ import {
   X,
   UserCheck,
   LogOut,
-  ArrowLeftRight,
   ExternalLink
 } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
@@ -39,7 +38,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const navigate = useNavigate()
   const location = useLocation()
   const { activeContractId, contracts } = useContractStore()
-  const { user, activeRole, toggleActiveRole, signOut: authSignOut } = useAuthStore()
+  const { user, activeRole, signOut: authSignOut } = useAuthStore()
   const { notifications, unreadCount, markAllAsRead, markAsRead, fetchNotifications } = useNotificationStore()
 
   useEffect(() => {
@@ -60,14 +59,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     await authSignOut()
     toast.success('Signed out successfully')
     navigate(ROUTES.HOME)
-  }
-
-  const handleRoleToggle = () => {
-    toggleActiveRole()
-    setProfileOpen(false)
-    const nextRole = activeRole === 'client' ? 'freelancer' : 'client'
-    toast.info(`Switched to ${nextRole} workspace`)
-    navigate(nextRole === 'client' ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME)
   }
 
   // Generate breadcrumb text from location
@@ -110,7 +101,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     <div className="min-h-screen bg-[#0B1326] text-[#DAE2FD] font-sans antialiased flex flex-col">
       {/* Desktop Sidebar (md+) */}
       <div className="hidden md:block">
-        <Sidebar currentRole={activeRole} onToggleRole={toggleActiveRole} />
+        <Sidebar currentRole={activeRole} />
       </div>
 
       {/* Mobile Drawer Sidebar */}
@@ -121,7 +112,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             onClick={() => setMobileSidebarOpen(false)}
           />
           <div className="relative w-64 max-w-full z-10">
-            <Sidebar currentRole={activeRole} onToggleRole={toggleActiveRole} />
+            <Sidebar currentRole={activeRole} />
             <button
               onClick={() => setMobileSidebarOpen(false)}
               className="absolute top-4 right-3 p-1 text-slate-400 hover:text-white"
@@ -330,18 +321,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       Workspace: {activeRole === 'client' ? 'Client' : 'Freelancer'}
                     </span>
                   </div>
-
-                  {/* Switch Persona */}
-                  <button
-                    onClick={handleRoleToggle}
-                    type="button"
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-[#172038] transition-colors cursor-pointer"
-                  >
-                    <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Switch to {activeRole === 'client' ? 'freelancer' : 'client'} workspace</span>
-                  </button>
-
-                  <div className="h-px bg-[#222A3D] my-1" />
 
                   {/* Sign Out */}
                   <button

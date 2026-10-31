@@ -230,15 +230,27 @@ def list_user_contracts(
 
     # Role filter
     if role == "client":
-        query = query.where(Contract.client_id == user.id)
+        matching_client_ids = [user.id]
+        if user.email:
+            email_ids = list(session.exec(select(UserProfile.id).where(UserProfile.email == user.email)).all())
+            matching_client_ids = list(set(matching_client_ids + email_ids))
+        query = query.where(Contract.client_id.in_(matching_client_ids))
     elif role == "freelancer":
+        matching_freelancer_ids = [user.id]
+        if user.email:
+            email_ids = list(session.exec(select(UserProfile.id).where(UserProfile.email == user.email)).all())
+            matching_freelancer_ids = list(set(matching_freelancer_ids + email_ids))
         query = query.where(
-            (Contract.freelancer_id == user.id) | (Contract.freelancer_email == user.email)
+            (Contract.freelancer_id.in_(matching_freelancer_ids)) | (Contract.freelancer_email == user.email)
         )
     else:
+        matching_user_ids = [user.id]
+        if user.email:
+            email_ids = list(session.exec(select(UserProfile.id).where(UserProfile.email == user.email)).all())
+            matching_user_ids = list(set(matching_user_ids + email_ids))
         query = query.where(
-            (Contract.client_id == user.id)
-            | (Contract.freelancer_id == user.id)
+            (Contract.client_id.in_(matching_user_ids))
+            | (Contract.freelancer_id.in_(matching_user_ids))
             | (Contract.freelancer_email == user.email)
         )
 

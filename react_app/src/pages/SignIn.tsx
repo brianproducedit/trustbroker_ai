@@ -41,14 +41,20 @@ export const SignIn: React.FC = () => {
     e.preventDefault()
     setIsLoading(true)
 
-    setActiveRole(selectedRole)
-    const result = await signIn(email, password)
+    const result = await signIn(email, password, selectedRole)
     setIsLoading(false)
 
     if (result.success) {
+      setActiveRole(selectedRole)
       const roleName = selectedRole === 'client' ? 'Client' : 'Freelancer'
       toast.success(`Signed in successfully as ${roleName}!`)
-      navigate(redirectParam ? decodeURIComponent(redirectParam) : ROUTES.DASHBOARD)
+      navigate(
+        redirectParam
+          ? decodeURIComponent(redirectParam)
+          : selectedRole === 'client'
+          ? ROUTES.CLIENT_HOME
+          : ROUTES.FREELANCER_HOME
+      )
     } else {
       toast.error(result.error || 'Failed to sign in. Please check your credentials.')
     }
@@ -83,10 +89,7 @@ export const SignIn: React.FC = () => {
                 type="button"
                 variant={selectedRole === 'client' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => {
-                  setSelectedRole('client')
-                  setActiveRole('client')
-                }}
+                onClick={() => setSelectedRole('client')}
                 className={`h-8 text-xs font-medium justify-center gap-1.5 ${
                   selectedRole === 'client'
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -101,10 +104,7 @@ export const SignIn: React.FC = () => {
                 type="button"
                 variant={selectedRole === 'freelancer' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => {
-                  setSelectedRole('freelancer')
-                  setActiveRole('freelancer')
-                }}
+                onClick={() => setSelectedRole('freelancer')}
                 className={`h-8 text-xs font-medium justify-center gap-1.5 ${
                   selectedRole === 'freelancer'
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
