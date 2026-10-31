@@ -181,7 +181,7 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
             url = "https://openrouter.ai/api/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {settings.openrouter_api_key.strip()}",
-                "HTTP-Referer": "https://trustbroker-ai-frontend.onrender.com",
+                "HTTP-Referer": "https://trustbroker-ai-frontend-bx9a.onrender.com",
                 "X-Title": "TrustBroker AI",
                 "Content-Type": "application/json",
             }

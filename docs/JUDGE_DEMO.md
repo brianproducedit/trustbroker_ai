@@ -2,7 +2,7 @@
 
 > **Competition:** [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)  
 > **Target Audience:** Hackathon Judges, Evaluators and Technical Reviewers  
-> **Key Innovation:** Autonomous AI milestone verification paired with real PayPal Orders v2 escrow captures and PayPal Payouts API disbursements.
+> **Key Innovation:** Autonomous AI milestone verification paired with real PayPal Orders v2 milestone captures and PayPal Payouts API disbursements.
 
 ---
 
@@ -20,7 +20,7 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
                   v
 +------------------------------------+
 | Platform Business Sandbox Account  |
-| (TrustBroker Escrow Hub)           |
+| (TrustBroker Platform Account)     |
 +------------------------------------+
                   |
                   | 2. Milestone AI Verified & Released
@@ -37,7 +37,7 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
 | Role | PayPal Sandbox Type | Purpose in Demo |
 |---|---|---|
 | **Client (Buyer)** | Sandbox Personal Account | Funds milestones via PayPal Buttons popup. Logs into PayPal modal. |
-| **Platform Escrow** | Sandbox Business (REST App) | Holds escrow in sandbox; backend credentials issue orders and payouts. |
+| **Platform** | Sandbox Business (REST App) | Receives captured milestone funds in sandbox; backend credentials issue orders and payouts. |
 | **Freelancer (Receiver)** | Sandbox Personal Account | Target `paypal_payout_email` that receives the payout batch item. |
 
 > **Note for Judges:** You can use your own sandbox personal accounts created in your [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/accounts), or use the test credentials pre-populated in the project environment.
@@ -70,12 +70,12 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 2. Notice the navigation tabs:
    - **Milestones**: Breakdown of deliverables, acceptance criteria and status badges.
    - **Legal SOW**: Plain-language AI-drafted statement of work and exclusions.
-   - **Payments**: The PayPal Escrow & Disbursement Hub.
+   - **Payments**: The PayPal Funding & Disbursement Hub.
    - **Audit Activity**: Immutable chronological event log.
 
 ### Step 3: Fund Milestone 1 with PayPal
 1. Open the **Payments** tab.
-2. In the **Milestone Escrow Allocation** card, locate the active unfunded milestone.
+2. In the **Milestone Funding Allocation** card, locate the active unfunded milestone.
 3. Click the gold **PayPal** button.
 4. The PayPal Sandbox modal launches:
    - Server calls `POST /api/v1/payments/create-order` via PayPal Orders v2.
@@ -128,9 +128,9 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 ### Step 8: Test AG Studio Financial Operations & AI Copilot
 1. In either the **Client** or **Freelancer** workspace, click **Operations** in the sidebar (or navigate to `/app/client/operations` or `/app/freelancer/operations`).
 2. Observe live KPI widgets:
-   - Total Committed, Staged in Escrow, Cleared Payouts and Pending Verification.
+   - Total Committed, Staged in Sandbox, Cleared Payouts and Pending Verification.
 3. Test the **AG Studio Copilot Agent**:
-   - Click one of the 3 prompt starters (e.g. *"Summarize total escrow funds and pending milestone verifications"* or *"Which milestone is currently in verification and what is its status?"*).
+   - Click one of the 3 prompt starters (e.g. *"Summarize total staged funds and pending milestone verifications"* or *"Which milestone is currently in verification and what is its status?"*).
    - Notice the agent answers with real-time database context queried directly from PostgreSQL.
 4. Inspect the **AG Grid Financial Ledger**:
    - Filter and sort across milestone amounts, counterparty names and lifecycle status pills.

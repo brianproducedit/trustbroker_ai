@@ -78,7 +78,7 @@ interface AICopilotFABProps {
 export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
   workspace,
   promptStarters = [
-    'Summarize total escrow funds and pending milestone verifications',
+    'Summarize total staged funds and pending milestone verifications',
     'Which milestone is currently in verification and what is its status?',
     'Break down PayPal payouts disbursed versus funds staged in sandbox',
   ],

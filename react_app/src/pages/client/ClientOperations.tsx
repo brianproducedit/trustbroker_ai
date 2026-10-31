@@ -340,7 +340,7 @@ export const ClientOperations: React.FC = () => {
                 <div>
                   <CardTitle className="text-sm font-semibold flex items-center gap-2 text-white">
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    Contracts & Milestone Escrow Ledger
+                    Contracts & Milestone Payment Ledger
                   </CardTitle>
                   <CardDescription className="text-xs text-slate-400">
                     High-density AG Grid ledger with live PayPal staging totals, counterparty data and real-time status chips.
