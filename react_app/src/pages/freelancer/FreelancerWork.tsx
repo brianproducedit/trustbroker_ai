@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
 
@@ -23,15 +24,79 @@ import {
   ExternalLink,
   UploadCloud,
   Search,
+  Check,
+  X,
+  AlertTriangle,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 export const FreelancerWork: React.FC = () => {
-  const { contracts, fetchContracts } = useContractStore()
+  const { contracts, fetchContracts, acceptContract, declineAward } = useContractStore()
+  const currentUser = useAuthStore((state) => state.user)
 
   const [loading, setLoading] = useState(true)
   const [selectedContract, setSelectedContract] = useState<any | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'active' | 'in_verification' | 'pending_acceptance'>('all')
+
+  const [acceptTarget, setAcceptTarget] = useState<any | null>(null)
+  const [declineTarget, setDeclineTarget] = useState<any | null>(null)
+  const [declineReason, setDeclineReason] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  /**
+   * Acceptance is the freelancer's action. The client already signs at award time, so the
+   * Accept/Decline controls must only render for the awarded freelancer.
+   */
+  const needsMyAcceptance = (contract: any) => {
+    const status = String(contract?.status || '')
+    if (status !== 'pending_acceptance' && status !== 'awarded') return false
+    const myEmail = (currentUser?.email || '').toLowerCase()
+    if (!myEmail) return false
+    const freelancer = contract?.freelancer || {}
+    const assignedEmail = String(freelancer.email || contract?.freelancer_email || '').toLowerCase()
+    const assignedId = freelancer.id ? String(freelancer.id) : ''
+    const myId = currentUser?.id ? String(currentUser.id) : ''
+    const isMe = (assignedEmail && assignedEmail === myEmail) || (assignedId && myId && assignedId === myId)
+    return Boolean(isMe) && !freelancer.accepted
+  }
+
+  const needsAcceptance = needsMyAcceptance
+
+  const handleAccept = async () => {
+    if (!acceptTarget) return
+    setIsSubmitting(true)
+    try {
+      await acceptContract(acceptTarget.id, 'freelancer')
+      toast.success(`Award accepted — ${acceptTarget.code} is now active.`)
+      setAcceptTarget(null)
+      setDialogOpen(false)
+      await fetchContracts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not accept the award.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDecline = async () => {
+    if (!declineTarget) return
+    setIsSubmitting(true)
+    try {
+      await declineAward(declineTarget.id, declineReason.trim() || undefined)
+      toast.success(`Award declined — ${declineTarget.code} has been released back to the marketplace.`)
+      setDeclineTarget(null)
+      setDeclineReason('')
+      setDialogOpen(false)
+      await fetchContracts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not decline the award.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -65,6 +130,7 @@ export const FreelancerWork: React.FC = () => {
   const activeCount = contracts.filter((c) => c.status === 'active').length
   const verifyingCount = contracts.filter((c) => c.status === 'in_verification').length
   const totalEarned = contracts.reduce((sum, c) => sum + (c.releasedAmount || 0), 0)
+  const awaitingAcceptance = contracts.filter((c) => needsAcceptance(c))
 
   return (
     <DashboardLayout>
@@ -91,6 +157,74 @@ export const FreelancerWork: React.FC = () => {
             </Link>
           </Button>
         </div>
+
+        {/* Action Required: awarded contracts awaiting freelancer acceptance */}
+        {awaitingAcceptance.length > 0 && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-3">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-200">
+                  Action required — {awaitingAcceptance.length} contract
+                  {awaitingAcceptance.length > 1 ? 's' : ''} awaiting your acceptance
+                </h3>
+                <p className="text-xs text-amber-200/70 mt-0.5">
+                  Review the milestones, then accept to activate the contract and unlock milestone funding.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {awaitingAcceptance.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-amber-500/25 bg-[#0C1916]/80 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[11px] font-semibold text-amber-400">{c.code}</span>
+                      <Badge className="bg-amber-950 text-amber-300 border-amber-800 text-[9px] uppercase font-mono">
+                        Pending acceptance
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-medium text-white truncate">{c.title}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {formatCurrency(c.totalAmount, c.currency)} · {c.milestones?.length || 0} milestone
+                      {(c.milestones?.length || 0) === 1 ? '' : 's'} · Client: {c.client?.name || 'Client'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedContract(c)
+                        setDialogOpen(true)
+                      }}
+                      className="h-7 text-xs border-[#1C3831] text-slate-200 hover:bg-[#122622]"
+                    >
+                      Review terms
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setAcceptTarget(c)}
+                      className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      <Check className="w-3 h-3 mr-1" /> Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDeclineTarget(c)}
+                      className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                    >
+                      <X className="w-3 h-3 mr-1" /> Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* KPI Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -246,15 +380,35 @@ export const FreelancerWork: React.FC = () => {
                         </td>
                         <td className="py-4 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              asChild
-                              size="sm"
-                              className="h-7 text-xs bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-600/40 px-2.5"
-                            >
-                              <Link to={ROUTES.DELIVERY_VERIFICATION(c.id)}>
-                                <UploadCloud className="w-3 h-3 mr-1" /> Submit Evidence
-                              </Link>
-                            </Button>
+                            {needsAcceptance(c) ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => setAcceptTarget(c)}
+                                  className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5"
+                                >
+                                  <Check className="w-3 h-3 mr-1" /> Accept
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setDeclineTarget(c)}
+                                  className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40 px-2"
+                                >
+                                  <X className="w-3 h-3 mr-1" /> Decline
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                asChild
+                                size="sm"
+                                className="h-7 text-xs bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-600/40 px-2.5"
+                              >
+                                <Link to={ROUTES.DELIVERY_VERIFICATION(c.id)}>
+                                  <UploadCloud className="w-3 h-3 mr-1" /> Submit Evidence
+                                </Link>
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -359,19 +513,139 @@ export const FreelancerWork: React.FC = () => {
                       Full Contract View <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
                     </Link>
                   </Button>
-                  <Button
-                    asChild
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                  >
-                    <Link to={ROUTES.DELIVERY_VERIFICATION(selectedContract.id)}>
-                      <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Submit Delivery Evidence
-                    </Link>
-                  </Button>
+                  {needsAcceptance(selectedContract) ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setDeclineTarget(selectedContract)
+                          setDialogOpen(false)
+                        }}
+                        className="text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" /> Decline
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setAcceptTarget(selectedContract)
+                          setDialogOpen(false)
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                      >
+                        <Check className="w-3.5 h-3.5 mr-1.5" /> Accept Terms
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      asChild
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                    >
+                      <Link to={ROUTES.DELIVERY_VERIFICATION(selectedContract.id)}>
+                        <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Submit Delivery Evidence
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Accept award confirmation */}
+        <Dialog open={!!acceptTarget} onOpenChange={(open) => !open && setAcceptTarget(null)}>
+          <DialogContent className="w-full max-w-lg bg-[#0C1916] border-[#1C3831] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-lg text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                Accept this award?
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                Accepting activates <span className="font-mono text-emerald-300">{acceptTarget?.code}</span> and
+                commits you to the agreed milestones. The client will then fund each milestone through PayPal.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="rounded-lg border border-[#1C3831] bg-[#06120E] p-3 text-xs space-y-1">
+              <div className="font-semibold text-white">{acceptTarget?.title}</div>
+              <div className="text-slate-400">
+                {formatCurrency(acceptTarget?.totalAmount || 0, acceptTarget?.currency)} ·{' '}
+                {acceptTarget?.milestones?.length || 0} milestone
+                {(acceptTarget?.milestones?.length || 0) === 1 ? '' : 's'}
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setAcceptTarget(null)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAccept}
+                disabled={isSubmitting}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+              >
+                {isSubmitting ? 'Accepting…' : 'Confirm & Accept'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Decline award dialog */}
+        <Dialog
+          open={!!declineTarget}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeclineTarget(null)
+              setDeclineReason('')
+            }
+          }}
+        >
+          <DialogContent className="w-full max-w-lg bg-[#0C1916] border-[#1C3831] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-lg text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                Decline this award?
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                <span className="font-mono text-amber-300">{declineTarget?.code}</span> will be released back to
+                the marketplace and the client will be notified. This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="decline-reason" className="text-xs text-slate-300">
+                Reason (optional)
+              </Label>
+              <Textarea
+                id="decline-reason"
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="e.g. Timeline no longer works for me"
+                className="bg-[#06120E] border-[#1C3831] text-white text-xs min-h-20"
+                maxLength={500}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setDeclineTarget(null)
+                  setDeclineReason('')
+                }}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                Keep award
+              </Button>
+              <Button
+                onClick={handleDecline}
+                disabled={isSubmitting}
+                className="bg-red-600 hover:bg-red-700 text-white text-xs"
+              >
+                {isSubmitting ? 'Declining…' : 'Confirm & Decline'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   )

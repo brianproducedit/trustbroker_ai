@@ -7,9 +7,11 @@ from sqlmodel import Session, select, func
 from app.models.contract import Contract, ContractStatus, ContractVisibility, ContractVersion
 from app.models.milestone import Milestone, MilestoneStatus, AcceptanceCriterion, CriterionStatus, PaymentStatus
 from app.models.acceptance import ContractAcceptance
+from app.models.marketplace import Application, ApplicationStatus
 from app.models.user import UserProfile
 from app.schemas.contract import ContractCreateRequest, ContractUpdateRequest, ContractRead, MilestoneRead, AcceptanceCriterionRead, ContractAcceptanceRead
 from app.services.audit_service import log_audit_event
+from app.services.notification_service import queue_notification
 from app.services.policy_engine import PolicyEngine
 
 
@@ -97,6 +99,9 @@ def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
         for a in acceptances
     ]
 
+    client_profile = session.get(UserProfile, contract.client_id) if contract.client_id else None
+    freelancer_profile = session.get(UserProfile, contract.freelancer_id) if contract.freelancer_id else None
+
     return ContractRead(
         id=contract.id,
         code=contract.code,
@@ -119,6 +124,10 @@ def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
         updated_at=contract.updated_at,
         milestones=milestone_reads,
         acceptances=acceptance_reads,
+        client_name=client_profile.full_name if client_profile else None,
+        client_organization=client_profile.organization if client_profile else None,
+        freelancer_name=freelancer_profile.full_name if freelancer_profile else None,
+        freelancer_organization=freelancer_profile.organization if freelancer_profile else None,
     )
 
 
@@ -384,6 +393,18 @@ def accept_contract(
     is_client = contract.client_id == user.id
     is_freelancer = contract.freelancer_id == user.id or contract.freelancer_email == user.email
 
+    # Idempotent: re-accepting an already-active contract you have signed is a no-op success.
+    if contract.status == ContractStatus.ACTIVE:
+        already_accepted = session.exec(
+            select(ContractAcceptance).where(
+                ContractAcceptance.contract_id == contract.id,
+                ContractAcceptance.version_number == contract.current_version,
+                ContractAcceptance.user_id == user.id,
+            )
+        ).first()
+        if already_accepted:
+            return get_contract_full(session, contract.id)
+
     policy = PolicyEngine.can_accept_contract(user, contract)
     if not policy.allowed:
         raise HTTPException(status_code=403, detail=policy.reason)
@@ -452,6 +473,89 @@ def accept_contract(
             contract_id=contract.id,
             actor_id=user.id,
             actor_name=user.full_name or user.email,
+        )
+
+    session.commit()
+    return get_contract_full(session, contract.id)
+
+
+def decline_award(
+    session: Session,
+    contract_id: uuid.UUID,
+    user: UserProfile,
+    reason: Optional[str] = None,
+) -> ContractRead:
+    """Freelancer declines an award: release the contract back to the open marketplace."""
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+
+    policy = PolicyEngine.can_decline_award(user, contract)
+    if not policy.allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=policy.reason)
+
+    client_id = contract.client_id
+
+    # Remove this freelancer's pending acceptance for the current version.
+    stale_acceptances = list(
+        session.exec(
+            select(ContractAcceptance).where(
+                ContractAcceptance.contract_id == contract.id,
+                ContractAcceptance.version_number == contract.current_version,
+                ContractAcceptance.user_id == user.id,
+            )
+        ).all()
+    )
+    for acceptance in stale_acceptances:
+        session.delete(acceptance)
+
+    # Mark the awarded application as withdrawn so the client can re-award someone else.
+    awarded_application = session.exec(
+        select(Application).where(
+            Application.contract_id == contract.id,
+            Application.freelancer_id == user.id,
+        )
+    ).first()
+    if awarded_application:
+        awarded_application.status = ApplicationStatus.WITHDRAWN.value
+        awarded_application.rejection_reason = (
+            f"Freelancer declined the award. Reason: {reason}" if reason else "Freelancer declined the award."
+        )
+        awarded_application.updated_at = datetime.now(timezone.utc)
+        session.add(awarded_application)
+
+    # Return the contract to the marketplace so the client can award another applicant.
+    contract.freelancer_id = None
+    contract.freelancer_email = None
+    contract.status = ContractStatus.OPEN
+    contract.visibility = ContractVisibility.OPEN.value
+    contract.updated_at = datetime.now(timezone.utc)
+    session.add(contract)
+
+    log_audit_event(
+        session=session,
+        action="award_declined",
+        details=(
+            f"{user.full_name or user.email} declined the award for '{contract.title}' ({contract.code}). "
+            f"The listing is open again. Reason: {reason or 'No reason specified'}"
+        ),
+        contract_id=contract.id,
+        actor_id=user.id,
+        actor_name=user.full_name or user.email,
+    )
+
+    if client_id:
+        queue_notification(
+            session,
+            user_id=client_id,
+            type="award_declined",
+            title="Freelancer declined the award",
+            body=(
+                f"{user.full_name or user.email} declined {contract.code}. "
+                "The listing is open again so you can award another applicant."
+            ),
+            entity_type="contract",
+            entity_id=contract.id,
         )
 
     session.commit()

@@ -62,6 +62,10 @@ class ContractRead(BaseModel):
     updated_at: datetime
     milestones: List[MilestoneRead] = []
     acceptances: List[ContractAcceptanceRead] = []
+    client_name: Optional[str] = None
+    client_organization: Optional[str] = None
+    freelancer_name: Optional[str] = None
+    freelancer_organization: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
