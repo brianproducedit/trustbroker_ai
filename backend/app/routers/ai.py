@@ -237,8 +237,8 @@ def studio_turn(
         if "unpaid" in msg_lower or "funded" in msg_lower or "milestone" in msg_lower:
             count = live_context.get("unpaid_funded_milestones_count", 0)
             staged = live_context.get("total_staged_usd", 0.0)
-            text = f"You currently have **{count} funded milestone(s)** staged in PayPal escrow with **${staged:,.2f} USD** staged awaiting verified deliverable inspection."
-            actions = ["View Milestone Inspection", "Check PayPal Escrow Ledger", "Review Deliveries"]
+            text = f"You currently have **{count} funded milestone(s)** staged via PayPal with **${staged:,.2f} USD** staged awaiting verified deliverable inspection."
+            actions = ["View Milestone Inspection", "Check PayPal Ledger", "Review Deliveries"]
         elif "payout" in msg_lower or "released" in msg_lower or "spent" in msg_lower:
             released = live_context.get("total_released_usd", 0.0)
             text = f"You have authorized and released **${released:,.2f} USD** in PayPal payouts across all completed milestones."

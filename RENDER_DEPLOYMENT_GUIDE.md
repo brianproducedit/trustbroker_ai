@@ -51,7 +51,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
    - **Start Command:** `python -m app.start`
    - **Instance Type:** `Free`
 3. Add the Backend Environment Variables (Section 4).
-4. Click **Create Web Service**. Note the deployed URL (e.g. `https://trustbroker-ai-api.onrender.com`).
+4. Click **Create Web Service**. Note the deployed URL (e.g. `https://trustbroker-ai-api-bx9a.onrender.com`).
 
 ### Step 2: Deploy Frontend Static Site
 1. In Render Dashboard, click **New +** $\rightarrow$ **Static Site**.
@@ -66,7 +66,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
    - **Type:** `Rewrite`
    - **Source:** `/*`
    - **Destination:** `/index.html`
-5. Click **Create Static Site**. Note the deployed URL (e.g. `https://trustbroker-ai-frontend.onrender.com`).
+5. Click **Create Static Site**. Note the deployed URL (e.g. `https://trustbroker-ai-frontend-bx9a.onrender.com`).
 
 ---
 
@@ -110,13 +110,13 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
 | `GROQ_MODEL` | `openai/gpt-oss-120b` | High-speed primary SOW & evaluation model |
 | `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) | Secondary fallback API key |
 | `OPENROUTER_MODEL` | `google/gemma-4-27b-it:free` | Free fallback model |
-| `FRONTEND_URL` | `https://trustbroker-ai-frontend.onrender.com` | Deployed frontend origin |
-| `ALLOWED_ORIGINS` | `https://trustbroker-ai-frontend.onrender.com,http://localhost:5173` | Allowed CORS origins |
+| `FRONTEND_URL` | `https://trustbroker-ai-frontend-bx9a.onrender.com` | Deployed frontend origin |
+| `ALLOWED_ORIGINS` | `https://trustbroker-ai-frontend-bx9a.onrender.com,http://localhost:5173` | Allowed CORS origins |
 
 ### Frontend (`trustbroker-ai-frontend`)
 | Variable | Value / Source |
 |---|---|
-| `VITE_API_BASE_URL` | `https://trustbroker-ai-api.onrender.com/api/v1` |
+| `VITE_API_BASE_URL` | `https://trustbroker-ai-api-bx9a.onrender.com/api/v1` |
 | `VITE_SUPABASE_URL` | `https://fgdvlrfbpzkaetwwjhxq.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Supabase $\rightarrow$ Project Settings $\rightarrow$ API $\rightarrow$ `anon` public key |
 | `VITE_PAYPAL_CLIENT_ID` | PayPal Sandbox Client ID |
@@ -130,12 +130,12 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
    - Toggle **Confirm email** to **OFF** (enables immediate testing without requiring real email clicks).
 2. **Configure Redirect URLs:**
    - In Supabase Dashboard $\rightarrow$ **Authentication** $\rightarrow$ **URL Configuration**.
-   - Set **Site URL** to: `https://trustbroker-ai-frontend.onrender.com`
+   - Set **Site URL** to: `https://trustbroker-ai-frontend-bx9a.onrender.com`
    - Add **Redirect URLs**:
      - `http://localhost:5173/reset-password`
-     - `https://trustbroker-ai-frontend.onrender.com/reset-password`
+     - `https://trustbroker-ai-frontend-bx9a.onrender.com/reset-password`
      - `http://localhost:5173/verify-email`
-     - `https://trustbroker-ai-frontend.onrender.com/verify-email`
+     - `https://trustbroker-ai-frontend-bx9a.onrender.com/verify-email`
 
 ---
 
@@ -144,7 +144,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
 1. Log into [developer.paypal.com](https://developer.paypal.com) $\rightarrow$ **Testing Tools** $\rightarrow$ **Sandbox Accounts**.
 2. Navigate to **Apps & Credentials** $\rightarrow$ Select your App.
 3. Scroll to **Webhooks** $\rightarrow$ Click **Add Webhook**.
-4. **Webhook URL:** `https://trustbroker-ai-api.onrender.com/api/v1/payments/webhook`
+4. **Webhook URL:** `https://trustbroker-ai-api-bx9a.onrender.com/api/v1/payments/webhook`
 5. Select the following Event Types:
    - `CHECKOUT.ORDER.APPROVED`
    - `PAYMENT.CAPTURE.COMPLETED`
@@ -168,8 +168,30 @@ The workflow at [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) automat
 > [!NOTE]
 > On Render's free tier, backend web services spin down after 15 minutes of inactivity and take approximately 30–45 seconds to wake up on the first request.
 
-- **Pre-warming before the demo:** Visit `https://trustbroker-ai-api.onrender.com/api/v1/health` 2 minutes before presenting to wake up the server.
+- **Pre-warming before the demo:** Visit `https://trustbroker-ai-api-bx9a.onrender.com/api/v1/health` 2 minutes before presenting to wake up the server.
 - The UI includes graceful loading states with spinners while waiting for initial API requests.
-- All actions also support offline/local dev fallback with preconfigured developer accounts:
-  - **Client:** `elena@acmeglobal.com`
-  - **Freelancer:** `tariro@devstudio.co.zw`
+- Judge test accounts are pre-seeded (see [`docs/JUDGE_DEMO.md`](docs/JUDGE_DEMO.md)):
+  - **Client:** `client.demo@trustbroker.ai`
+  - **Freelancer:** `freelancer.demo@trustbroker.ai`
+  - **Newcomer:** `newcomer.demo@trustbroker.ai`
+
+---
+
+## 9. Free-Tier-Safe Background Verification (No Paid Cron)
+
+Render's **Cron Jobs**, **Workflows** and **Background Workers** carry a minimum $1/month
+charge per service, which would break this project's strict $0-budget constraint.
+Instead, TrustBroker uses **FastAPI `BackgroundTasks`** — built into the web service at
+no extra cost — to offload AI verification:
+
+1. `POST /api/v1/deliveries` submits evidence and returns `201` immediately with
+   `verification.status = "queued"`.
+2. The verification orchestrator runs in a `BackgroundTask` with a fresh DB session
+   after the response is sent (Groq/vision calls never block the HTTP request).
+3. The frontend polls `GET /api/v1/deliveries/{delivery_id}/verification-status` until
+   the report is ready, then falls back to the synchronous
+   `POST /api/v1/ai/verify-delivery` endpoint if polling times out.
+
+This keeps the demo responsive on Render's free web service while preserving the
+full multimodal verification pipeline. To pre-warm the service during judging, hit
+the `/api/v1/health` endpoint (Section 8).

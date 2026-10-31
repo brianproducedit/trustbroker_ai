@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { MilestoneDetailDialog } from '@/components/dialogs/MilestoneDetailDialog'
+import { AICompatibilityAssessment } from '@/components/common/AICompatibilityAssessment'
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,6 @@ import {
   User,
   Award,
   AlertCircle,
-  Sparkles,
   ChevronRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -293,7 +293,7 @@ export const ClientContractPage: React.FC = () => {
                 {contract.title}
               </h1>
               <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed">
-                {contract.description || 'Smart contract binding milestone deliverables to PayPal escrow disbursements.'}
+                {contract.description || 'Smart contract binding milestone deliverables to PayPal milestone disbursements.'}
               </p>
             </div>
 
@@ -614,20 +614,18 @@ export const ClientContractPage: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {applications.map((app) => {
-                  const vetting = app.vettingReport || {}
-                  const score = vetting.score ?? 85
-                  const rec = vetting.recommendation ?? 'CONSIDER'
+                  const vetting = app.vetting || app.vettingReport
 
                   return (
                     <Card
                       key={app.id}
-                      className="bg-[#131B2E] border-[#222A3D] text-white p-5 hover:border-blue-500/50 transition-all"
+                      className="bg-[#131B2E] border-[#222A3D] text-white p-5 hover:border-blue-500/50 transition-all space-y-4"
                     >
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-white text-base">
-                              {app.freelancer?.name || 'Applicant'}
+                              {app.freelancer?.full_name || app.freelancer?.name || 'Applicant'}
                             </span>
                             <span className="text-xs text-slate-400">
                               ({app.freelancer?.email || 'verified'})
@@ -637,34 +635,21 @@ export const ClientContractPage: React.FC = () => {
                                   ? 'bg-emerald-600 text-white'
                                   : app.status === 'shortlisted'
                                     ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-800 text-slate-300'
+                                    : app.status === 'rejected'
+                                      ? 'bg-rose-950 text-rose-400 border-rose-800'
+                                      : 'bg-slate-800 text-slate-300'
                                 }`}
                             >
-                              {app.status}
+                              {app.status === 'rejected' ? 'Another candidate chosen' : app.status}
                             </Badge>
                           </div>
 
-                          <p className="text-xs text-slate-300 bg-[#0B1120] p-3 rounded-lg border border-[#222A3D] italic">
-                            "{app.coverNote || 'Looking forward to delivering this project with verified milestone quality.'}"
+                          <p className="text-xs text-slate-300 bg-[#0B1120] p-3 rounded-lg border border-[#222A3D]">
+                            <strong className="text-slate-400 not-italic block mb-0.5 text-[11px] uppercase font-mono">
+                              Proposal Statement:
+                            </strong>
+                            "{app.cover_note || app.coverNote || 'Looking forward to delivering this project with verified milestone quality.'}"
                           </p>
-
-                          {/* AI Vetting Snapshot */}
-                          <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
-                            <div className="flex items-center gap-1.5 text-blue-400 font-mono">
-                              <Sparkles className="w-3.5 h-3.5" /> AI Score: <span className="font-bold">{score}/100</span>
-                            </div>
-                            <span className="text-slate-600">•</span>
-                            <span
-                              className={`font-semibold text-[11px] ${rec === 'HIRE'
-                                  ? 'text-emerald-400'
-                                  : rec === 'CONSIDER'
-                                    ? 'text-amber-400'
-                                    : 'text-red-400'
-                                }`}
-                            >
-                              Recommendation: {rec}
-                            </span>
-                          </div>
                         </div>
 
                         {/* Actions */}
@@ -693,6 +678,13 @@ export const ClientContractPage: React.FC = () => {
                           )}
                         </div>
                       </div>
+
+                      {/* AI Compatibility Deep Dive */}
+                      <AICompatibilityAssessment
+                        vetting={vetting}
+                        applicantName={app.freelancer?.full_name || app.freelancer?.name}
+                        workspace="client"
+                      />
                     </Card>
                   )
                 })}
@@ -706,7 +698,7 @@ export const ClientContractPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-bold text-white mb-2">Statement of Work (SOW)</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  This legally binding smart contract governance agreement specifies dual cryptographic acceptance, milestone evidence submission standards, automated AI verification thresholds and PayPal sandbox escrow release triggers.
+                  This legally binding smart contract governance agreement specifies dual cryptographic acceptance, milestone evidence submission standards, automated AI verification thresholds and PayPal sandbox release triggers.
                 </p>
               </div>
 

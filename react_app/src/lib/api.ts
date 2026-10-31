@@ -273,6 +273,8 @@ export const api = {
         }),
       }),
     get: (id: string) => apiFetch<any>(`/deliveries/${id}`),
+    verificationStatus: (id: string) =>
+      apiFetch<any>(`/deliveries/${id}/verification-status`),
     listMilestoneDeliveries: (milestoneId: string) =>
       apiFetch<any[]>(`/deliveries/milestone/${milestoneId}`),
     requestRevision: (contractId: string, milestoneId: string, notes?: string) =>

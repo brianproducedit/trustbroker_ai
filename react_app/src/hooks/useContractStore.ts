@@ -604,8 +604,21 @@ export const useContractStore = create<ContractStore>((set, get) => ({
         const deliveryId = deliveryRes?.delivery?.id || deliveryRes?.id
         let verifyRes = deliveryRes?.verification
 
-        if (!verifyRes && deliveryId) {
-          // Fallback to separate AI verification endpoint if not auto-verified
+        // If verification was queued in the background, poll until the report lands.
+        if (verifyRes?.status === 'queued' && deliveryId) {
+          for (let attempt = 0; attempt < 40 && !verifyRes?.report; attempt++) {
+            await new Promise((r) => setTimeout(r, 1500))
+            const statusRes = await api.deliveries.verificationStatus(deliveryId)
+            if (statusRes?.report) {
+              verifyRes = statusRes.report
+            } else if (statusRes?.status === 'pending') {
+              break
+            }
+          }
+        }
+
+        if ((!verifyRes || verifyRes.status === 'queued') && deliveryId) {
+          // Fallback to the synchronous AI verification endpoint if polling yielded nothing.
           verifyRes = await api.ai.verifyDelivery({
             contract_id: contractId,
             milestone_id: milestoneId,

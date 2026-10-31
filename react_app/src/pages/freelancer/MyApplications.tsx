@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
 import { formatDate } from '@/lib/utils'
+import { AICompatibilityAssessment } from '@/components/common/AICompatibilityAssessment'
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -303,41 +304,11 @@ export const MyApplications: React.FC = () => {
                       </div>
 
                       {/* AI Vetting Feedback */}
-                      <div className="bg-[#06120E] border border-emerald-900/40 rounded-lg p-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5" /> Automated AI Compatibility Assessment
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            Match Score: {score}/100
-                          </span>
-                        </div>
-
-                        {vetting.reasons && (
-                          <ul className="list-disc list-inside text-xs text-slate-300 space-y-1 pt-1">
-                            {(Array.isArray(vetting.reasons)
-                              ? vetting.reasons
-                              : Object.entries(vetting.reasons).map(([k, v]) => typeof v === 'string' ? `${k.replace(/_/g, ' ')}: ${v}` : `${k}: ${JSON.stringify(v)}`)
-                            ).map((r: string, idx: number) => (
-                              <li key={idx}>{r}</li>
-                            ))}
-                          </ul>
-                        )}
-
-                        {vetting.matched_skills && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                            <span className="text-[11px] text-slate-400 mr-1">Matched Skills:</span>
-                            {vetting.matched_skills.map((s: string, idx: number) => (
-                              <span
-                                key={idx}
-                                className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 text-[10px] px-2 py-0.5 rounded-full"
-                              >
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <AICompatibilityAssessment
+                        vetting={app.vetting || app.vetting_report || app.vettingReport}
+                        applicantName="My Application"
+                        workspace="freelancer"
+                      />
 
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-[11px] text-slate-500">

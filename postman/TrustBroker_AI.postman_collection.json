@@ -1,0 +1,370 @@
+{
+  "info": {
+    "_postman_id": "trustbroker-ai-paypal-hackathon-2026",
+    "name": "TrustBroker AI — PayPal AI Hackathon 2026",
+    "description": "End-to-end API collection for the TrustBroker AI contract & payment lifecycle: SOW drafting → open marketplace → AI vetting → award/accept → PayPal Orders v2 funding → AI verification → PayPal Payouts.\n\nSet `baseUrl` to https://trustbroker-ai-api-bx9a.onrender.com/api/v1 (hosted) or http://localhost:8000/api/v1 (local).\n\nSet `authToken` to a Supabase JWT (Bearer).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://trustbroker-ai-api-bx9a.onrender.com/api/v1" },
+    { "key": "authToken", "value": "PASTE_SUPABASE_JWT_HERE" },
+    { "key": "contractId", "value": "" },
+    { "key": "milestoneId", "value": "" },
+    { "key": "deliveryId", "value": "" },
+    { "key": "applicationId", "value": "" },
+    { "key": "listingId", "value": "" },
+    { "key": "paypalOrderId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "0. Health & AI Status",
+      "item": [
+        {
+          "name": "System health & DB ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Returns service health and PostgreSQL connectivity."
+          }
+        },
+        {
+          "name": "AI engine status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/ai/status", "host": ["{{baseUrl}}"], "path": ["ai", "status"] },
+            "description": "Returns which LLM providers/models are configured (Groq primary, OpenRouter fallback, DeepSeek tier-3)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. AI SOW Drafting",
+      "item": [
+        {
+          "name": "Draft Statement of Work",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Build a responsive React landing page for a fintech startup with a blog, SEO and a PayPal donations widget.\",\n  \"category\": \"software\",\n  \"total_budget\": 3000,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/ai/draft-sow", "host": ["{{baseUrl}}"], "path": ["ai", "draft-sow"] },
+            "description": "AI generates structured milestones with measurable acceptance criteria."
+          }
+        },
+        {
+          "name": "Clarify brief (optional questions)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"I need a mobile app\",\n  \"category\": \"software\",\n  \"total_budget\": 5000,\n  \"answers\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/ai/clarify", "host": ["{{baseUrl}}"], "path": ["ai", "clarify"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Contracts & Marketplace",
+      "item": [
+        {
+          "name": "Create contract draft (client)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Responsive fintech landing page\",\n  \"description\": \"React + Tailwind landing page with blog, SEO and PayPal donations widget.\",\n  \"category\": \"software\",\n  \"required_skills\": [\"React\", \"Tailwind\"],\n  \"currency\": \"USD\",\n  \"milestones\": [\n    {\n      \"title\": \"Design & build landing page\",\n      \"description\": \"Pixel-perfect responsive page matching the Figma brief.\",\n      \"amount\": 3000,\n      \"deadline\": \"2026-11-20\",\n      \"acceptance_criteria\": [\n        { \"title\": \"Responsive at 375px and 1440px\", \"description\": \"No horizontal scroll on mobile\", \"evidence_type\": \"screenshot\" }\n      ]\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/contracts", "host": ["{{baseUrl}}"], "path": ["contracts"] },
+            "description": "Creates a private draft. Copy the returned `id` into `contractId`."
+          }
+        },
+        {
+          "name": "List my contracts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/contracts", "host": ["{{baseUrl}}"], "path": ["contracts"] }
+          }
+        },
+        {
+          "name": "Get contract detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/contracts/{{contractId}}", "host": ["{{baseUrl}}"], "path": ["contracts", "{{contractId}}"] }
+          }
+        },
+        {
+          "name": "Publish draft as open listing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/contracts/{{contractId}}/publish", "host": ["{{baseUrl}}"], "path": ["contracts", "{{contractId}}", "publish"] },
+            "description": "Sets the contract to `open` so freelancers can apply."
+          }
+        },
+        {
+          "name": "Browse open listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/listings?category=software&page=1&per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["listings"],
+              "query": [
+                { "key": "category", "value": "software" },
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            },
+            "description": "Authenticated marketplace browse for freelancers. Copy an `id` into `listingId`."
+          }
+        },
+        {
+          "name": "Get listing detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/listings/{{listingId}}", "host": ["{{baseUrl}}"], "path": ["listings", "{{listingId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Applications & AI Vetting",
+      "item": [
+        {
+          "name": "Apply to contract (freelancer)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cover_note\": \"I ship pixel-perfect React + Tailwind landing pages with fast Lighthouse scores.\",\n  \"proposed_start\": \"2026-11-02\",\n  \"portfolio_snapshot\": [\n    { \"title\": \"Fintech landing page\", \"url\": \"https://github.com/devstudio/react-landing-verified\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/contracts/{{contractId}}/applications", "host": ["{{baseUrl}}"], "path": ["contracts", "{{contractId}}", "applications"] },
+            "description": "One application per contract per freelancer. Copy the returned `id` into `applicationId`."
+          }
+        },
+        {
+          "name": "AI vet application",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"application_id\": \"{{applicationId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/ai/vet-application", "host": ["{{baseUrl}}"], "path": ["ai", "vet-application"] },
+            "description": "Generates the vetting report (newcomer-fair scoring)."
+          }
+        },
+        {
+          "name": "List applications for a contract (client)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/contracts/{{contractId}}/applications", "host": ["{{baseUrl}}"], "path": ["contracts", "{{contractId}}", "applications"] }
+          }
+        },
+        {
+          "name": "List my applications (freelancer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/applications/mine", "host": ["{{baseUrl}}"], "path": ["applications", "mine"] }
+          }
+        },
+        {
+          "name": "Award application (client)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/applications/{{applicationId}}/award", "host": ["{{baseUrl}}"], "path": ["applications", "{{applicationId}}", "award"] },
+            "description": "Awards the freelancer; other applications are rejected with notifications."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Deliveries & AI Verification",
+      "item": [
+        {
+          "name": "Submit deliverable evidence",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_id\": \"{{contractId}}\",\n  \"milestone_id\": \"{{milestoneId}}\",\n  \"description\": \"Production deliverables completed. TypeScript build compiles cleanly.\",\n  \"repo_url\": \"https://github.com/devstudio/react-landing-verified\",\n  \"live_url\": \"https://react-landing-demo.vercel.app\",\n  \"auto_verify\": true,\n  \"files\": [\n    { \"file_name\": \"screenshot_desktop.png\", \"storage_path\": \"https://images.unsplash.com/photo-1551288049-bebda4e38f71\", \"size_bytes\": 245000, \"mime_type\": \"image/png\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/deliveries", "host": ["{{baseUrl}}"], "path": ["deliveries"] },
+            "description": "Submits evidence and queues multimodal AI verification in the background. Copy `delivery.id` into `deliveryId`."
+          }
+        },
+        {
+          "name": "Poll verification status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/deliveries/{{deliveryId}}/verification-status", "host": ["{{baseUrl}}"], "path": ["deliveries", "{{deliveryId}}", "verification-status"] },
+            "description": "Returns `queued` or `completed` with the per-criterion report once ready."
+          }
+        },
+        {
+          "name": "Run verification directly (sync fallback)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_id\": \"{{contractId}}\",\n  \"milestone_id\": \"{{milestoneId}}\",\n  \"delivery_id\": \"{{deliveryId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/ai/verify-delivery", "host": ["{{baseUrl}}"], "path": ["ai", "verify-delivery"] }
+          }
+        },
+        {
+          "name": "Get delivery detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/deliveries/{{deliveryId}}", "host": ["{{baseUrl}}"], "path": ["deliveries", "{{deliveryId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. PayPal Money Loop (Orders → Capture → Payouts)",
+      "item": [
+        {
+          "name": "Create PayPal order (fund milestone)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_id\": \"{{contractId}}\",\n  \"milestone_id\": \"{{milestoneId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/payments/create-order", "host": ["{{baseUrl}}"], "path": ["payments", "create-order"] },
+            "description": "Creates a PayPal Orders v2 order (intent=CAPTURE). Copy `paypal_order_id` into `paypalOrderId`."
+          }
+        },
+        {
+          "name": "Capture PayPal order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"paypal_order_id\": \"{{paypalOrderId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/payments/capture-order", "host": ["{{baseUrl}}"], "path": ["payments", "capture-order"] },
+            "description": "Server-side capture. Milestone becomes `funded` only when PayPal returns COMPLETED."
+          }
+        },
+        {
+          "name": "Release payout to freelancer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_id\": \"{{contractId}}\",\n  \"milestone_id\": \"{{milestoneId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/payments/release", "host": ["{{baseUrl}}"], "path": ["payments", "release"] },
+            "description": "Idempotent PayPal Payouts API disbursement (PayPal-Request-Id = payout:{milestoneId}). Requires verified + funded milestone."
+          }
+        },
+        {
+          "name": "Freelancer earnings ledger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/payments/earnings", "host": ["{{baseUrl}}"], "path": ["payments", "earnings"] }
+          }
+        },
+        {
+          "name": "Payouts for a contract",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/payments/payouts/{{contractId}}", "host": ["{{baseUrl}}"], "path": ["payments", "payouts", "{{contractId}}"] }
+          }
+        },
+        {
+          "name": "Payment attempt history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/payments/history/{{contractId}}", "host": ["{{baseUrl}}"], "path": ["payments", "history", "{{contractId}}"] }
+          }
+        },
+        {
+          "name": "PayPal webhook (example event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "paypal-auth-algo", "value": "SHA256withRSA" },
+              { "key": "paypal-transmission-id", "value": "example-transmission-id" },
+              { "key": "paypal-transmission-time", "value": "2026-11-01T00:00:00Z" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"WH-EXAMPLE\",\n  \"event_type\": \"PAYMENT.CAPTURE.COMPLETED\",\n  \"resource\": { \"id\": \"{{paypalOrderId}}\" }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/payments/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "webhook"] },
+            "description": "Idempotently processes CHECKOUT.ORDER.*, PAYMENT.CAPTURE.* and PAYMENT.PAYOUTS-ITEM.* events with signature verification."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Profiles, Notifications & Audit",
+      "item": [
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/profiles/me", "host": ["{{baseUrl}}"], "path": ["profiles", "me"] }
+          }
+        },
+        {
+          "name": "Update my profile (PayPal payout email)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"headline\": \"Senior React engineer\",\n  \"skills\": [\"React\", \"TypeScript\", \"PayPal Integrations\"],\n  \"paypal_payout_email\": \"freelancer-payout@sandbox.paypal.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/profiles/me", "host": ["{{baseUrl}}"], "path": ["profiles", "me"] }
+          }
+        },
+        {
+          "name": "List notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications", "host": ["{{baseUrl}}"], "path": ["notifications"] }
+          }
+        },
+        {
+          "name": "Get audit trail for a contract",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/audit/{{contractId}}", "host": ["{{baseUrl}}"], "path": ["audit", "{{contractId}}"] }
+          }
+        }
+      ]
+    }
+  ]
+}

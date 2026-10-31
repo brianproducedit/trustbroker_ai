@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { api } from '@/lib/api'
 import { ROUTES } from '@/constants'
+import { AICompatibilityAssessment } from '@/components/common/AICompatibilityAssessment'
 
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -281,17 +282,6 @@ export const ClientApplications: React.FC = () => {
               const isStrong = score >= 80
               const isMedium = score >= 60 && score < 80
 
-              const reasons: string[] = Array.isArray(vetting.reasons)
-                ? vetting.reasons
-                : vetting.reasons && typeof vetting.reasons === 'object'
-                ? Object.entries(vetting.reasons).map(([k, v]) =>
-                    typeof v === 'string'
-                      ? `${k.replace(/_/g, ' ')}: ${v}`
-                      : `${k.replace(/_/g, ' ')}: ${JSON.stringify(v)}`
-                  )
-                : []
-              const matchedSkills = vetting.matched_skills || vetting.matchedSkills || []
-
               return (
                 <div
                   key={app.id}
@@ -394,66 +384,11 @@ export const ClientApplications: React.FC = () => {
                       </div>
 
                       {/* AI Vetting Deep Dive */}
-                      <div className="bg-[#0B1120] border border-blue-900/30 rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5" /> AI Compatibility Assessment
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white font-mono">
-                              Match Score: {score}/100
-                            </span>
-                            <span
-                              className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${
-                                isStrong
-                                  ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60'
-                                  : isMedium
-                                  ? 'bg-amber-950/80 text-amber-400 border-amber-800/60'
-                                  : 'bg-slate-900 text-slate-400 border-slate-700/60'
-                              }`}
-                            >
-                              {recommendation}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Visual Match Bar */}
-                        <div className="w-full bg-[#0E1528] rounded-full h-2 border border-[#222A3D] overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-500 rounded-full ${
-                              isStrong ? 'bg-emerald-500' : isMedium ? 'bg-amber-500' : 'bg-rose-500'
-                            }`}
-                            style={{ width: `${Math.min(100, Math.max(5, score))}%` }}
-                          />
-                        </div>
-
-                        {reasons.length > 0 && (
-                          <div className="space-y-1 pt-1">
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              Compatibility Breakdown:
-                            </span>
-                            <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
-                              {reasons.map((r: string, i: number) => (
-                                <li key={i}>{r}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {matchedSkills.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[11px] text-slate-400 mr-1">Matched Skills:</span>
-                            {matchedSkills.map((skill: string, i: number) => (
-                              <span
-                                key={i}
-                                className="bg-blue-950/80 text-blue-300 border border-blue-800/50 text-[10px] px-2 py-0.5 rounded-full"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <AICompatibilityAssessment
+                        vetting={app.vetting || app.vettingReport}
+                        applicantName={app.freelancer?.full_name || app.freelancer?.name}
+                        workspace="client"
+                      />
 
                       {/* Action CTAs */}
                       <div className="flex items-center justify-between pt-2">
