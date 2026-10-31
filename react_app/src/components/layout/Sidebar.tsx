@@ -8,7 +8,6 @@ import {
   PlusCircle,
   FileText,
   UserCircle2,
-  ArrowLeftRight,
   Wallet,
   LogOut,
   Search,
@@ -34,10 +33,9 @@ import {
 
 interface SidebarProps {
   currentRole: 'client' | 'freelancer'
-  onToggleRole: () => void
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const authSignOut = useAuthStore((state) => state.signOut)
@@ -51,14 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
     navigate(ROUTES.HOME)
   }
 
-  const handleRoleToggle = () => {
-    onToggleRole()
-    const nextRole = currentRole === 'client' ? 'freelancer' : 'client'
-    toast.info(`Switched to ${nextRole} workspace`)
-    navigate(nextRole === 'client' ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME)
-  }
 
-  // Clear, distinct persona navigation
   const clientNavItems = [
     { label: 'Home', icon: LayoutGrid, path: ROUTES.CLIENT_HOME },
     { label: 'My Contracts', icon: FileText, path: ROUTES.CLIENT_CONTRACTS },
@@ -160,20 +151,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole, onToggleRole }) =
             >
               {currentRole === 'client' ? 'Client Mode' : 'Freelancer Mode'}
             </span>
-            <button
-              onClick={handleRoleToggle}
-              type="button"
+            <span
               className={cn(
-                'inline-flex items-center gap-1 font-mono text-[10px] transition-colors uppercase font-medium px-2 py-0.5 rounded border cursor-pointer',
+                'inline-flex items-center gap-1 font-mono text-[10px] uppercase font-semibold px-2 py-0.5 rounded border',
                 currentRole === 'client'
-                  ? 'bg-blue-950/80 text-blue-300 hover:text-white border-blue-800/60'
-                  : 'bg-emerald-950/80 text-emerald-300 hover:text-white border-emerald-800/60'
+                  ? 'bg-blue-950/80 text-blue-300 border-blue-800/60'
+                  : 'bg-emerald-950/80 text-emerald-300 border-emerald-800/60'
               )}
-              title="Switch workspace"
             >
-              <ArrowLeftRight className="w-2.5 h-2.5" />
-              <span>Switch workspace</span>
-            </button>
+              {currentRole === 'client' ? 'Client' : 'Freelancer'}
+            </span>
           </div>
 
           <div className="flex items-center gap-2 mt-1">

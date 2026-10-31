@@ -14,7 +14,11 @@ interface AuthStore {
 
   // Actions
   initialize: () => Promise<void>
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signIn: (
+    email: string,
+    password: string,
+    expectedRole?: 'client' | 'freelancer'
+  ) => Promise<{ success: boolean; error?: string }>
   signUp: (
     email: string,
     password: string,
@@ -47,17 +51,17 @@ const mapSupabaseUser = (user: User, fallbackRole: 'client' | 'freelancer' = 'cl
 }
 
 const DEV_CLIENT_USER: UserProfile = {
-  id: '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2',
-  email: 'elena@acmeglobal.com',
-  name: 'Elena Rostova',
+  id: '1e0dacbd-8d91-46f2-b04e-02acad08ce0c',
+  email: 'client.demo@trustbroker.ai',
+  name: 'Elena Rostova (Client)',
   role: 'client',
   organization: 'Acme Global Ventures LLC',
 }
 
 const DEV_FREELANCER_USER: UserProfile = {
-  id: 'f907f77b-c340-4abe-8c12-a4606b8c2b15',
-  email: 'tariro@devstudio.co.zw',
-  name: 'Tariro Moyo',
+  id: '2203012f-e6ac-4efb-8d63-4dc4e1a4bbbc',
+  email: 'freelancer.demo@trustbroker.ai',
+  name: 'Tariro Moyo (Freelancer)',
   role: 'freelancer',
   organization: 'DevStudio Zimbabwe',
 }
@@ -159,7 +163,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     })
   },
 
-  signIn: async (email: string, password: string) => {
+  signIn: async (email: string, password: string, expectedRole?: 'client' | 'freelancer') => {
     set({ isLoading: true })
 
     const DEMO_PASSWORD = 'DemoPassword2026!'
@@ -172,13 +176,46 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       (password === DEMO_PASSWORD || password === 'password123' || password === 'demo123')
     )
 
+    // Role sensitivity check for demo credentials
+    if (expectedRole === 'client' && isFreelancerDemo) {
+      set({ isLoading: false })
+      return {
+        success: false,
+        error: 'This account is registered as a Freelancer account. Please select Freelancer workspace to sign in.',
+      }
+    }
+    if (expectedRole === 'freelancer' && isClientDemo) {
+      set({ isLoading: false })
+      return {
+        success: false,
+        error: 'This account is registered as a Client account. Please select Client workspace to sign in.',
+      }
+    }
+
     // 1. Try real Supabase Auth first when configured
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (!error && data.session && data.user) {
-          localStorage.removeItem('tb_dev_token')
           const profile = mapSupabaseUser(data.user)
+
+          // Role enforcement: if expectedRole is provided, validate against registered role
+          if (expectedRole && profile.role !== expectedRole) {
+            await supabase.auth.signOut()
+            set({
+              session: null,
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+            })
+            const regLabel = profile.role === 'freelancer' ? 'Freelancer' : 'Client'
+            return {
+              success: false,
+              error: `This account is registered as a ${regLabel} account. Please use the ${regLabel} sign-in option.`,
+            }
+          }
+
+          localStorage.removeItem('tb_dev_token')
           localStorage.setItem('tb_active_role', profile.role)
           set({
             session: data.session,
@@ -193,25 +230,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
 
         if (error) {
-          // If Supabase returns error for demo accounts, fall back to dev role seamlessly
-          if (isClientDemo) {
+          // If Supabase returns error for demo accounts, fall back to dev role seamlessly (respecting expectedRole)
+          if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
             console.info('Supabase sign-in fallback to client demo account:', error.message)
             get().signInWithDevRole('client')
             set({ isLoading: false })
             return { success: true }
           }
-          if (isFreelancerDemo) {
+          if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
             console.info('Supabase sign-in fallback to freelancer demo account:', error.message)
             get().signInWithDevRole('freelancer')
             set({ isLoading: false })
             return { success: true }
           }
+
           set({ isLoading: false })
-          return { success: false, error: error.message }
+          const isInvalid = error.message.toLowerCase().includes('invalid login credentials') || error.status === 400
+          const friendlyMessage = isInvalid
+            ? `No ${expectedRole ? (expectedRole === 'client' ? 'Client' : 'Freelancer') : ''} account found with these credentials. Please check your email and password, or create an account.`
+            : error.message
+          return { success: false, error: friendlyMessage }
         }
       } catch (err: any) {
-        if (isClientDemo || isFreelancerDemo) {
-          get().signInWithDevRole(isClientDemo ? 'client' : 'freelancer')
+        if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
+          get().signInWithDevRole('client')
+          set({ isLoading: false })
+          return { success: true }
+        }
+        if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
+          get().signInWithDevRole('freelancer')
           set({ isLoading: false })
           return { success: true }
         }
@@ -221,19 +268,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     // 2. Local fallback if Supabase not configured
-    if (isClientDemo) {
+    if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
       get().signInWithDevRole('client')
       set({ isLoading: false })
       return { success: true }
     }
-    if (isFreelancerDemo) {
+    if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
       get().signInWithDevRole('freelancer')
       set({ isLoading: false })
       return { success: true }
     }
 
     set({ isLoading: false })
-    return { success: false, error: 'Supabase authentication is not configured in environment variables.' }
+    return {
+      success: false,
+      error: `No ${expectedRole ? (expectedRole === 'client' ? 'Client' : 'Freelancer') : ''} account found with these credentials.`,
+    }
   },
 
   signUp: async (email, password, metadata) => {

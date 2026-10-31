@@ -25,6 +25,14 @@ def ensure_schema_columns(engine):
         "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS required_skills JSONB DEFAULT '[]'::jsonb;",
         "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS opens_at TIMESTAMP WITH TIME ZONE;",
         "ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio_snapshot JSONB DEFAULT '[]'::jsonb;",
+        "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS client_id UUID;",
+        "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS freelancer_id UUID;",
+        "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS freelancer_email VARCHAR;",
+        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS rejection_reason TEXT;",
+        "CREATE INDEX IF NOT EXISTS idx_contracts_client_id ON contracts(client_id);",
+        "CREATE INDEX IF NOT EXISTS idx_contracts_freelancer_id ON contracts(freelancer_id);",
+        "CREATE INDEX IF NOT EXISTS idx_applications_contract_id ON applications(contract_id);",
+        "CREATE INDEX IF NOT EXISTS idx_applications_freelancer_id ON applications(freelancer_id);",
     ]
     with engine.begin() as conn:
         for stmt in statements:
@@ -68,6 +76,7 @@ def main():
 
         cfg = Config(alembic_ini_path)
         cfg.set_main_option("script_location", os.path.join(backend_dir, "alembic"))
+        cfg.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url.replace("%", "%%"))
         try:
             command.upgrade(cfg, "head")
             print("[STARTUP] [OK] Alembic migrations completed successfully.")
@@ -75,6 +84,7 @@ def main():
             print(f"[STARTUP] [NOTICE] Alembic upgrade encountered: {mig_err}")
             # Self-healing: stamp database to head if tables exist or revision is out of sync
             print("[STARTUP] Reconciling schema revision state (stamping to head)...")
+            cfg.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url.replace("%", "%%"))
             command.stamp(cfg, "head")
             print("[STARTUP] [OK] Alembic database successfully reconciled and stamped to head.")
     except Exception as e:

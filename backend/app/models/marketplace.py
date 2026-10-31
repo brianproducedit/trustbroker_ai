@@ -54,6 +54,7 @@ class Application(SQLModel, table=True):
         sa_column=Column(JSON, nullable=False, server_default="[]"),
     )
     status: str = Field(default=ApplicationStatus.SUBMITTED.value, index=True, nullable=False)
+    rejection_reason: Optional[str] = Field(default=None, nullable=True)
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
     updated_at: datetime = Field(default_factory=utc_now, nullable=False)
 

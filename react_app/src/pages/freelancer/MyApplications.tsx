@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   ranked: { label: 'AI Evaluated', color: 'bg-indigo-950 text-indigo-400 border-indigo-800' },
   shortlisted: { label: 'Shortlisted', color: 'bg-purple-950 text-purple-400 border-purple-800' },
   awarded: { label: 'Awarded ✓', color: 'bg-emerald-950 text-emerald-400 border-emerald-800 font-bold' },
-  rejected: { label: 'Not Selected', color: 'bg-slate-800 text-slate-400 border-slate-700' },
+  rejected: { label: 'Not Selected — Another Candidate Chosen', color: 'bg-rose-950 text-rose-400 border-rose-800' },
   withdrawn: { label: 'Withdrawn', color: 'bg-slate-900 text-slate-500 border-slate-800' },
 }
 
@@ -73,7 +73,7 @@ export const MyApplications: React.FC = () => {
   const awardedCount = apps.filter((a) => a.status === 'awarded').length
   const avgScore = useMemo(() => {
     const scores = apps
-      .map((a) => a.vetting_report?.score || a.vettingReport?.score)
+      .map((a) => a.vetting?.score || a.vetting_report?.score || a.vettingReport?.score)
       .filter((s) => typeof s === 'number')
     if (scores.length === 0) return 92
     return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
@@ -213,8 +213,8 @@ export const MyApplications: React.FC = () => {
                 label: app.status || 'Pending',
                 color: 'bg-slate-800 text-slate-300 border-slate-700',
               }
-              const vetting = app.vetting_report || app.vettingReport || {}
-              const score = vetting.score ?? 90
+              const vetting = app.vetting || app.vetting_report || app.vettingReport || {}
+              const score = vetting.score ?? 0
               const rec = vetting.recommendation ?? 'CONSIDER'
 
               return (
@@ -276,6 +276,23 @@ export const MyApplications: React.FC = () => {
 
                   {isExpanded && (
                     <div className="p-5 border-t border-[#1C3831] bg-[#081411] space-y-4">
+                      {/* Rejection Notice Banner */}
+                      {app.status === 'rejected' && (
+                        <div className="bg-rose-950/40 border border-rose-900/60 rounded-lg p-4 flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full bg-rose-900/80 flex items-center justify-center shrink-0 mt-0.5 text-rose-300 font-bold text-xs">
+                            ✕
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs font-semibold text-rose-400 block">
+                              Application Not Selected
+                            </span>
+                            <p className="text-xs text-rose-200/90 leading-relaxed">
+                              {app.rejection_reason || 'Another candidate has been selected for this contract. Thank you for your interest.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <div className="text-xs font-mono uppercase text-slate-400 font-semibold mb-1.5">
                           My Proposal Statement
@@ -298,7 +315,10 @@ export const MyApplications: React.FC = () => {
 
                         {vetting.reasons && (
                           <ul className="list-disc list-inside text-xs text-slate-300 space-y-1 pt-1">
-                            {vetting.reasons.map((r: string, idx: number) => (
+                            {(Array.isArray(vetting.reasons)
+                              ? vetting.reasons
+                              : Object.entries(vetting.reasons).map(([k, v]) => typeof v === 'string' ? `${k.replace(/_/g, ' ')}: ${v}` : `${k}: ${JSON.stringify(v)}`)
+                            ).map((r: string, idx: number) => (
                               <li key={idx}>{r}</li>
                             ))}
                           </ul>

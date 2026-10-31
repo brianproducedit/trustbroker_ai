@@ -14,8 +14,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Overwrite sqlalchemy.url with the database_url from application settings
-config.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url)
+# Overwrite sqlalchemy.url with the database_url from application settings.
+# Escape % to %% to prevent configparser interpolation errors with URL-encoded passwords.
+safe_url = settings.sqlalchemy_database_url.replace("%", "%%")
+config.set_main_option("sqlalchemy.url", safe_url)
 
 # Target metadata for autogenerate migrations
 target_metadata = SQLModel.metadata

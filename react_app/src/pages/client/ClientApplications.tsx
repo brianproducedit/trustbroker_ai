@@ -48,13 +48,14 @@ export const ClientApplications: React.FC = () => {
     setLoading(true)
     try {
       await fetchContracts()
+      const currentContracts = useContractStore.getState().contracts
       const allApps: any[] = []
       // Standard UUID validator to prevent 422 errors on mock contract IDs
       const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
       // Query applications for each valid backend contract
       await Promise.all(
-        contracts.map(async (c) => {
+        currentContracts.map(async (c) => {
           if (!c.id || !UUID_REGEX.test(c.id)) {
             return
           }
@@ -273,9 +274,23 @@ export const ClientApplications: React.FC = () => {
           <div className="space-y-3">
             {filteredApps.map((app) => {
               const isExpanded = expandedId === app.id
-              const vetting = app.vettingReport || {}
-              const score = vetting.score ?? 85
-              const recommendation = vetting.recommendation ?? 'CONSIDER'
+              const vetting = app.vetting || app.vettingReport || {}
+              const score = vetting.score ?? 0
+              const rawRec = vetting.recommendation ?? 'CONSIDER'
+              const recommendation = String(rawRec).replace(/_/g, ' ')
+              const isStrong = score >= 80
+              const isMedium = score >= 60 && score < 80
+
+              const reasons: string[] = Array.isArray(vetting.reasons)
+                ? vetting.reasons
+                : vetting.reasons && typeof vetting.reasons === 'object'
+                ? Object.entries(vetting.reasons).map(([k, v]) =>
+                    typeof v === 'string'
+                      ? `${k.replace(/_/g, ' ')}: ${v}`
+                      : `${k.replace(/_/g, ' ')}: ${JSON.stringify(v)}`
+                  )
+                : []
+              const matchedSkills = vetting.matched_skills || vetting.matchedSkills || []
 
               return (
                 <div
@@ -289,17 +304,17 @@ export const ClientApplications: React.FC = () => {
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-500/30">
-                        {(app.freelancer?.name || 'F')[0].toUpperCase()}
+                        {(app.freelancer?.full_name || app.freelancer?.name || 'F')[0].toUpperCase()}
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-sm text-white">
-                            {app.freelancer?.name || 'Verified Freelancer'}
+                            {app.freelancer?.full_name || app.freelancer?.name || 'Verified Freelancer'}
                           </span>
                           <span className="text-slate-500 text-xs">•</span>
                           <span className="text-xs text-slate-400">
-                            {app.freelancer?.email || 'freelancer@trustbroker.ai'}
+                            {app.freelancer?.headline || app.freelancer?.email || 'Talent Applicant'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
@@ -320,16 +335,16 @@ export const ClientApplications: React.FC = () => {
                       {/* AI Vetting Pill */}
                       <div className="flex items-center gap-2 bg-[#0B1120] px-3 py-1.5 rounded-lg border border-[#222A3D]">
                         <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                        <span className="text-xs font-mono font-bold text-white">
+                        <span className={`text-xs font-mono font-bold ${isStrong ? 'text-emerald-400' : isMedium ? 'text-amber-400' : 'text-slate-300'}`}>
                           {score}/100
                         </span>
                         <span
-                          className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
-                            recommendation === 'HIRE'
-                              ? 'bg-emerald-950 text-emerald-400'
-                              : recommendation === 'CONSIDER'
-                              ? 'bg-amber-950 text-amber-400'
-                              : 'bg-red-950 text-red-400'
+                          className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded border ${
+                            isStrong
+                              ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60'
+                              : isMedium
+                              ? 'bg-amber-950/80 text-amber-400 border-amber-800/60'
+                              : 'bg-slate-900 text-slate-400 border-slate-700/60'
                           }`}
                         >
                           {recommendation}
@@ -343,10 +358,12 @@ export const ClientApplications: React.FC = () => {
                             ? 'bg-emerald-600 text-white'
                             : app.status === 'shortlisted'
                             ? 'bg-blue-600 text-white'
+                            : app.status === 'rejected'
+                            ? 'bg-rose-950 text-rose-400 border border-rose-800'
                             : 'bg-slate-800 text-slate-300'
                         }`}
                       >
-                        {app.status}
+                        {app.status === 'rejected' ? 'Another candidate chosen' : app.status}
                       </Badge>
 
                       <Button
@@ -372,7 +389,7 @@ export const ClientApplications: React.FC = () => {
                           Proposal Cover Note
                         </div>
                         <p className="text-xs text-slate-200 bg-[#0B1120] p-4 rounded-lg border border-[#222A3D] leading-relaxed whitespace-pre-wrap">
-                          {app.coverNote || 'Proposal delivered per statement of work milestones.'}
+                          {app.cover_note || app.coverNote || 'Proposal delivered per statement of work milestones.'}
                         </p>
                       </div>
 
@@ -380,30 +397,53 @@ export const ClientApplications: React.FC = () => {
                       <div className="bg-[#0B1120] border border-blue-900/30 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5" /> AI Evaluation Assessment
+                            <Sparkles className="w-3.5 h-3.5" /> AI Compatibility Assessment
                           </span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            Multi-Factor Match: {score}%
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white font-mono">
+                              Match Score: {score}/100
+                            </span>
+                            <span
+                              className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${
+                                isStrong
+                                  ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60'
+                                  : isMedium
+                                  ? 'bg-amber-950/80 text-amber-400 border-amber-800/60'
+                                  : 'bg-slate-900 text-slate-400 border-slate-700/60'
+                              }`}
+                            >
+                              {recommendation}
+                            </span>
+                          </div>
                         </div>
 
-                        {vetting.reasons && vetting.reasons.length > 0 && (
-                          <div className="space-y-1">
+                        {/* Visual Match Bar */}
+                        <div className="w-full bg-[#0E1528] rounded-full h-2 border border-[#222A3D] overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 rounded-full ${
+                              isStrong ? 'bg-emerald-500' : isMedium ? 'bg-amber-500' : 'bg-rose-500'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(5, score))}%` }}
+                          />
+                        </div>
+
+                        {reasons.length > 0 && (
+                          <div className="space-y-1 pt-1">
                             <span className="text-[11px] text-slate-400 font-medium">
-                              Evaluation Highlights:
+                              Compatibility Breakdown:
                             </span>
                             <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
-                              {vetting.reasons.map((r: string, i: number) => (
+                              {reasons.map((r: string, i: number) => (
                                 <li key={i}>{r}</li>
                               ))}
                             </ul>
                           </div>
                         )}
 
-                        {vetting.matched_skills && vetting.matched_skills.length > 0 && (
+                        {matchedSkills.length > 0 && (
                           <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className="text-[11px] text-slate-400 mr-1">Skills:</span>
-                            {vetting.matched_skills.map((skill: string, i: number) => (
+                            <span className="text-[11px] text-slate-400 mr-1">Matched Skills:</span>
+                            {matchedSkills.map((skill: string, i: number) => (
                               <span
                                 key={i}
                                 className="bg-blue-950/80 text-blue-300 border border-blue-800/50 text-[10px] px-2 py-0.5 rounded-full"
