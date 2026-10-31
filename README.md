@@ -88,7 +88,7 @@ graph TD
 |---|---|---|
 | **Payments** | **PayPal Orders v2 API** | Client milestone funding via PayPal Smart Buttons and server-side capture. |
 | **Disbursements** | **PayPal Payouts API** | Automated, idempotent milestone releases to freelancer PayPal emails. |
-| **Webhooks** | **PayPal Webhooks** | Server-side signature validation (`SHA256withRSA`) for payment events. |
+| **Webhooks** | **PayPal Webhooks** | Server-side webhook handler for payment events (signature verification activates when `PAYPAL_WEBHOOK_ID` is set). |
 | **Operations** | **AG Studio React & AG Grid** | Copilot agent with prompt starters, KPI telemetry and dense financial ledgers. |
 | **AI Inference** | **Groq LPU (Primary)** | Sub-second SOW drafting, applicant ranking and multi-criterion evidence verification. |
 | **AI Fallback** | **OpenRouter (Free Tier)** | Resilient free-tier fallback ensuring zero API downtime without cost. |
@@ -102,7 +102,7 @@ graph TD
 
 ## Devpost Tools Used
 
-- **PayPal Platform:** Orders v2 API, Payments Capture API, Payouts API, Webhook Verification.
+- **PayPal Platform:** Orders v2 API, Payments Capture API, Payouts API, Webhooks.
 - **AG Studio & AG Grid:** `ag-studio-react`, `@ag-grid-community/react`, custom financial cell renderers.
 - **Groq:** Fast LPU inference running open-weight LLMs (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`, `openai/gpt-oss-20b`).
 - **OpenRouter:** Secondary free-tier fallback models (`google/gemma-4-27b-it:free`).

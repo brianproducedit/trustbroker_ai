@@ -4,7 +4,6 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import { formatCurrency } from '@/lib/utils'
-import { AgStudioProvider } from 'ag-studio-react'
 import { AgGridReact } from 'ag-grid-react'
 import {
   ModuleRegistry,
@@ -12,7 +11,9 @@ import {
   themeQuartz,
   colorSchemeDark,
 } from 'ag-grid-community'
+import { AllEnterpriseModule } from 'ag-grid-enterprise'
 import type { ColDef, ICellRendererParams } from 'ag-grid-community'
+import { HAS_GRID_ENTERPRISE_LICENSE } from '@/lib/agLicense'
 
 import {
   Card,
@@ -35,8 +36,9 @@ import {
 } from 'lucide-react'
 import { AICopilotFAB } from '@/components/operations/AICopilotFAB'
 
-// Register AG Grid Community modules
-ModuleRegistry.registerModules([AllCommunityModule])
+// The ledgers use AG Grid Community unless a separate AG Grid Enterprise key is supplied.
+// An AG Studio key does not license standalone AG Grid Enterprise.
+ModuleRegistry.registerModules([HAS_GRID_ENTERPRISE_LICENSE ? AllEnterpriseModule : AllCommunityModule])
 
 // Custom dark theme matching Stripe Atlas / Navy palette
 const clientStudioTheme = themeQuartz.withPart(colorSchemeDark).withParams({
@@ -209,7 +211,6 @@ export const ClientOperations: React.FC = () => {
   }, [navigate])
 
   return (
-    <AgStudioProvider>
       <DashboardLayout>
         <div className="space-y-6 max-w-7xl mx-auto pb-12">
           {/* Header */}
@@ -389,7 +390,6 @@ export const ClientOperations: React.FC = () => {
           <AICopilotFAB workspace="client" />
         </div>
       </DashboardLayout>
-    </AgStudioProvider>
   )
 }
 

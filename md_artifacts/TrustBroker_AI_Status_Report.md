@@ -19,7 +19,7 @@ The remaining work is the **"last mile"**: the 3-minute demo video, the Devpost 
 | Multimodal AI verification | ✅ Real adapters, not a chatbot wrapper |
 | PolicyEngine (AI never moves money) | ✅ Enforces all 4 release safeguards |
 | AI applicant vetting (newcomer-fair) | ✅ Seeded: Tariro 92% / Kuda 78% |
-| AG Studio + AG Grid operations dashboards | ✅ Custom theme, widgets, agent proxy |
+| AG Studio + AG Grid operations dashboards | ✅ **Real `<AgStudio>` dashboard, custom dark theme, lazy-loaded** |
 | Public site + two distinct workspaces + mobile | ✅ |
 | Seeded judge accounts + listings + pass/fail evidence | ✅ |
 | Live Render deployment | ✅ Working (see §5) |
@@ -48,7 +48,16 @@ Adapters in [`backend/app/services/verification/adapters/`](../backend/app/servi
 [`backend/app/services/vetting_service.py`](../backend/app/services/vetting_service.py) + `POST /api/v1/ai/vet-application`. Newcomers with strong portfolios are scored fairly (no `0` for empty contract history).
 
 ### 2.5 AG Studio / AG Grid
-[`react_app/src/pages/client/ClientOperations.tsx`](../react_app/src/pages/client/ClientOperations.tsx), [`react_app/src/pages/freelancer/FreelancerOperations.tsx`](../react_app/src/pages/freelancer/FreelancerOperations.tsx), [`react_app/src/components/operations/AICopilotFAB.tsx`](../react_app/src/components/operations/AICopilotFAB.tsx). Custom dark theme, KPI widgets from live data, 3 prompt starters each, agent proxied through `POST /api/v1/ai/studio-turn` (no API key in the browser).
+- **Real AG Studio dashboard** at `/app/client/studio` and `/app/freelancer/studio`:
+  - Two data sources (`Contracts`, `Milestones`) linked by a many-to-one relationship, built from live store data in [`studioData.ts`](../react_app/src/lib/studioData.ts).
+  - Starter layout with an Overview page (4 KPI widgets, 2 bar charts, contract grid) and a Milestones drill-down page (filter + grid).
+  - `View` / `Edit Layout` toggle so judges can see both the presentation and the builder.
+- **Custom dark theme** matching the app palette (`#0B1326` / `#131B2E` / `#3B82F6`) in [`studioTheme.ts`](../react_app/src/lib/studioTheme.ts).
+- **AG Studio license** supplied via `VITE_AG_STUDIO_LICENSE_KEY` and applied by `<AgStudioProvider>`; the `AgStudioAiModule` is registered for Studio AI features.
+- **Lazy-loaded**: `/studio` routes are `React.lazy` + `Suspense`, which cut the main bundle from 7.99 MB to 3.83 MB (Studio's 4.17 MB chunk loads only on demand).
+- Standalone AG Grid ledgers remain on **Community** (free, watermark-free) because the AG Studio license does not cover standalone AG Grid Enterprise.
+
+Files: [`react_app/src/pages/client/ClientOperations.tsx`](../react_app/src/pages/client/ClientOperations.tsx), [`react_app/src/pages/freelancer/FreelancerOperations.tsx`](../react_app/src/pages/freelancer/FreelancerOperations.tsx), [`react_app/src/components/operations/StudioDashboard.tsx`](../react_app/src/components/operations/StudioDashboard.tsx), [`react_app/src/components/operations/AICopilotFAB.tsx`](../react_app/src/components/operations/AICopilotFAB.tsx).
 
 ### 2.6 Live deployment
 | Service | URL | Status |
@@ -74,16 +83,16 @@ Adapters in [`backend/app/services/verification/adapters/`](../backend/app/servi
 ### 3.2 Sponsor-prize opportunities (optional but high ROI)
 | Prize | Fit | Action |
 |---|---|---|
-| AG Grid ($5k/$2k/$1k) | ★★★★★ | Verify no AG Studio trial watermark in the demo; request a trial license if needed. |
+| AG Grid / AG Studio ($5k/$2k/$1k) | ★★★★★ | **Done** — real `<AgStudio>` dashboard, custom theme, 2 data sources, 2 pages, licensed. Verify no watermark in the demo (key is set). |
 | Best Use of PayPal + AI ($5k) | ★★★★★ | Already demonstrated (checkout→capture→webhook→payout after AI pass). |
 | Best Use of Agentic Commerce ($5k) | ★★★★☆ | Reframe one line in Devpost/video: policy engine + AI verification + human-authorized payout = "agentic commerce with guardrails". |
 | Render (credits) | ★★★★☆ | Already deployed. Mention FastAPI BackgroundTasks offload (free-tier-safe). |
-| APIMatic ($1k ×3) | ★★★☆☆ | Generate the PayPal SDK via the Context Plugin and commit it, or drop the claim from the README "Tools Used". |
+| APIMatic ($1k ×3) | ★★★☆☆ | Run `npx context-plugins install paypal` and screenshot it, or drop the claim from the README "Tools Used". |
 
 > ⚠️ Rules note: a project can win **one sponsor prize + one Grand/Honorable-Mention** prize. Depth beats logo-spraying.
 
 ### 3.3 Nice-to-have (non-blocking)
-- Lazy-load the Operations route (AG Studio makes the JS bundle ~6.2 MB; `vite build` warns).
+- ~~Lazy-load the Operations route~~ — **done**: `/studio` routes are code-split (main bundle 7.99 MB → 3.83 MB).
 - Add a `GET /api/v1/health` pre-warm note for judges (already documented).
 - Dark/light toggle on the public site (roadmap P2, optional).
 

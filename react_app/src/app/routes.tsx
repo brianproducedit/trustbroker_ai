@@ -31,7 +31,18 @@ import { ClientProfile } from '@/pages/client/ClientProfile'
 import { ClientProfilePublic } from '@/pages/client/ClientProfilePublic'
 import { FreelancerWork } from '@/pages/freelancer/FreelancerWork'
 import { NotificationsPage } from '@/pages/Notifications'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+
+// AG Studio is heavy (enterprise grid + charts + AI module), so its routes are code-split.
+const ClientStudio = React.lazy(() => import('@/pages/client/ClientStudio'))
+const FreelancerStudio = React.lazy(() => import('@/pages/freelancer/FreelancerStudio'))
+
+const StudioFallback: React.FC = () => (
+  <div className="flex items-center justify-center h-[60vh]">
+    <LoadingSpinner size="lg" text="Loading AG Studio…" />
+  </div>
+)
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -121,6 +132,16 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/app/client/studio"
+        element={
+          <ProtectedRoute>
+            <React.Suspense fallback={<StudioFallback />}>
+              <ClientStudio />
+            </React.Suspense>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Authenticated Freelancer Workspace Routes */}
       <Route
@@ -192,6 +213,16 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <FreelancerOperations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/freelancer/studio"
+        element={
+          <ProtectedRoute>
+            <React.Suspense fallback={<StudioFallback />}>
+              <FreelancerStudio />
+            </React.Suspense>
           </ProtectedRoute>
         }
       />
