@@ -47,7 +47,7 @@ export interface PayoutItem {
 }
 
 export const FreelancerPayouts: React.FC = () => {
-  const { contracts, activeRole, toggleActiveRole, fetchContracts } = useContractStore()
+  const { contracts, activeRole, fetchContracts } = useContractStore()
   const user = useAuthStore((state) => state.user)
   const [payouts, setPayouts] = useState<PayoutItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -149,19 +149,11 @@ export const FreelancerPayouts: React.FC = () => {
       <div className="flex flex-col gap-6">
         {/* Client View Banner Notice */}
         {activeRole === 'client' && (
-          <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-800/60 flex items-center justify-between gap-4 text-xs">
-            <div className="flex items-center gap-2.5 text-blue-300">
-              <Info className="w-4 h-4 flex-shrink-0 text-blue-400" />
-              <span>
-                <strong>Client workspace active:</strong> Payout ledger below displays your received payouts when working as a freelancer.
-              </span>
-            </div>
-            <button
-              onClick={toggleActiveRole}
-              className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors flex-shrink-0 cursor-pointer"
-            >
-              Switch to freelancer workspace
-            </button>
+          <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-800/60 flex items-center gap-2.5 text-xs text-blue-300">
+            <Info className="w-4 h-4 flex-shrink-0 text-blue-400" />
+            <span>
+              <strong>Client account notice:</strong> Payout ledger below displays disbursements sent via PayPal Payouts for verified milestone deliveries.
+            </span>
           </div>
         )}
 

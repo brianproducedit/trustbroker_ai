@@ -1190,18 +1190,31 @@ export const ContractDetail: React.FC = () => {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              {/* FREELANCER: Submit Work Action */}
+                              {/* FREELANCER: Submit Work Action — unlocked only once funded */}
                               {isFreelancer && (m.status === 'in_progress' || m.status === 'pending' || m.status === 'revision_requested') && (
-                                <Button
-                                  size="sm"
-                                  asChild
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
-                                >
-                                  <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
-                                    <UploadCloud className="w-3.5 h-3.5" />
-                                    Submit Work Evidence
-                                  </Link>
-                                </Button>
+                                isStaged ? (
+                                  <Button
+                                    size="sm"
+                                    asChild
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
+                                  >
+                                    <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                                      <UploadCloud className="w-3.5 h-3.5" />
+                                      Submit Work Evidence
+                                    </Link>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled
+                                    className="bg-slate-800/80 text-slate-400 border border-slate-700/60 cursor-not-allowed text-xs gap-1.5 h-8"
+                                    title="The client must fund this milestone with PayPal before you can proceed with work."
+                                  >
+                                    <Lock className="w-3.5 h-3.5 text-slate-500" />
+                                    Locked (Awaiting PayPal Funding)
+                                  </Button>
+                                )
                               )}
 
                               {/* CLIENT: Authorize PayPal Payout Release */}

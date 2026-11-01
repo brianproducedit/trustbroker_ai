@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { useContractStore } from '@/hooks/useContractStore'
+import { useAuthStore } from '@/hooks/useAuthStore'
 import { api, formatApiError } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
 import {
@@ -112,7 +113,15 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
   onOpenChange,
   onMilestoneUpdated,
 }) => {
-  const { updateMilestone, removeMilestone } = useContractStore()
+  const { updateMilestone, removeMilestone, activeRole } = useContractStore()
+  const user = useAuthStore((state) => state.user)
+
+  const isOwner =
+    contract?.client?.id === user?.id ||
+    (contract?.client?.email && contract.client.email.toLowerCase() === (user?.email || '').toLowerCase())
+  const isClient = (activeRole === 'client' || user?.role === 'client') && isOwner
+  const isVerified = milestone?.status === 'verified' || milestone?.status === 'settled'
+  const isContractActive = contract?.status === 'active' || contract?.status === 'in_verification'
 
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({
@@ -201,7 +210,6 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
   const paymentStatus = milestone.paymentStatus
   const isReleased = paymentStatus === 'released' || paymentStatus === 'release_authorized'
   const isStaged = paymentStatus === 'staged_in_sandbox'
-  const isContractActive = contract?.status === 'active'
 
   return (
     <>
@@ -367,7 +375,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                 <div>
                   <p className="text-sm font-semibold text-emerald-400">Payment Released ✓</p>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    {formatCurrency(milestone.amount, milestone.currency || 'USD')} has been disbursed to the freelancer.
+                    {formatCurrency(milestone.amount, milestone.currency || 'USD')} has been disbursed to the freelancer via PayPal Payout.
                   </p>
                 </div>
               </div>
@@ -376,28 +384,50 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                 <div className="rounded-lg p-3 bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
                   <DollarSign className="w-5 h-5 text-amber-400 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-amber-400">Staged in Escrow</p>
+                    <p className="text-sm font-semibold text-amber-400">Staged in Escrow (Milestone Unlocked)</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {formatCurrency(milestone.amount, milestone.currency || 'USD')} is held securely in PayPal sandbox escrow.
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-amber-500/50 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
-                  onClick={handleReleasePayment}
-                  disabled={isReleasing}
-                >
-                  {isReleasing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Releasing...
-                    </>
+
+                {/* Release controls: Client only and requires verified status */}
+                {isClient ? (
+                  isVerified ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 text-xs font-semibold"
+                      onClick={handleReleasePayment}
+                      disabled={isReleasing}
+                    >
+                      {isReleasing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Releasing PayPal Payout...
+                        </>
+                      ) : (
+                        'Release Payment to Freelancer'
+                      )}
+                    </Button>
                   ) : (
-                    'Release Payment to Freelancer'
-                  )}
-                </Button>
+                    <div className="rounded-lg p-2.5 bg-blue-950/40 border border-blue-800/40 text-xs text-blue-300 flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-blue-400 shrink-0" />
+                      <span>
+                        Payout release will unlock once deliverable evidence is submitted and AI verification passes.
+                      </span>
+                    </div>
+                  )
+                ) : (
+                  <div className="rounded-lg p-2.5 bg-emerald-950/40 border border-emerald-800/40 text-xs text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>
+                      {isVerified
+                        ? 'Milestone verified by AI! Payment will be disbursed to your PayPal email upon client release authorization.'
+                        : 'Milestone is unlocked. Deliver your work and submit evidence for AI verification to receive funds.'}
+                    </span>
+                  </div>
+                )}
               </div>
             ) : !isContractActive ? (
               <div className="space-y-3">
@@ -421,27 +451,41 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-slate-400">
-                  Fund this milestone to place {formatCurrency(milestone.amount, milestone.currency || 'USD')} into PayPal sandbox escrow.
-                </p>
-                <Button
-                  size="sm"
-                  className="w-full bg-[#0070BA] hover:bg-[#003087] text-white font-semibold"
-                  onClick={handleFundMilestone}
-                  disabled={isFunding}
-                >
-                  {isFunding ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Initiating PayPal...
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign className="w-4 h-4 mr-1.5" />
-                      Fund Milestone via PayPal
-                    </>
-                  )}
-                </Button>
+                {isClient ? (
+                  <>
+                    <p className="text-xs text-slate-400">
+                      Fund this milestone to place {formatCurrency(milestone.amount, milestone.currency || 'USD')} into PayPal sandbox escrow and unlock work for the freelancer.
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full bg-[#0070BA] hover:bg-[#003087] text-white font-semibold"
+                      onClick={handleFundMilestone}
+                      disabled={isFunding}
+                    >
+                      {isFunding ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Initiating PayPal...
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-4 h-4 mr-1.5" />
+                          Fund Milestone via PayPal
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="rounded-lg p-3 bg-amber-950/40 border border-amber-800/40 text-xs text-amber-300 space-y-1.5">
+                    <div className="flex items-center gap-2 font-semibold text-amber-400">
+                      <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Milestone Locked (Unfunded)</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      The client has not yet funded this milestone with PayPal. Under TrustBroker AI policy, work and evidence submission remain locked until funding is staged.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

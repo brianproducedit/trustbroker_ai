@@ -32,12 +32,15 @@ import {
   Award,
   AlertCircle,
   ChevronRight,
+  Lock,
+  Unlock,
+  CheckCircle2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export const ClientContractPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const { contracts, fetchContracts, addMilestone } = useContractStore()
+  const { contracts, fetchContracts, addMilestone, activeRole } = useContractStore()
   const user = useAuthStore((state) => state.user)
 
   const [loading, setLoading] = useState(true)
@@ -99,11 +102,20 @@ export const ClientContractPage: React.FC = () => {
     loadApps()
   }, [contract?.id])
 
+  // True only when the current user is the contract's client/owner and is in client mode
+  const isClientOwner = useMemo(() => {
+    if (!contract || !user) return false
+    const ownerMatch =
+      contract.client?.id === user.id ||
+      (contract.client?.email && contract.client.email.toLowerCase() === (user.email || '').toLowerCase())
+    return Boolean(ownerMatch) && activeRole === 'client'
+  }, [contract, user, activeRole])
+
   const canEditMilestones = useMemo(() => {
-    if (!contract) return false
+    if (!isClientOwner) return false
     const editableStatuses = ['draft', 'open', 'pending_acceptance']
-    return editableStatuses.includes(contract.status)
-  }, [contract])
+    return editableStatuses.includes(contract?.status ?? '')
+  }, [isClientOwner, contract?.status])
 
   const handleAddMilestone = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -559,14 +571,30 @@ export const ClientContractPage: React.FC = () => {
                             </td>
                             <td className="py-3.5 px-4">
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${isReleased
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium inline-flex items-center gap-1 ${
+                                  isReleased
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                     : isStaged
-                                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                                      : 'bg-slate-800 text-slate-400 border border-slate-700'
-                                  }`}
+                                    ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                                    : 'bg-amber-950/40 text-amber-400 border border-amber-800/50'
+                                }`}
                               >
-                                {isReleased ? 'Released' : isStaged ? 'Staged' : 'Unfunded'}
+                                {isReleased ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                    Released
+                                  </>
+                                ) : isStaged ? (
+                                  <>
+                                    <Unlock className="w-3 h-3 text-blue-400" />
+                                    Staged (Unlocked)
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="w-3 h-3 text-amber-400" />
+                                    Unfunded (Locked)
+                                  </>
+                                )}
                               </span>
                             </td>
                             <td className="py-3.5 px-4 text-center">
@@ -652,9 +680,9 @@ export const ClientContractPage: React.FC = () => {
                           </p>
                         </div>
 
-                        {/* Actions */}
+                        {/* Actions — client owner only */}
                         <div className="flex items-center md:flex-col gap-2 shrink-0">
-                          {app.status !== 'awarded' && (
+                          {isClientOwner && app.status !== 'awarded' && (
                             <Button
                               onClick={() => {
                                 setSelectedApplicant(app)
@@ -666,7 +694,7 @@ export const ClientContractPage: React.FC = () => {
                               <Award className="w-3.5 h-3.5 mr-1.5" /> Award Contract
                             </Button>
                           )}
-                          {app.status === 'submitted' && (
+                          {isClientOwner && app.status === 'submitted' && (
                             <Button
                               onClick={() => handleShortlist(app.id)}
                               variant="outline"

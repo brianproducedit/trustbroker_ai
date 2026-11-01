@@ -27,6 +27,8 @@ import {
   Check,
   X,
   AlertTriangle,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Textarea } from '@/components/ui/textarea'
@@ -399,15 +401,36 @@ export const FreelancerWork: React.FC = () => {
                                 </Button>
                               </>
                             ) : (
-                              <Button
-                                asChild
-                                size="sm"
-                                className="h-7 text-xs bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-600/40 px-2.5"
-                              >
-                                <Link to={ROUTES.DELIVERY_VERIFICATION(c.id)}>
-                                  <UploadCloud className="w-3 h-3 mr-1" /> Submit Evidence
-                                </Link>
-                              </Button>
+                              (() => {
+                                const hasFundedMilestone = (c.milestones || []).some(
+                                  (m) =>
+                                    ['staged_in_sandbox', 'release_authorized', 'released'].includes(m.paymentStatus) ||
+                                    (m as any).paymentStatus === 'staged'
+                                )
+                                return (
+                                  <Button
+                                    asChild
+                                    size="sm"
+                                    className={`h-7 text-xs px-2.5 ${
+                                      hasFundedMilestone
+                                        ? 'bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-600/40'
+                                        : 'bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 border border-amber-600/40'
+                                    }`}
+                                  >
+                                    <Link to={ROUTES.DELIVERY_VERIFICATION(c.id)}>
+                                      {hasFundedMilestone ? (
+                                        <>
+                                          <UploadCloud className="w-3 h-3 mr-1" /> Submit Evidence
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Lock className="w-3 h-3 mr-1" /> Awaiting Funding
+                                        </>
+                                      )}
+                                    </Link>
+                                  </Button>
+                                )
+                              })()
                             )}
                           </div>
                         </td>
@@ -472,25 +495,50 @@ export const FreelancerWork: React.FC = () => {
                     Contract Milestones ({selectedContract.milestones?.length || 0})
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {(selectedContract.milestones || []).map((m: any, idx: number) => (
-                      <div
-                        key={m.id || idx}
-                        className="bg-[#06120E] p-2.5 rounded-lg border border-[#1C3831] flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-slate-500">M{idx + 1}</span>
-                          <span className="font-medium text-white">{m.title}</span>
+                    {(selectedContract.milestones || []).map((m: any, idx: number) => {
+                      const isFunded =
+                        ['staged_in_sandbox', 'release_authorized'].includes(m.paymentStatus) ||
+                        (m as any).paymentStatus === 'staged'
+                      const isReleased = m.paymentStatus === 'released'
+                      return (
+                        <div
+                          key={m.id || idx}
+                          className="bg-[#06120E] p-2.5 rounded-lg border border-[#1C3831] flex items-center justify-between text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            {isReleased ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            ) : isFunded ? (
+                              <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            ) : (
+                              <Lock className="w-3.5 h-3.5 text-amber-500/80 shrink-0" />
+                            )}
+                            <span className="font-mono text-slate-500">M{idx + 1}</span>
+                            <span className="font-medium text-white">{m.title}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-slate-300">
+                              {formatCurrency(m.amount || 0, selectedContract.currency)}
+                            </span>
+                            <Badge
+                              className={`text-[9px] font-mono ${
+                                isReleased
+                                  ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                                  : isFunded
+                                  ? 'bg-blue-950 text-blue-300 border-blue-800'
+                                  : 'bg-amber-950/60 text-amber-400 border-amber-800/60'
+                              }`}
+                            >
+                              {isReleased
+                                ? 'PAID OUT'
+                                : isFunded
+                                ? 'UNLOCKED / FUNDED'
+                                : 'LOCKED (UNFUNDED)'}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-slate-300">
-                            {formatCurrency(m.amount || 0, selectedContract.currency)}
-                          </span>
-                          <Badge className="text-[9px] bg-slate-800 text-slate-400">
-                            {m.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>

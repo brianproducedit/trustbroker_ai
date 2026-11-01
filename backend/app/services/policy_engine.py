@@ -184,7 +184,7 @@ class PolicyEngine:
         contract: Contract,
         milestone: Milestone,
     ) -> PolicyResult:
-        """Freelancer only, contract active or in verification, milestone must not be already settled."""
+        """Freelancer only, contract active or in verification, milestone funded in PayPal sandbox, and not already settled."""
         if not cls.is_freelancer(user, contract):
             return PolicyResult(False, "Only the assigned freelancer can submit deliverable evidence.")
         if contract.status == ContractStatus.CANCELLED:
@@ -196,6 +196,14 @@ class PolicyEngine:
             )
         if milestone.status == MilestoneStatus.SETTLED or milestone.payment_status == PaymentStatus.RELEASED:
             return PolicyResult(False, "Milestone payment has already been settled and released.")
+        if milestone.payment_status not in (
+            PaymentStatus.STAGED_IN_SANDBOX,
+            PaymentStatus.RELEASE_AUTHORIZED,
+        ):
+            return PolicyResult(
+                False,
+                "Milestone is locked. The client must fund this milestone via PayPal before you can proceed with work and submit deliverables.",
+            )
         return PolicyResult(True)
 
     @classmethod

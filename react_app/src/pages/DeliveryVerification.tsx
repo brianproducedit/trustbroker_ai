@@ -31,7 +31,9 @@ import {
   Camera,
   Check,
   Plus,
-  Trash2
+  Trash2,
+  Lock,
+  Unlock
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -182,6 +184,12 @@ export const DeliveryVerification: React.FC = () => {
 
   const assessment = selectedMilestone?.assessment
   const isSettled = selectedMilestone.status === 'settled'
+  const isFunded =
+    selectedMilestone.paymentStatus === 'staged_in_sandbox' ||
+    selectedMilestone.paymentStatus === 'release_authorized' ||
+    (selectedMilestone as any).paymentStatus === 'staged'
+  const isReleased = selectedMilestone.paymentStatus === 'released'
+  const isLocked = !isFunded && !isReleased
 
   return (
     <DashboardLayout>
@@ -219,18 +227,34 @@ export const DeliveryVerification: React.FC = () => {
 
           {/* Milestone Selection Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 bg-[#131B2E] p-1.5 rounded-xl border border-[#222A3D] self-start">
-            {contract.milestones.map((m, idx) => (
-              <button
-                key={m.id}
-                onClick={() => setSelectedMilestoneId(m.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${selectedMilestoneId === m.id
-                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
+            {contract.milestones.map((m, idx) => {
+              const mFunded =
+                ['staged_in_sandbox', 'release_authorized', 'released'].includes(m.paymentStatus) ||
+                (m as any).paymentStatus === 'staged'
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedMilestoneId(m.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedMilestoneId === m.id
+                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
                   }`}
-              >
-                M{idx + 1}: ${m.amount}
-              </button>
-            ))}
+                >
+                  {mFunded ? (
+                    <Unlock className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Lock className="w-3 h-3 text-amber-400/80" />
+                  )}
+                  <span>M{idx + 1}: ${m.amount}</span>
+                  {!mFunded && (
+                    <span className="text-[9px] text-amber-300 font-mono px-1 py-0.2 rounded bg-amber-950/60 border border-amber-800/60">
+                      Locked
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -241,6 +265,17 @@ export const DeliveryVerification: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-white">{selectedMilestone.title}</span>
                 <StatusBadge status={selectedMilestone.status} />
+                <Badge
+                  className={`text-[10px] font-mono uppercase ${
+                    isReleased
+                      ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                      : isFunded
+                      ? 'bg-blue-950 text-blue-300 border-blue-800'
+                      : 'bg-amber-950 text-amber-300 border-amber-800'
+                  }`}
+                >
+                  {isReleased ? 'Paid via PayPal' : isFunded ? 'PayPal Escrow Staged (Unlocked)' : 'Locked (Unfunded)'}
+                </Badge>
               </div>
               <p className="text-xs text-slate-300">{selectedMilestone.description}</p>
             </div>
@@ -270,6 +305,41 @@ export const DeliveryVerification: React.FC = () => {
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">
+                {/* Milestone Lock / Funding Status Banner */}
+                {isLocked ? (
+                  <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 space-y-2">
+                    <div className="flex items-center gap-2 font-semibold text-amber-300 text-xs">
+                      <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Milestone Locked — Awaiting PayPal Funding from Client</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      {activeRole === 'client'
+                        ? `You must fund this milestone (${formatCurrency(selectedMilestone.amount, contract.currency)}) through PayPal sandbox escrow before the freelancer can submit work.`
+                        : `Under TrustBroker AI policy, work and evidence submission remain locked until funds are staged in PayPal escrow. This protects you against unfunded scope. Once the client funds this milestone, evidence submission unlocks automatically.`}
+                    </p>
+                    {activeRole === 'client' && (
+                      <Button
+                        size="sm"
+                        asChild
+                        className="h-7 text-xs bg-[#0070BA] hover:bg-[#003087] text-white mt-1 gap-1"
+                      >
+                        <Link to={`/app/client/contracts/${contract.id}`}>
+                          <DollarSign className="w-3 h-3" />
+                          Fund Milestone via PayPal
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                ) : isFunded && !isSettled ? (
+                  <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-600/30 text-emerald-300 text-xs flex items-center justify-between">
+                    <span className="flex items-center gap-2 font-medium">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      Milestone Unlocked — {formatCurrency(selectedMilestone.amount, contract.currency)} Staged in PayPal Escrow
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">Disbursed after verification</span>
+                  </div>
+                ) : null}
+
                 {/* Milestone Acceptance Criteria Requirements Matrix */}
                 <div className="space-y-2 p-3 rounded-xl bg-[#0B1326] border border-[#222A3D]">
                   <div className="flex items-center justify-between text-xs">
@@ -425,10 +495,19 @@ export const DeliveryVerification: React.FC = () => {
 
                   <Button
                     type="submit"
-                    disabled={isEvaluating || isSettled}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-2 h-9 font-semibold shadow-sm"
+                    disabled={isEvaluating || isSettled || isLocked}
+                    className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${
+                      isLocked
+                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
                   >
-                    {isEvaluating ? (
+                    {isLocked ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-slate-500" />
+                        Milestone Locked (Client PayPal Funding Required)
+                      </>
+                    ) : isEvaluating ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         AI is inspecting evidence across multimodal adapters...
@@ -587,6 +666,33 @@ export const DeliveryVerification: React.FC = () => {
                           <RotateCcw className="w-3.5 h-3.5" />
                           Request Revision
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Notice for Freelancer after verification */}
+                    {activeRole === 'freelancer' && !isSettled && (
+                      <div className="pt-2">
+                        {assessment.passed ? (
+                          <div className="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 space-y-1.5">
+                            <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span>AI Verification Passed — Awaiting Payout Authorization</span>
+                            </div>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). The client has been notified to authorize release. Funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) will be transferred directly to your registered PayPal account.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-xs text-amber-300 space-y-1.5">
+                            <div className="flex items-center gap-1.5 font-semibold text-amber-400">
+                              <AlertCircle className="w-4 h-4 text-amber-400" />
+                              <span>Verification Score Below Threshold ({assessment.overallScore}/100)</span>
+                            </div>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              Some criteria require adjustments. Review the itemized criterion feedback above, make the necessary corrections, and re-run verification.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 
