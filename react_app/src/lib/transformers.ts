@@ -49,6 +49,9 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
     role: 'client',
     accepted: Boolean(clientAcceptance),
     acceptedAt: clientAcceptance?.accepted_at,
+    contentHash: clientAcceptance?.content_hash,
+    ipAddress: clientAcceptance?.ip_address,
+    userAgent: clientAcceptance?.user_agent,
   }
 
   const freelancer: ContractParty = {
@@ -59,6 +62,9 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
     role: 'freelancer',
     accepted: Boolean(freelancerAcceptance),
     acceptedAt: freelancerAcceptance?.accepted_at,
+    contentHash: freelancerAcceptance?.content_hash,
+    ipAddress: freelancerAcceptance?.ip_address,
+    userAgent: freelancerAcceptance?.user_agent,
   }
 
   const transformedMilestones: Milestone[] = Array.isArray(c.milestones)
@@ -94,6 +100,7 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
     currency: c.currency || 'USD',
     stagedAmount: Number(c.staged_amount) || 0,
     releasedAmount: Number(c.released_amount) || 0,
+    contentHash: c.content_hash || undefined,
     client,
     freelancer,
     milestones: transformedMilestones,

@@ -42,6 +42,9 @@ export interface ContractParty {
   role: 'client' | 'freelancer'
   accepted: boolean
   acceptedAt?: string
+  contentHash?: string
+  ipAddress?: string
+  userAgent?: string
 }
 
 export interface ContractAuditLog {
@@ -64,6 +67,7 @@ export interface Contract {
   currency: string
   stagedAmount: number
   releasedAmount: number
+  contentHash?: string
   client: ContractParty
   freelancer: ContractParty
   milestones: Milestone[]

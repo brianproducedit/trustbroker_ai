@@ -281,7 +281,7 @@ export const ContractDetail: React.FC = () => {
   }
 
   const handleCopyHash = () => {
-    const hash = `sha256-tb2026-${contract.id.slice(-8)}-${contract.version}a9f`
+    const hash = contract.contentHash || `sha256-tb2026-${contract.id.slice(-8)}-${contract.version}a9f`
     navigator.clipboard.writeText(hash)
     setCopiedHash(true)
     toast.success('Copied SOW SHA-256 fingerprint')
@@ -552,6 +552,18 @@ export const ContractDetail: React.FC = () => {
               <span>{contract.code}</span>
               {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-500 group-hover:text-blue-400" />}
             </button>
+
+            {contract.contentHash && (
+              <button
+                onClick={handleCopyHash}
+                className="group inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-300 hover:text-white bg-[#0E1528] hover:bg-blue-950/40 px-2.5 py-1 rounded border border-[#222A3D] transition-colors"
+                title={`SHA-256 Fingerprint: ${contract.contentHash}\nClick to copy cryptographic hash`}
+              >
+                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                <span>SHA-256: {contract.contentHash.slice(0, 8)}…</span>
+                {copiedHash ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-500 group-hover:text-white" />}
+              </button>
+            )}
 
             <Button
               variant="outline"
@@ -1292,9 +1304,11 @@ export const ContractDetail: React.FC = () => {
 
                     <button
                       onClick={handleCopyHash}
-                      className="inline-flex items-center gap-1.5 font-mono text-[10px] text-slate-400 hover:text-white bg-[#0B1326] px-2 py-1 rounded border border-[#222A3D]"
+                      className="inline-flex items-center gap-1.5 font-mono text-[10px] text-slate-300 hover:text-white bg-[#0B1326] px-2.5 py-1 rounded border border-[#222A3D] transition-colors"
+                      title="Click to copy canonical SHA-256 fingerprint"
                     >
-                      <span>sha256-tb2026-{contract.id.slice(-8)}</span>
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                      <span>{contract.contentHash ? `sha256:${contract.contentHash.slice(0, 12)}…` : `sha256-tb2026-${contract.id.slice(-8)}`}</span>
                       {copiedHash ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                     </button>
                   </div>

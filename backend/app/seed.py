@@ -219,6 +219,7 @@ def seed_database():
                 currency="USD",
                 staged_amount=Decimal("6000.00"),
                 released_amount=Decimal("4000.00"),
+                content_hash="7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
                 client_id=contract_client_id,
                 freelancer_id=contract_freelancer_id,
                 freelancer_email=contract_freelancer_email,
@@ -234,6 +235,7 @@ def seed_database():
                 version_number=1,
                 title=c1.title,
                 description=c1.description,
+                content_hash="7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
                 sow_content={
                     "overview": "Full-stack headless Next.js web storefront and microservices integration.",
                     "architecture": "Next.js App Router, TailwindCSS, Supabase DB, PayPal Staging",
@@ -251,6 +253,9 @@ def seed_database():
                 version_number=1,
                 user_id=contract_client_id,
                 role="client",
+                content_hash="7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+                ip_address="198.51.100.24",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) TrustBrokerClient/2.4",
                 accepted_at=now - timedelta(days=13),
             )
             acc_freelancer = ContractAcceptance(
@@ -259,6 +264,9 @@ def seed_database():
                 version_number=1,
                 user_id=contract_freelancer_id,
                 role="freelancer",
+                content_hash="7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+                ip_address="203.0.113.88",
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) TrustBrokerFreelancer/2.4",
                 accepted_at=now - timedelta(days=13),
             )
             session.add(acc_client)

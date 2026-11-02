@@ -45,6 +45,7 @@ class Contract(SQLModel, table=True):
     currency: str = Field(default="USD", nullable=False)
     staged_amount: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2, nullable=False)
     released_amount: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2, nullable=False)
+    content_hash: Optional[str] = Field(default=None, max_length=64, nullable=True)
 
     client_id: uuid.UUID = Field(foreign_key="profiles.id", index=True, nullable=False)
     freelancer_id: Optional[uuid.UUID] = Field(default=None, foreign_key="profiles.id", index=True, nullable=True)
@@ -62,6 +63,7 @@ class ContractVersion(SQLModel, table=True):
     version_number: int = Field(nullable=False)
     title: str = Field(nullable=False)
     description: str = Field(default="", nullable=False)
+    content_hash: Optional[str] = Field(default=None, max_length=64, nullable=True)
     sow_content: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_by: Optional[uuid.UUID] = Field(default=None, foreign_key="profiles.id", nullable=True)
     created_at: datetime = Field(default_factory=utc_now, nullable=False)

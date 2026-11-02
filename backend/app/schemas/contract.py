@@ -35,6 +35,9 @@ class ContractAcceptanceRead(BaseModel):
     version_number: int
     user_id: uuid.UUID
     role: str
+    content_hash: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
     accepted_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -55,6 +58,7 @@ class ContractRead(BaseModel):
     currency: str
     staged_amount: Decimal
     released_amount: Decimal
+    content_hash: Optional[str] = None
     client_id: uuid.UUID
     freelancer_id: Optional[uuid.UUID] = None
     freelancer_email: Optional[str] = None

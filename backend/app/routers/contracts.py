@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from sqlmodel import Session
 from app.database import get_session
@@ -144,14 +144,19 @@ def list_contract_applications(
 @router.post("/{contract_id}/accept", response_model=ContractRead, summary="Accept awarded or invited contract terms")
 def accept_contract(
     contract_id: uuid.UUID,
+    request: Request,
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Freelancer (or client) accepts the current version. When both parties accept, the contract becomes ACTIVE."""
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     return contract_service.accept_contract(
         session=session,
         contract_id=contract_id,
         user=current_user,
+        client_ip=client_ip,
+        user_agent=user_agent,
     )
 
 

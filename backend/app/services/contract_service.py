@@ -1,7 +1,9 @@
+import hashlib
+import json
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, func
 from app.models.contract import Contract, ContractStatus, ContractVisibility, ContractVersion
@@ -13,6 +15,59 @@ from app.schemas.contract import ContractCreateRequest, ContractUpdateRequest, C
 from app.services.audit_service import log_audit_event
 from app.services.notification_service import queue_notification
 from app.services.policy_engine import PolicyEngine
+
+
+def compute_contract_hash(
+    title: str,
+    description: str,
+    total_amount: Any,
+    currency: str,
+    milestones: list,
+) -> str:
+    """Compute a deterministic canonical SHA-256 fingerprint for a contract version."""
+    m_list = []
+    for m in milestones:
+        if hasattr(m, "title"):
+            m_title = m.title
+            m_amount = str(m.amount)
+            m_deadline = str(m.deadline) if m.deadline else ""
+            raw_criteria = getattr(m, "acceptance_criteria", []) or []
+        elif isinstance(m, dict):
+            m_title = m.get("title", "")
+            m_amount = str(m.get("amount", "0.00"))
+            m_deadline = str(m.get("deadline", ""))
+            raw_criteria = m.get("acceptance_criteria") or m.get("criteria") or []
+        else:
+            m_title = str(m)
+            m_amount = "0.00"
+            m_deadline = ""
+            raw_criteria = []
+
+        crit_list = []
+        for c in raw_criteria:
+            if hasattr(c, "title"):
+                crit_list.append(c.title)
+            elif isinstance(c, dict):
+                crit_list.append(c.get("title", ""))
+            elif isinstance(c, str):
+                crit_list.append(c)
+
+        m_list.append({
+            "title": m_title,
+            "amount": m_amount,
+            "deadline": m_deadline,
+            "criteria": crit_list,
+        })
+
+    payload = {
+        "title": (title or "").strip(),
+        "description": (description or "").strip(),
+        "total_amount": str(total_amount),
+        "currency": (currency or "USD").upper(),
+        "milestones": m_list,
+    }
+    canonical_str = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
 
 
 def generate_contract_code(session: Session) -> str:
@@ -94,10 +149,23 @@ def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
             version_number=a.version_number,
             user_id=a.user_id,
             role=a.role,
+            content_hash=a.content_hash,
+            ip_address=a.ip_address,
+            user_agent=a.user_agent,
             accepted_at=a.accepted_at,
         )
         for a in acceptances
     ]
+
+    effective_hash = contract.content_hash
+    if not effective_hash:
+        effective_hash = compute_contract_hash(
+            title=contract.title,
+            description=contract.description,
+            total_amount=contract.total_amount,
+            currency=contract.currency,
+            milestones=milestones,
+        )
 
     client_profile = session.get(UserProfile, contract.client_id) if contract.client_id else None
     freelancer_profile = session.get(UserProfile, contract.freelancer_id) if contract.freelancer_id else None
@@ -117,6 +185,7 @@ def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
         currency=contract.currency,
         staged_amount=contract.staged_amount,
         released_amount=contract.released_amount,
+        content_hash=effective_hash,
         client_id=contract.client_id,
         freelancer_id=contract.freelancer_id,
         freelancer_email=contract.freelancer_email,
@@ -149,6 +218,14 @@ def create_contract(
         if existing_freelancer:
             freelancer_id = existing_freelancer.id
 
+    initial_hash = compute_contract_hash(
+        title=req.title,
+        description=req.description,
+        total_amount=total_amount,
+        currency=req.currency,
+        milestones=req.milestones,
+    )
+
     contract = Contract(
         code=code,
         title=req.title,
@@ -160,6 +237,7 @@ def create_contract(
         required_skills=req.required_skills or [],
         total_amount=total_amount,
         currency=req.currency,
+        content_hash=initial_hash,
         client_id=client.id,
         freelancer_id=freelancer_id,
         freelancer_email=req.freelancer_email,
@@ -173,6 +251,7 @@ def create_contract(
         version_number=1,
         title=req.title,
         description=req.description,
+        content_hash=initial_hash,
         sow_content={
             "title": req.title,
             "description": req.description,
@@ -349,12 +428,23 @@ def update_contract(
 
         contract.total_amount = total_amount
 
+    contract_milestones = list(session.exec(select(Milestone).where(Milestone.contract_id == contract.id)).all())
+    new_hash = compute_contract_hash(
+        title=contract.title,
+        description=contract.description,
+        total_amount=contract.total_amount,
+        currency=contract.currency,
+        milestones=contract_milestones,
+    )
+    contract.content_hash = new_hash
+
     # Create new ContractVersion snapshot
     version = ContractVersion(
         contract_id=contract.id,
         version_number=contract.current_version,
         title=contract.title,
         description=contract.description,
+        content_hash=new_hash,
         sow_content={
             "title": contract.title,
             "description": contract.description,
@@ -384,6 +474,8 @@ def accept_contract(
     session: Session,
     contract_id: uuid.UUID,
     user: UserProfile,
+    client_ip: Optional[str] = None,
+    user_agent: Optional[str] = None,
 ) -> ContractRead:
     """Record contract acceptance for client or freelancer. If both accept, activate contract."""
     contract = session.get(Contract, contract_id)
@@ -392,6 +484,18 @@ def accept_contract(
 
     is_client = contract.client_id == user.id
     is_freelancer = contract.freelancer_id == user.id or contract.freelancer_email == user.email
+
+    # Ensure canonical content hash exists
+    if not contract.content_hash:
+        contract_milestones = list(session.exec(select(Milestone).where(Milestone.contract_id == contract.id)).all())
+        contract.content_hash = compute_contract_hash(
+            title=contract.title,
+            description=contract.description,
+            total_amount=contract.total_amount,
+            currency=contract.currency,
+            milestones=contract_milestones,
+        )
+        session.flush()
 
     # Idempotent: re-accepting an already-active contract you have signed is a no-op success.
     if contract.status == ContractStatus.ACTIVE:
@@ -432,6 +536,9 @@ def accept_contract(
             version_number=contract.current_version,
             user_id=user.id,
             role=role,
+            content_hash=contract.content_hash,
+            ip_address=client_ip,
+            user_agent=user_agent,
         )
         session.add(acceptance)
         session.flush()
@@ -459,20 +566,22 @@ def accept_contract(
         log_audit_event(
             session=session,
             action="contract_fully_accepted",
-            details=f"Contract '{contract.title}' ({contract.code}) fully accepted by both parties. Status is now ACTIVE.",
+            details=f"Contract '{contract.title}' ({contract.code}) fully accepted by both parties with SHA-256 fingerprint {contract.content_hash[:12] if contract.content_hash else ''}. Status is now ACTIVE.",
             contract_id=contract.id,
             actor_id=user.id,
             actor_name=user.full_name or user.email,
+            metadata={"version": contract.current_version, "content_hash": contract.content_hash, "ip_address": client_ip},
         )
     else:
         contract.status = ContractStatus.PENDING_ACCEPTANCE
         log_audit_event(
             session=session,
             action="contract_accepted",
-            details=f"Contract '{contract.title}' accepted by {role} ({user.full_name or user.email}). Awaiting other party.",
+            details=f"Contract '{contract.title}' accepted by {role} ({user.full_name or user.email}) with SHA-256 fingerprint {contract.content_hash[:12] if contract.content_hash else ''}. Awaiting other party.",
             contract_id=contract.id,
             actor_id=user.id,
             actor_name=user.full_name or user.email,
+            metadata={"version": contract.current_version, "content_hash": contract.content_hash, "ip_address": client_ip},
         )
 
     session.commit()
