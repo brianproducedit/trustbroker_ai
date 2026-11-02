@@ -1003,8 +1003,9 @@ export const ContractDetail: React.FC = () => {
                   <div className="space-y-4">
                     {filteredMilestones.map((m, idx) => {
                       const isVerified = m.status === 'verified' || m.status === 'settled'
-                      const isReleased = m.paymentStatus === 'released' || m.paymentStatus === 'release_authorized'
-                      const isStaged = m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged'
+                      const isReleased = m.paymentStatus === 'released'
+                      const isReleaseAuthorized = m.paymentStatus === 'release_authorized'
+                      const isStaged = m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged' || isReleaseAuthorized
 
                       return (
                         <Card key={m.id} className="border-[#222A3D] bg-[#131B2E] text-white overflow-hidden shadow-sm hover:border-slate-700 transition-colors">
@@ -1217,13 +1218,13 @@ export const ContractDetail: React.FC = () => {
                                 )
                               )}
 
-                              {/* CLIENT: Authorize PayPal Payout Release */}
-                              {isClient && isVerified && !isReleased && (
+                              {/* CLIENT / AUTHORIZED: Authorize PayPal Payout Release */}
+                              {(isClient || isReleaseAuthorized) && (isVerified || isReleaseAuthorized) && !isReleased && (
                                 isStaged ? (
                                   <Button
                                     size="sm"
                                     onClick={() => handleOpenReleaseModal(m)}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm animate-pulse"
                                   >
                                     <DollarSign className="w-3.5 h-3.5" />
                                     Authorize Payout ({formatCurrency(m.amount, contract.currency)})

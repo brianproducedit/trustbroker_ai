@@ -525,8 +525,9 @@ export const ClientContractPage: React.FC = () => {
                     ) : (
                       (contract.milestones || []).map((m: any, idx: number) => {
                         const isVerified = m.status === 'verified' || m.status === 'settled'
-                        const isStaged = m.paymentStatus === 'staged_in_sandbox' || m.paymentStatus === 'funded'
-                        const isReleased = m.paymentStatus === 'released' || m.paymentStatus === 'release_authorized'
+                        const isReleased = m.paymentStatus === 'released'
+                        const isReleaseAuthorized = m.paymentStatus === 'release_authorized'
+                        const isStaged = m.paymentStatus === 'staged_in_sandbox' || m.paymentStatus === 'funded' || isReleaseAuthorized
                         const isOrderCreated = m.paymentStatus === 'checkout_created'
 
                         return (
@@ -576,6 +577,8 @@ export const ClientContractPage: React.FC = () => {
                                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium inline-flex items-center gap-1 ${
                                   isReleased
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                    : isReleaseAuthorized
+                                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500 font-bold animate-pulse'
                                     : isStaged
                                     ? 'bg-blue-950 text-blue-300 border border-blue-800'
                                     : isOrderCreated
@@ -587,6 +590,11 @@ export const ClientContractPage: React.FC = () => {
                                   <>
                                     <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                                     Released
+                                  </>
+                                ) : isReleaseAuthorized ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                    Release Authorized
                                   </>
                                 ) : isStaged ? (
                                   <>

@@ -79,6 +79,7 @@ export const DeliveryVerification: React.FC = () => {
   const [revisionNotes, setRevisionNotes] = useState('')
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
+  const [isReleasing, setIsReleasing] = useState(false)
 
   if (!contract || !selectedMilestone) {
     return (
@@ -193,15 +194,22 @@ export const DeliveryVerification: React.FC = () => {
     }
   }
 
-  const handleAuthorizeRelease = () => {
-    releasePayment(contract.id, selectedMilestone.id)
-    toast.success(`Payment released: ${formatCurrency(selectedMilestone.amount)} USD sent to freelancer!`)
-    addNotification({
-      title: 'Payment Released',
-      description: `${formatCurrency(selectedMilestone.amount)} USD transferred for verified milestone.`,
-      type: 'payment',
-      link: `/dashboard/contracts/${contract.id}`,
-    })
+  const handleAuthorizeRelease = async () => {
+    setIsReleasing(true)
+    try {
+      await releasePayment(contract.id, selectedMilestone.id)
+      toast.success(`Payment released: ${formatCurrency(selectedMilestone.amount)} USD disbursed via PayPal!`)
+      addNotification({
+        title: 'Payment Released',
+        description: `${formatCurrency(selectedMilestone.amount)} USD transferred for verified milestone.`,
+        type: 'payment',
+        link: `/dashboard/contracts/${contract.id}`,
+      })
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to disburse PayPal payout.')
+    } finally {
+      setIsReleasing(false)
+    }
   }
 
   const handleConfirmRevision = () => {
@@ -759,13 +767,14 @@ export const DeliveryVerification: React.FC = () => {
                     {/* Action Buttons for Client */}
                     {activeRole === 'client' && !isSettled && (
                       <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
-                        {assessment.passed ? (
+                        {assessment.passed || selectedMilestone.status === 'verified' || selectedMilestone.paymentStatus === 'release_authorized' ? (
                           <Button
                             onClick={handleAuthorizeRelease}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                            disabled={isReleasing}
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
                           >
                             <DollarSign className="w-3.5 h-3.5" />
-                            Authorize PayPal Payout (${selectedMilestone.amount})
+                            {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
                           </Button>
                         ) : (
                           <Button
@@ -788,18 +797,34 @@ export const DeliveryVerification: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Notice for Freelancer after verification */}
+                    {/* Notice & Disbursal for Freelancer after verification */}
                     {activeRole === 'freelancer' && !isSettled && (
                       <div className="pt-2">
-                        {assessment.passed ? (
-                          <div className="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 space-y-1.5">
-                            <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                        {assessment.passed || selectedMilestone.status === 'verified' || selectedMilestone.paymentStatus === 'release_authorized' ? (
+                          <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 space-y-3">
+                            <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-sm">
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                              <span>AI Verification Passed — Awaiting Payout Authorization</span>
+                              <span>AI Verification Passed — Ready for PayPal Disbursal</span>
                             </div>
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). The client has been notified to authorize release. Funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) will be transferred directly to your registered PayPal account.
+                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) are held in PayPal sandbox escrow, approved and ready for transfer directly to your registered PayPal account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
                             </p>
+                            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                              <Button
+                                onClick={handleAuthorizeRelease}
+                                disabled={isReleasing}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                {isReleasing ? 'Executing PayPal Disbursement...' : `Disburse PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
+                              </Button>
+                              <Link
+                                to={ROUTES.FREELANCER_PAYOUTS}
+                                className="inline-flex items-center justify-center px-3.5 py-2 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-xs font-medium text-slate-300 border border-[#222A3D] transition-colors"
+                              >
+                                View Earnings Ledger →
+                              </Link>
+                            </div>
                           </div>
                         ) : (
                           <div className="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-xs text-amber-300 space-y-1.5">

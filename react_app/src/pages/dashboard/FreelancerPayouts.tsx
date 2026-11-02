@@ -29,6 +29,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 export interface PayoutItem {
   id: string
@@ -103,10 +105,11 @@ export const FreelancerPayouts: React.FC = () => {
   // Staged milestone escrow from user's awarded contracts
   const stagedMilestones = contracts.flatMap((c) =>
     c.milestones.filter(
-      (m) => m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged'
-    ).map((m) => ({ ...m, contractCode: c.code, currency: c.currency }))
+      (m) => m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged' || m.paymentStatus === 'release_authorized'
+    ).map((m) => ({ ...m, contractCode: c.code, currency: c.currency, contractId: c.id }))
   )
   const totalStagedAmount = stagedMilestones.reduce((sum, m) => sum + (Number(m.amount) || 0), 0)
+  const authorizedMilestones = stagedMilestones.filter((m) => m.paymentStatus === 'release_authorized')
 
   const getStatusBadge = (status: string) => {
     const s = (status || '').toLowerCase()
@@ -200,6 +203,48 @@ export const FreelancerPayouts: React.FC = () => {
             </a>
           </div>
         </div>
+
+        {/* Ready for Disbursal Alert */}
+        {authorizedMilestones.length > 0 && (
+          <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Verified Escrow Ready for Payout ({formatCurrency(authorizedMilestones.reduce((sum, m) => sum + Number(m.amount || 0), 0))})</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold animate-pulse">ACTION READY</span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  {authorizedMilestones.length} milestone(s) passed multimodal AI verification. Disburse funds directly via PayPal sandbox.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              {authorizedMilestones.map((am) => (
+                <Button
+                  key={am.id}
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await api.payments.releasePayout({ contract_id: am.contractId, milestone_id: am.id })
+                      toast.success(`PayPal payout of ${formatCurrency(am.amount)} disbursed successfully!`)
+                      fetchContracts()
+                      loadEarnings()
+                    } catch (err: any) {
+                      toast.error(err?.detail || 'Failed to release payout.')
+                    }
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 gap-1.5 shadow-md flex-1 md:flex-none"
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  Disburse {am.title} (${am.amount})
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

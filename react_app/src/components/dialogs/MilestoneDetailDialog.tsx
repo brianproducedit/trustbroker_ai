@@ -251,8 +251,9 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
   }
 
   const paymentStatus = milestone.paymentStatus
-  const isReleased = paymentStatus === 'released' || paymentStatus === 'release_authorized'
-  const isStaged = paymentStatus === 'staged_in_sandbox'
+  const isReleased = paymentStatus === 'released'
+  const isReleaseAuthorized = paymentStatus === 'release_authorized'
+  const isStaged = paymentStatus === 'staged_in_sandbox' || isReleaseAuthorized
 
   return (
     <>
@@ -427,20 +428,24 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                 <div className="rounded-lg p-3 bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
                   <DollarSign className="w-5 h-5 text-amber-400 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-amber-400">Staged in Escrow (Milestone Unlocked)</p>
+                    <p className="text-sm font-semibold text-amber-400">
+                      {isReleaseAuthorized ? 'Release Authorized — Ready for Payout' : 'Staged in Escrow (Milestone Unlocked)'}
+                    </p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {formatCurrency(milestone.amount, milestone.currency || 'USD')} is held securely in PayPal sandbox escrow.
+                      {isReleaseAuthorized
+                        ? `${formatCurrency(milestone.amount, milestone.currency || 'USD')} verified by AI. Awaiting PayPal disbursal.`
+                        : `${formatCurrency(milestone.amount, milestone.currency || 'USD')} is held securely in PayPal sandbox escrow.`}
                     </p>
                   </div>
                 </div>
 
                 {/* Release controls: Client only and requires verified status */}
-                {isClient ? (
-                  isVerified ? (
+                {isClient || isReleaseAuthorized ? (
+                  isVerified || isReleaseAuthorized ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 text-xs font-semibold"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 text-xs font-semibold shadow-md"
                       onClick={handleReleasePayment}
                       disabled={isReleasing}
                     >
@@ -450,7 +455,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                           Releasing PayPal Payout...
                         </>
                       ) : (
-                        'Release Payment to Freelancer'
+                        `Disburse PayPal Payout (${formatCurrency(milestone.amount, milestone.currency || 'USD')})`
                       )}
                     </Button>
                   ) : (

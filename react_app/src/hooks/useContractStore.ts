@@ -905,6 +905,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
         await api.payments.releasePayout({ contract_id: contractId, milestone_id: milestoneId })
       } catch (err) {
         console.warn('Backend release payout API warning:', err)
+        throw err
       }
     }
 
