@@ -15,7 +15,8 @@ import {
   BarChart3,
   Bell,
   Briefcase,
-  Sparkles
+  Sparkles,
+  ArrowLeftRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -41,7 +42,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
   const navigate = useNavigate()
   const authSignOut = useAuthStore((state) => state.signOut)
   const user = useAuthStore((state) => state.user)
+  const toggleActiveRole = useAuthStore((state) => state.toggleActiveRole)
   const [signOutOpen, setSignOutOpen] = useState(false)
+
+  const handleSwitchWorkspace = () => {
+    toggleActiveRole()
+    const target = currentRole === 'client' ? ROUTES.FREELANCER_HOME : ROUTES.CLIENT_HOME
+    toast.success(`Switched to ${currentRole === 'client' ? 'Freelancer' : 'Client'} Workspace`)
+    navigate(target)
+  }
 
   const handleSignOut = async () => {
     setSignOutOpen(false)
@@ -184,6 +193,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
             </div>
           </div>
         </div>
+
+        {/* Quick Workspace Switch Button */}
+        <button
+          onClick={handleSwitchWorkspace}
+          type="button"
+          className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-[#0E1528] hover:bg-[#172038] border border-[#222A3D] hover:border-blue-500/50 transition-all cursor-pointer group"
+          title={`Switch to ${currentRole === 'client' ? 'Freelancer' : 'Client'} Workspace`}
+        >
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400 group-hover:rotate-180 transition-transform duration-300" />
+            <span>Switch to {currentRole === 'client' ? 'Freelancer' : 'Client'}</span>
+          </div>
+          <span className="text-[10px] font-mono text-slate-500 group-hover:text-slate-300">Workspace</span>
+        </button>
 
         <div className="flex flex-col gap-1 px-2 py-1 text-xs">
           <div className="flex items-center gap-2">

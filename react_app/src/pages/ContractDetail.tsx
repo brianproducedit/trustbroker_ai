@@ -215,7 +215,7 @@ export const ContractDetail: React.FC = () => {
   const releasedAmount = contract.releasedAmount || 0
   const completionPercentage = Math.min(100, Math.round((releasedAmount / totalAmount) * 100))
   const isBothAccepted = Boolean(clientParty.accepted && freelancerParty.accepted)
-  const isEscrowStaged = stagedAmount > 0
+  const isMilestoneStaged = stagedAmount > 0
   const isWorkVerified = contract.milestones.some((m) => m.status === 'verified' || m.status === 'settled')
   const isSettled = releasedAmount > 0 && releasedAmount >= totalAmount
 
@@ -252,15 +252,15 @@ export const ContractDetail: React.FC = () => {
     {
       id: 3,
       title: 'Milestone funded',
-      desc: isEscrowStaged ? 'PayPal captured' : 'Unfunded',
-      status: isEscrowStaged ? 'completed' : isBothAccepted ? 'current' : 'upcoming',
+      desc: isMilestoneStaged ? 'PayPal captured' : 'Unfunded',
+      status: isMilestoneStaged ? 'completed' : isBothAccepted ? 'current' : 'upcoming',
       icon: ShieldCheck,
     },
     {
       id: 4,
       title: 'AI Verification',
       desc: isWorkVerified ? 'Criteria met' : 'In review',
-      status: isWorkVerified ? 'completed' : isEscrowStaged ? 'current' : 'upcoming',
+      status: isWorkVerified ? 'completed' : isMilestoneStaged ? 'current' : 'upcoming',
       icon: Sparkles,
     },
     {
@@ -912,7 +912,7 @@ export const ContractDetail: React.FC = () => {
                         statusBadgeColor = 'text-purple-400'
                       } else if (isFunded) {
                         circleBg = 'bg-blue-500/20 border-blue-500 text-blue-400'
-                        statusBadgeText = 'Funded in Escrow'
+                        statusBadgeText = 'Staged in Sandbox'
                         statusBadgeColor = 'text-blue-400'
                       }
 
@@ -1172,7 +1172,7 @@ export const ContractDetail: React.FC = () => {
                           {/* Milestone Footer */}
                           <CardFooter className="bg-[#0E1528] border-t border-[#222A3D] p-3.5 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="text-slate-400">Escrow:</span>
+                              <span className="text-slate-400">Staging:</span>
                               <Badge
                                 variant="outline"
                                 className={`text-[11px] font-mono capitalize ${isReleased
@@ -1185,7 +1185,7 @@ export const ContractDetail: React.FC = () => {
                                 {isReleased
                                   ? 'Disbursed to Freelancer'
                                   : isStaged
-                                    ? 'Staged in Escrow'
+                                    ? 'Staged in Sandbox'
                                     : 'Pending Funding'}
                               </Badge>
                             </div>
@@ -1348,15 +1348,15 @@ export const ContractDetail: React.FC = () => {
                         <CreditCard className="w-4 h-4" />
                         <span>PayPal Orders v2 &bull; Milestone Funding</span>
                       </div>
-                      <h3 className="text-base font-bold text-white">Milestone Escrow Allocation</h3>
+                      <h3 className="text-base font-bold text-white">Milestone Staging Allocation</h3>
                       <p className="text-xs text-slate-400">
-                        The client funds one milestone at a time into PayPal platform escrow. Funds remain staged until deliverables are verified.
+                        The client funds one milestone at a time into PayPal sandbox staging. Funds remain staged until deliverables are verified.
                       </p>
                     </div>
 
                     <div className="flex items-center gap-4 text-xs font-mono bg-[#0B1326] px-3.5 py-2 rounded-lg border border-[#222A3D]">
                       <div>
-                        <span className="text-slate-400 block text-[10px]">STAGED IN ESCROW</span>
+                        <span className="text-slate-400 block text-[10px]">STAGED IN SANDBOX</span>
                         <strong className="text-blue-400 font-bold">{formatCurrency(stagedAmount, contract.currency)}</strong>
                       </div>
                       <div className="border-l border-slate-700 pl-4">
@@ -1425,7 +1425,7 @@ export const ContractDetail: React.FC = () => {
                   )}
                 </Card>
 
-                {/* 2. PayPal Escrow Orders & Captures Table */}
+                {/* 2. PayPal Staging Orders & Captures Table */}
                 <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-[#222A3D]">
                     <div>
@@ -1790,7 +1790,7 @@ export const ContractDetail: React.FC = () => {
               )}
             </Card>
 
-            {/* 2. Financial Escrow Summary Card */}
+            {/* 2. Financial Staging Summary Card */}
             <Card className="border-[#222A3D] bg-[#131B2E] text-white p-4 space-y-3">
               <div className="flex items-center justify-between text-xs text-slate-400">
                 <span className="font-semibold uppercase tracking-wider text-[10px]">Milestone funding</span>
@@ -1805,7 +1805,7 @@ export const ContractDetail: React.FC = () => {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-blue-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    Staged in Escrow:
+                    Staged in Sandbox:
                   </span>
                   <span className="font-bold text-blue-400 font-mono text-sm">{formatCurrency(stagedAmount, contract.currency)}</span>
                 </div>

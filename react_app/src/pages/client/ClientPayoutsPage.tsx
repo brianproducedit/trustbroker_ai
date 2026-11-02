@@ -61,8 +61,8 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     completed: { label: 'Released', cls: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
     pending: { label: 'Pending', cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/30' },
     processing: { label: 'Processing', cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/30' },
-    staged: { label: 'In Escrow', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
-    staged_in_sandbox: { label: 'In Escrow', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+    staged: { label: 'Staged (Sandbox)', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+    staged_in_sandbox: { label: 'Staged (Sandbox)', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
     unclaimed: { label: 'Unclaimed', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
     failed: { label: 'Failed', cls: 'bg-rose-500/15 text-rose-400 border border-rose-500/30' },
     denied: { label: 'Denied', cls: 'bg-rose-500/15 text-rose-400 border border-rose-500/30' },
@@ -161,7 +161,7 @@ export const ClientPayoutsPage: React.FC = () => {
               <h1 className="text-2xl font-bold text-white">Payment Management</h1>
             </div>
             <p className="text-slate-400 text-sm ml-11">
-              Escrow & payout ledger — all contracts · PayPal Sandbox
+              Milestone staging & payout ledger — all contracts · PayPal Sandbox
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -189,16 +189,16 @@ export const ClientPayoutsPage: React.FC = () => {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Escrowed */}
+          {/* Total Staged */}
           <div className="rounded-xl bg-[#0E1528] border border-[#222A3D] p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Escrowed</span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Staged</span>
               <div className="p-1.5 rounded-lg bg-amber-500/10">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
               </div>
             </div>
             <p className="text-2xl font-bold text-white">{formatCurrency(totalEscrowed)}</p>
-            <p className="text-xs text-slate-500 mt-1">Held in PayPal escrow</p>
+            <p className="text-xs text-slate-500 mt-1">Staged in PayPal Sandbox</p>
           </div>
 
           {/* Total Released */}
@@ -404,23 +404,16 @@ export const ClientPayoutsPage: React.FC = () => {
           )}
         </div>
 
-        {/* PayPal Sandbox Notice */}
+        {/* PayPal Sandbox & Regional Capability Notice */}
         <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-amber-300 text-sm font-medium">Sandbox Environment</p>
-            <p className="text-amber-400/70 text-xs mt-1">
-              All transactions are processed in the PayPal Sandbox. No real money moves.
-              View full transaction logs at{' '}
-              <a
-                href="https://developer.paypal.com/dashboard/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-amber-300 hover:text-amber-200 underline underline-offset-2"
-              >
-                developer.paypal.com/dashboard
-              </a>
-              {' '}→ Sandbox → Notifications.
+          <div className="space-y-1">
+            <p className="text-amber-300 text-sm font-medium">Sandbox Environment &amp; Regional Capabilities</p>
+            <p className="text-amber-400/80 text-xs">
+              All transactions are simulated via PayPal Developer Sandbox. Milestone funds are captured via PayPal Orders v2 and disbursed via PayPal Payouts.
+            </p>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              In live production, PayPal Payouts capabilities are subject to recipient country regulations and regional PayPal account capabilities (e.g., Zimbabwe accounts are currently Send-Only in PayPal production).
             </p>
           </div>
         </div>

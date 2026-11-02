@@ -330,7 +330,7 @@ export const DeliveryVerification: React.FC = () => {
                       : 'bg-amber-950 text-amber-300 border-amber-800'
                   }`}
                 >
-                  {isReleased ? 'Paid via PayPal' : isFunded ? 'PayPal Escrow Staged (Unlocked)' : 'Locked (Unfunded)'}
+                  {isReleased ? 'Paid via PayPal' : isFunded ? 'PayPal Staged (Unlocked)' : 'Locked (Unfunded)'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-300">{selectedMilestone.description}</p>
@@ -370,8 +370,8 @@ export const DeliveryVerification: React.FC = () => {
                     </div>
                     <p className="text-slate-300 text-[11px] leading-relaxed">
                       {activeRole === 'client'
-                        ? `You must fund this milestone (${formatCurrency(selectedMilestone.amount, contract.currency)}) through PayPal sandbox escrow before the freelancer can submit work.`
-                        : `Under TrustBroker AI policy, work and evidence submission remain locked until funds are staged in PayPal escrow. This protects you against unfunded scope. Once the client funds this milestone, evidence submission unlocks automatically.`}
+                        ? `You must fund this milestone (${formatCurrency(selectedMilestone.amount, contract.currency)}) through PayPal Sandbox before the freelancer can submit work.`
+                        : `Under TrustBroker AI policy, work and evidence submission remain locked until funds are staged in PayPal Sandbox. This protects you against unfunded scope. Once the client funds this milestone, evidence submission unlocks automatically.`}
                     </p>
                     {activeRole === 'client' && (
                       <Button
@@ -390,7 +390,7 @@ export const DeliveryVerification: React.FC = () => {
                   <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-600/30 text-emerald-300 text-xs flex items-center justify-between">
                     <span className="flex items-center gap-2 font-medium">
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      Milestone Unlocked — {formatCurrency(selectedMilestone.amount, contract.currency)} Staged in PayPal Escrow
+                      Milestone Unlocked — {formatCurrency(selectedMilestone.amount, contract.currency)} Staged in PayPal Sandbox
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">Disbursed after verification</span>
                   </div>
@@ -807,7 +807,10 @@ export const DeliveryVerification: React.FC = () => {
                               <span>AI Verification Passed — Ready for PayPal Disbursal</span>
                             </div>
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) are held in PayPal sandbox escrow, approved and ready for transfer directly to your registered PayPal account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
+                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) are staged in PayPal Sandbox, approved and ready for transfer directly to your registered PayPal account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
+                            </p>
+                            <p className="text-[10px] text-slate-400 italic bg-[#0B1326] p-2 rounded border border-[#222A3D]">
+                              Notice: PayPal Developer Sandbox simulation active. In live production, PayPal Payouts capabilities are subject to recipient country regulations and regional PayPal account capabilities (e.g., Zimbabwe accounts are currently Send-Only in PayPal production).
                             </p>
                             <div className="pt-1 flex flex-col sm:flex-row gap-2">
                               <Button

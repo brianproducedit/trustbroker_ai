@@ -319,7 +319,7 @@ export const ClientContractPage: React.FC = () => {
                 </div>
               </div>
               <div className="bg-[#0B1120] border border-amber-900/30 rounded-lg p-3 text-right min-w-[120px]">
-                <div className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold">Staged Escrow</div>
+                <div className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold">Staged Funds</div>
                 <div className="text-lg font-bold font-mono text-amber-300 mt-0.5">
                   {formatCurrency(stagedAmount, contract.currency)}
                 </div>
@@ -391,7 +391,7 @@ export const ClientContractPage: React.FC = () => {
               value="payments"
               className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs px-4 py-2"
             >
-              PayPal Escrow Ledger
+              PayPal Staging Ledger
             </TabsTrigger>
           </TabsList>
 
@@ -511,7 +511,7 @@ export const ClientContractPage: React.FC = () => {
                       <th className="py-3 px-4">Delivery Status</th>
                       <th className="py-3 px-4 text-right">Target Amount</th>
                       <th className="py-3 px-4">Deadline</th>
-                      <th className="py-3 px-4">PayPal Escrow</th>
+                      <th className="py-3 px-4">PayPal Staging</th>
                       <th className="py-3 px-4 text-center">Action</th>
                     </tr>
                   </thead>
@@ -784,14 +784,14 @@ export const ClientContractPage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* TAB 4: PAYMENTS & ESCROW */}
+          {/* TAB 4: PAYMENTS & STAGING LEDGER */}
           <TabsContent value="payments" className="space-y-4">
             <Card className="bg-[#131B2E] border-[#222A3D] text-white p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white">PayPal Escrow Ledger</h3>
+                  <h3 className="text-lg font-bold text-white">PayPal Sandbox Staging Ledger</h3>
                   <p className="text-xs text-slate-400">
-                    Live escrow reconciliation synchronized with PayPal Sandbox Orders and Payouts.
+                    Live milestone staging reconciliation synchronized with PayPal Sandbox Orders and Payouts.
                   </p>
                 </div>
                 <Badge className="bg-emerald-950 text-emerald-400 border-emerald-800 font-mono text-xs">
@@ -809,7 +809,7 @@ export const ClientContractPage: React.FC = () => {
                 </div>
 
                 <div className="bg-[#0B1120] border border-amber-900/40 rounded-xl p-4">
-                  <span className="text-xs text-amber-400">Staged in Escrow</span>
+                  <span className="text-xs text-amber-400">Staged in Sandbox</span>
                   <div className="text-2xl font-bold font-mono text-amber-300 mt-1">
                     {formatCurrency(stagedAmount, contract.currency)}
                   </div>

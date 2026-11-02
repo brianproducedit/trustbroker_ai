@@ -296,7 +296,7 @@ async def capture_milestone_escrow_payment(
     log_audit_event(
         session=session,
         action="payment_capture_completed",
-        details=f"Payment of {attempt.amount} {attempt.currency} captured. Milestone funded in escrow.",
+        details=f"Payment of {attempt.amount} {attempt.currency} captured. Milestone funded and staged in sandbox.",
         contract_id=contract.id,
         actor_id=client.id,
         actor_name=client.full_name or client.email,

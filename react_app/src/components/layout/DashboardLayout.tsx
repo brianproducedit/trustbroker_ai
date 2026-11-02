@@ -13,7 +13,8 @@ import {
   X,
   UserCheck,
   LogOut,
-  ExternalLink
+  ExternalLink,
+  ArrowLeftRight
 } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ROUTES } from '@/constants'
@@ -38,7 +39,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const navigate = useNavigate()
   const location = useLocation()
   const { activeContractId, contracts } = useContractStore()
-  const { user, activeRole, signOut: authSignOut } = useAuthStore()
+  const { user, activeRole, signOut: authSignOut, toggleActiveRole } = useAuthStore()
   const { notifications, unreadCount, markAllAsRead, markAsRead, fetchNotifications } = useNotificationStore()
 
   useEffect(() => {
@@ -172,12 +173,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             </div>
           </div>
 
-          {/* Right actions: Sandbox Indicator, Notifications, Profile */}
+          {/* Right actions: Sandbox Indicator, Role Switcher, Notifications, Profile */}
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="hidden sm:inline-flex bg-blue-950/40 border-blue-900/60 text-blue-300 text-[11px] gap-1.5 py-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              PayPal
+              PayPal Sandbox
             </Badge>
+
+            <button
+              onClick={() => {
+                toggleActiveRole()
+                const target = activeRole === 'client' ? ROUTES.FREELANCER_HOME : ROUTES.CLIENT_HOME
+                toast.success(`Switched to ${activeRole === 'client' ? 'Freelancer' : 'Client'} Workspace`)
+                navigate(target)
+              }}
+              type="button"
+              className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium border bg-[#0E1528] hover:bg-[#172038] border-[#222A3D] text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title={`Switch to ${activeRole === 'client' ? 'Freelancer' : 'Client'} Workspace`}
+            >
+              <ArrowLeftRight className="w-3 h-3 text-blue-400" />
+              <span>{activeRole === 'client' ? 'Client' : 'Freelancer'} Mode</span>
+            </button>
 
             {/* Notification Bell Dropdown */}
             <div className="relative">
@@ -321,6 +337,22 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       Workspace: {activeRole === 'client' ? 'Client' : 'Freelancer'}
                     </span>
                   </div>
+
+                  {/* Switch Workspace Action */}
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false)
+                      toggleActiveRole()
+                      const target = activeRole === 'client' ? ROUTES.FREELANCER_HOME : ROUTES.CLIENT_HOME
+                      toast.success(`Switched to ${activeRole === 'client' ? 'Freelancer' : 'Client'} Workspace`)
+                      navigate(target)
+                    }}
+                    type="button"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-[#1E293B] transition-colors cursor-pointer"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Switch to {activeRole === 'client' ? 'Freelancer' : 'Client'} Mode</span>
+                  </button>
 
                   {/* Sign Out */}
                   <button

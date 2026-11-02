@@ -44,8 +44,8 @@ def seed_database():
                 "full_name": "Elena Rostova (Client)",
                 "organization": "Acme Global Ventures LLC",
                 "headline": "Fintech & Marketplace Product Lead",
-                "bio": "Product and operations lead specializing in autonomous escrow, cross-border settlements and developer tooling.",
-                "skills": ["Product Strategy", "FinTech", "Milestone Escrow", "Vendor Management"],
+                "bio": "Product and operations lead specializing in autonomous milestone staging, cross-border settlements and developer tooling.",
+                "skills": ["Product Strategy", "FinTech", "Milestone Staging", "Vendor Management"],
                 "portfolio": [],
                 "profile_completeness": 100,
                 "primary_workspace": "client",
@@ -57,7 +57,7 @@ def seed_database():
                 "full_name": "Tariro Moyo (Freelancer)",
                 "organization": "DevStudio Zimbabwe",
                 "headline": "Senior Full-Stack & Cloud Architecture Lead (React, Next.js, Stripe, FastAPI)",
-                "bio": "Senior Full-Stack Engineer and Systems Architect with 8+ years experience delivering production web applications in React, Next.js 14, TypeScript, Tailwind CSS, Shadcn/UI, Stripe and Python/FastAPI microservices. Specializes in autonomous escrow, PayPal payments and high-reliability SaaS dashboards.",
+                "bio": "Senior Full-Stack Engineer and Systems Architect with 8+ years experience delivering production web applications in React, Next.js 14, TypeScript, Tailwind CSS, Shadcn/UI, Stripe and Python/FastAPI microservices. Specializes in autonomous milestone staging, PayPal payments and high-reliability SaaS dashboards.",
                 "skills": [
                     "React",
                     "TypeScript",
@@ -211,7 +211,7 @@ def seed_database():
                 id=contract_id,
                 code="TB-2026-001",
                 title="Global Next.js Commerce & Inventory Architecture",
-                description="High-performance headless e-commerce platform with automated inventory synchronization and resilient escrow milestone release.",
+                description="High-performance headless e-commerce platform with automated inventory synchronization and resilient milestone release.",
                 category="software",
                 current_version=1,
                 status=ContractStatus.ACTIVE,
@@ -236,7 +236,7 @@ def seed_database():
                 description=c1.description,
                 sow_content={
                     "overview": "Full-stack headless Next.js web storefront and microservices integration.",
-                    "architecture": "Next.js App Router, TailwindCSS, Supabase DB, Stripe/PayPal Escrow",
+                    "architecture": "Next.js App Router, TailwindCSS, Supabase DB, PayPal Staging",
                     "milestones_count": 3
                 },
                 created_by=contract_client_id,
@@ -456,7 +456,7 @@ def seed_database():
                     actor_id=contract_client_id,
                     actor_name="Elena Rostova (Client)",
                     action="payment_staged",
-                    details="Staged $4,000.00 into PayPal Sandbox Escrow for Milestone 1.",
+                    details="Staged $4,000.00 into PayPal Sandbox Staging for Milestone 1.",
                     created_at=now - timedelta(days=12),
                 ),
                 AuditEvent(
@@ -474,7 +474,7 @@ def seed_database():
                     actor_id=contract_client_id,
                     actor_name="Elena Rostova (Client)",
                     action="payment_staged",
-                    details="Staged $6,000.00 into PayPal Sandbox Escrow for Milestone 2.",
+                    details="Staged $6,000.00 into PayPal Sandbox Staging for Milestone 2.",
                     created_at=now - timedelta(days=6),
                 ),
                 AuditEvent(
@@ -529,8 +529,8 @@ def seed_database():
                 "opens_at": now - timedelta(days=2),
                 "milestones": [
                     {
-                        "title": "Multi-Currency Escrow Engine & Webhook Ingestion",
-                        "description": "FastAPI microservice for secure escrow holding and PayPal sandbox webhook event processing.",
+                        "title": "Multi-Currency Settlement Engine & Webhook Ingestion",
+                        "description": "FastAPI microservice for secure milestone fund staging and PayPal sandbox webhook event processing.",
                         "amount": Decimal("5000.00"),
                         "deadline": (now + timedelta(days=14)).strftime("%Y-%m-%d"),
                         "criteria": [
@@ -606,7 +606,7 @@ def seed_database():
             {
                 "code": "TB-2026-004",
                 "title": "Real-Time Telemetry & Financial Operations Dashboard",
-                "description": "High-density streaming financial analytics portal integrating AG Studio copilot widgets and live escrow reconciliation.",
+                "description": "High-density streaming financial analytics portal integrating AG Studio copilot widgets and live milestone staging reconciliation.",
                 "category": "software",
                 "total_amount": Decimal("9500.00"),
                 "required_skills": ["AG Grid", "React", "Data Visualization", "Python", "WebSockets"],

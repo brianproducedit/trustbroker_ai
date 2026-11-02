@@ -40,6 +40,7 @@ import {
   ShieldCheck,
   Loader2,
   Lock,
+  Info,
 } from 'lucide-react'
 
 interface MilestoneDetailDialogProps {
@@ -96,7 +97,7 @@ function getCriterionStatusLabel(status: string) {
 function getPaymentStatusLabel(status: string | undefined) {
   switch (status) {
     case 'staged_in_sandbox':
-      return 'Staged in Escrow'
+      return 'Staged Funds (Sandbox)'
     case 'released':
     case 'release_authorized':
       return 'Payment Released'
@@ -190,7 +191,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
       }
       toast.success(`PayPal Order #${orderId} created successfully!`)
 
-      // 2. In Sandbox mode, immediately complete capture to stage funds into escrow
+      // 2. In Sandbox mode, immediately complete capture to stage funds into sandbox
       await api.payments.captureOrder({
         contract_id: contract.id,
         milestone_id: milestone.id,
@@ -198,7 +199,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
       })
 
       toast.success(
-        `Milestone funded successfully! ${formatCurrency(milestone.amount, milestone.currency || 'USD')} staged into PayPal sandbox escrow.`
+        `Milestone funded successfully! ${formatCurrency(milestone.amount, milestone.currency || 'USD')} staged in PayPal Sandbox.`
       )
       onMilestoneUpdated?.()
       onOpenChange(false)
@@ -221,7 +222,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
         paypal_order_id: '',
       })
       toast.success(
-        `Milestone funded successfully! ${formatCurrency(milestone.amount, milestone.currency || 'USD')} staged into PayPal sandbox escrow.`
+        `Milestone funded successfully! ${formatCurrency(milestone.amount, milestone.currency || 'USD')} staged in PayPal Sandbox.`
       )
       onMilestoneUpdated?.()
       onOpenChange(false)
@@ -438,12 +439,12 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                   <DollarSign className="w-5 h-5 text-amber-400 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-amber-400">
-                      {isReleaseAuthorized ? 'Release Authorized — Ready for Payout' : 'Staged in Escrow (Milestone Unlocked)'}
+                      {isReleaseAuthorized ? 'Release Authorized — Ready for Payout' : 'Staged Funds (Milestone Unlocked)'}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {isReleaseAuthorized
                         ? `${formatCurrency(milestone.amount, milestone.currency || 'USD')} verified by AI. Awaiting PayPal disbursal.`
-                        : `${formatCurrency(milestone.amount, milestone.currency || 'USD')} is held securely in PayPal sandbox escrow.`}
+                        : `${formatCurrency(milestone.amount, milestone.currency || 'USD')} is safely staged in PayPal Sandbox.`}
                     </p>
                   </div>
                 </div>
@@ -491,9 +492,9 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                 <div className="rounded-lg p-3 bg-blue-950/40 border border-blue-800/50 text-xs text-blue-300 flex items-start gap-3">
                   <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="font-semibold text-white">Escrow Staging Notice</p>
+                    <p className="font-semibold text-white">Milestone Staging Notice</p>
                     <p className="text-slate-300 leading-relaxed">
-                      Milestones can be pre-funded into PayPal sandbox escrow once this contract is awarded and transitions to <strong>Active</strong> status. This contract is currently in <strong>{contract.status || 'open'}</strong> status.
+                      Milestones can be pre-funded and staged in PayPal Sandbox once this contract is awarded and transitions to <strong>Active</strong> status. This contract is currently in <strong>{contract.status || 'open'}</strong> status.
                     </p>
                   </div>
                 </div>
@@ -522,7 +523,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                       </div>
                       <p className="text-xs text-slate-300 leading-relaxed">
                         PayPal checkout order has been registered. Click below to complete sandbox capture and stage{' '}
-                        <strong className="text-white">{formatCurrency(milestone.amount, milestone.currency || 'USD')}</strong> into escrow.
+                        <strong className="text-white">{formatCurrency(milestone.amount, milestone.currency || 'USD')}</strong> in PayPal Sandbox.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-2 pt-1">
                         <Button
@@ -534,12 +535,12 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                           {isFunding ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Capturing Sandbox Escrow...
+                              Capturing Sandbox Payment...
                             </>
                           ) : (
                             <>
                               <ShieldCheck className="w-4 h-4 mr-1.5" />
-                              Complete &amp; Capture Sandbox Escrow
+                              Complete &amp; Capture Sandbox Payment
                             </>
                           )}
                         </Button>
@@ -557,7 +558,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                   ) : (
                     <>
                       <p className="text-xs text-slate-400">
-                        Fund this milestone to place {formatCurrency(milestone.amount, milestone.currency || 'USD')} into PayPal sandbox escrow and unlock work for the freelancer.
+                        Fund this milestone to place {formatCurrency(milestone.amount, milestone.currency || 'USD')} into PayPal Sandbox staging and unlock work for the freelancer.
                       </p>
                       <Button
                         size="sm"
@@ -568,7 +569,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                         {isFunding ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Initiating PayPal &amp; Staging Escrow...
+                            Initiating PayPal &amp; Staging Funds...
                           </>
                         ) : (
                           <>
@@ -590,6 +591,14 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                     </p>
                   </div>
                 )}
+
+                {/* PayPal Sandbox & Eligibility Disclosure */}
+                <div className="rounded-lg p-2.5 bg-[#0A1020] border border-[#1E293B] text-[10px] text-slate-500 leading-normal flex items-start gap-2 mt-2">
+                  <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <span>
+                    Milestone payments are staged in the PayPal Developer Sandbox. Actual cross-border disbursement availability depends on PayPal seller onboarding, currency, and regional account capabilities.
+                  </span>
+                </div>
               </div>
             )}
           </div>

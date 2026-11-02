@@ -102,7 +102,7 @@ export const FreelancerPayouts: React.FC = () => {
   )
   const totalInFlightAmount = inFlightPayouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
 
-  // Staged milestone escrow from user's awarded contracts
+  // Staged milestone funds from user's awarded contracts
   const stagedMilestones = contracts.flatMap((c) =>
     c.milestones.filter(
       (m) => m.paymentStatus === 'staged_in_sandbox' || (m.paymentStatus as string) === 'staged' || m.paymentStatus === 'release_authorized'
@@ -213,7 +213,7 @@ export const FreelancerPayouts: React.FC = () => {
               </div>
               <div>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>Verified Escrow Ready for Payout ({formatCurrency(authorizedMilestones.reduce((sum, m) => sum + Number(m.amount || 0), 0))})</span>
+                  <span>Verified Funds Ready for Payout ({formatCurrency(authorizedMilestones.reduce((sum, m) => sum + Number(m.amount || 0), 0))})</span>
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold animate-pulse">ACTION READY</span>
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5">
@@ -264,7 +264,7 @@ export const FreelancerPayouts: React.FC = () => {
 
           <div className="bg-[#131B2E] p-5 rounded-xl border border-[#222A3D] flex flex-col gap-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium uppercase font-mono">Staged in Escrow</span>
+              <span className="text-xs font-medium uppercase font-mono">Staged in Sandbox</span>
               <Clock className="w-4 h-4 text-blue-400" />
             </div>
             <span className="text-2xl font-bold text-white font-mono">
@@ -531,6 +531,20 @@ export const FreelancerPayouts: React.FC = () => {
           </CollapsibleContent>
         </Collapsible>
 
+        {/* PayPal Sandbox & Regional Capability Notice */}
+        <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+          <div className="space-y-1">
+            <p className="text-amber-300 text-sm font-medium">Sandbox Simulation &amp; Regional Capabilities</p>
+            <p className="text-amber-400/80 text-xs">
+              Disbursements shown here are executed against the PayPal Developer Sandbox via PayPal Payouts API.
+            </p>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              In live production, PayPal Payouts capabilities are subject to recipient country regulations and regional PayPal account capabilities (e.g., Zimbabwe accounts are currently Send-Only in PayPal production).
+            </p>
+          </div>
+        </div>
+
         {/* Webhook Modal Inspection */}
         {showWebhookModal && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
@@ -549,7 +563,7 @@ export const FreelancerPayouts: React.FC = () => {
               </div>
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                TrustBroker backend (<code className="text-blue-300 font-mono">POST /api/v1/payments/webhook</code>) idempotently processes PayPal event notifications to synchronize escrow capture and payout state.
+                TrustBroker backend (<code className="text-blue-300 font-mono">POST /api/v1/payments/webhook</code>) idempotently processes PayPal event notifications to synchronize milestone capture and payout state.
               </p>
 
               <div className="space-y-3 font-mono text-[11px]">
