@@ -37,7 +37,7 @@ flowchart TD
 
 ---
 
-## Phase 1: Terminology, Legal Precision & Identity Decoupling
+## Phase 1: Terminology, Legal Precision & Identity Decoupling [✅ COMPLETED — Commit a39ffe4]
 
 ### 1.1 Objective
 Reconcile all UI copy, backend logs, models, and seed files to eliminate false claims of legal escrow, clarify PayPal sandbox staging, and ensure workspace personas (Client vs. Freelancer) are flexible contexts rather than permanent global account locks.
@@ -71,13 +71,13 @@ Reconcile all UI copy, backend logs, models, and seed files to eliminate false c
   - Backend authorization must check contract-specific membership (`contract.client_id == user.id` or `contract.freelancer_id == user.id`), not global user role.
 
 ### 1.4 Verification Criteria
-- [ ] No occurrences of misleading "licensed escrow" in UI strings or notification payloads.
-- [ ] Disclaimer on payment pages accurately references PayPal sandbox and regional eligibility.
-- [ ] Client Elena Rostova can switch to freelancer view and apply to open projects without permission errors.
+- [x] No occurrences of misleading "licensed escrow" in UI strings or notification payloads.
+- [x] Disclaimer on payment pages accurately references PayPal sandbox and regional eligibility.
+- [x] Client Elena Rostova can switch to freelancer view and apply to open projects without permission errors.
 
 ---
 
-## Phase 2: Contract Versioning, Cryptographic Integrity & Mutual Acceptance
+## Phase 2: Contract Versioning, Cryptographic Integrity & Mutual Acceptance [✅ COMPLETED — Commit ab091aa]
 
 ### 2.1 Objective
 Implement mathematical, tamper-evident contract versioning with SHA-256 content hashing. Guarantee that both parties mutually accept the exact same contract version, and any material change invalidates prior acceptances and creates a clean new version.
@@ -123,13 +123,13 @@ Implement mathematical, tamper-evident contract versioning with SHA-256 content 
   - Display verified content hash badge (`SHA-256: 7f8a9...b4c`) in `ContractDetail.tsx` and `ClientContractPage.tsx`.
 
 ### 2.4 Verification Criteria
-- [ ] Every contract version stores an immutable SHA-256 content hash in the database.
-- [ ] Contract changes create a new version number and reset acceptance state.
-- [ ] The API prevents milestone funding or delivery submission if both parties have not accepted the current version.
+- [x] Every contract version stores an immutable SHA-256 content hash in the database.
+- [x] Contract changes create a new version number and reset acceptance state.
+- [x] The API prevents milestone funding or delivery submission if both parties have not accepted the current version.
 
 ---
 
-## Phase 3: Vetting Engine, Newcomer-Fair Scoring & 90+ Score Alignment
+## Phase 3: Vetting Engine, Newcomer-Fair Scoring & 90+ Score Alignment [✅ COMPLETED — Commit 39be0e4]
 
 ### 3.1 Objective
 Ensure the AI vetting engine rigorously evaluates applications according to the 4 weighted dimensions defined in the Testing Projects Guide, guaranteeing Tariro Moyo achieves **92–98/100 (Strong Fit — Ranked #1)** when applying with the matching cover notes and profile.
@@ -173,13 +173,13 @@ Ensure the AI vetting engine rigorously evaluates applications according to the 
   - Render concrete AI reasoning points with matched skills chips.
 
 ### 3.4 Verification Criteria
-- [ ] Applying with the 5 project cover notes from `TrustBroker_AI_Testing_Projects_Guide.md` produces scores between 92 and 98.
-- [ ] Newcomer demo account (Kuda Nyamuda) receives a fair score (78+) without being penalized with zero for empty platform history.
-- [ ] Client can view the breakdown, shortlist candidates, and award the contract.
+- [x] Applying with the 5 project cover notes from `TrustBroker_AI_Testing_Projects_Guide.md` produces scores between 92 and 98.
+- [x] Newcomer demo account (Kuda Nyamuda) receives a fair score (78+) without being penalized with zero for empty platform history.
+- [x] Client can view the breakdown, shortlist candidates, and award the contract.
 
 ---
 
-## Phase 4: Multimodal Verification Engine & Revision Resubmission Loop
+## Phase 4: Multimodal Verification Engine & Revision Resubmission Loop [✅ COMPLETED — Commit 415e817]
 
 ### 4.1 Objective
 Deliver a bulletproof verification pipeline that tests all 4 evidence types (Live URL, GitHub Repository, Screenshot/Vision, Document/Text), handles edge CDN rate limits cleanly, and provides a complete revision request and resubmission loop.
@@ -221,14 +221,14 @@ Deliver a bulletproof verification pipeline that tests all 4 evidence types (Liv
   - Submitting evidence creates a new `Delivery` entry (linked to previous delivery via `supersedes_id`) and triggers re-verification.
 
 ### 4.4 Verification Criteria
-- [ ] Submitting Project 1 (React Admin Dashboard) passes with score 85–95/100.
-- [ ] Submitting Project 2 (Next.js SaaS Starter) passes with score 85–95/100 despite Vercel edge checkpoints.
-- [ ] Intentionally omitting required evidence (e.g. invalid repo URL) triggers `REVISION_REQUESTED` with clear feedback.
-- [ ] Freelancer resubmission re-runs verification and updates status upon correction.
+- [x] Submitting Project 1 (React Admin Dashboard) passes with score 85–95/100.
+- [x] Submitting Project 2 (Next.js SaaS Starter) passes with score 85–95/100 despite Vercel edge checkpoints.
+- [x] Intentionally omitting required evidence (e.g. invalid repo URL) triggers `REVISION_REQUESTED` with clear feedback.
+- [x] Freelancer resubmission re-runs verification and updates status upon correction.
 
 ---
 
-## Phase 5: Payment Coordination, Sandbox Resilience & Payout Ledger
+## Phase 5: Payment Coordination, Sandbox Resilience & Payout Ledger [✅ COMPLETED — Commit 415e817]
 
 ### 5.1 Objective
 Harden PayPal Orders v2 capture and PayPal Payouts release, guarantee idempotency against double payouts, eliminate unhandled server exceptions, and provide complete financial transparency across client and freelancer workspaces.
@@ -273,13 +273,13 @@ Harden PayPal Orders v2 capture and PayPal Payouts release, guarantee idempotenc
   - Freelancer Earnings (`/app/freelancer/earnings`): Display cleared payouts, batch IDs, and transaction dates.
 
 ### 5.4 Verification Criteria
-- [ ] Milestone payout releases immediately generate a real or synthetic PayPal Batch ID.
-- [ ] Duplicate clicks on "Release Payout" return the existing record without double-paying.
-- [ ] Both Client and Freelancer ledger pages display matching transaction totals and timestamps.
+- [x] Milestone payout releases immediately generate a real or synthetic PayPal Batch ID.
+- [x] Duplicate clicks on "Release Payout" return the existing record without double-paying.
+- [x] Both Client and Freelancer ledger pages display matching transaction totals and timestamps.
 
 ---
 
-## Phase 6: AG Studio Operations Experience & Whole-Project Refactoring
+## Phase 6: AG Studio Operations Experience & Whole-Project Refactoring [✅ COMPLETED — Commit 384c6e8]
 
 ### 6.1 Objective
 Transform the AG Studio analytics views into an indispensable operations dashboard solving real operational problems (stalled projects, pending reviews, payment exceptions) and execute a project-wide cleanup of unused code, legacy mocks, and inconsistent types.
@@ -326,13 +326,13 @@ Transform the AG Studio analytics views into an indispensable operations dashboa
   - Audit every page for consistent Loading, Empty, Validation Error, and Success states.
 
 ### 6.4 Verification Criteria
-- [ ] AG Studio loads with zero licensing watermarks when the trial key is supplied.
-- [ ] Operations dashboard correctly reflects live contract states and updates on data changes.
-- [ ] TypeScript compilation (`tsc -b && vite build`) completes with zero errors or warnings.
+- [x] AG Studio loads with zero licensing watermarks when the trial key is supplied.
+- [x] Operations dashboard correctly reflects live contract states and updates on data changes.
+- [x] TypeScript compilation (`tsc -b && vite build`) completes with zero errors or warnings.
 
 ---
 
-## Phase 7: Automated Test Suite & 5-Project E2E Validation
+## Phase 7: Automated Test Suite & 5-Project E2E Validation [✅ COMPLETED]
 
 ### 7.1 Objective
 Establish an automated test suite verifying core security, payment, and verification rules, accompanied by explicit step-by-step verification checklists for all 5 projects in the Testing Projects Guide.
@@ -369,8 +369,8 @@ Establish an automated test suite verifying core security, payment, and verifica
   - **Project 5:** Vercel Commerce (Headless Storefront) — Budget `$1,500`
 
 ### 7.4 Verification Criteria
-- [ ] All automated unit and integration tests pass cleanly.
-- [ ] Complete run-through of Project 1 and Project 2 from client creation to payment disbursement completes without errors.
+- [x] All automated unit and integration tests pass cleanly.
+- [x] Complete run-through of Project 1 and Project 2 from client creation to payment disbursement completes without errors.
 
 ---
 

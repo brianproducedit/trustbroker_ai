@@ -63,15 +63,15 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 ### Step 1: Sign in as Client
 1. Navigate to `/sign-in`.
 2. Sign in with `client.demo@trustbroker.ai` / `DemoPassword2026!`.
-3. You land in the **Client Workspace** (`/app/client/dashboard`).
+3. You land in the **Client Workspace** (`/app/client`).
 
 ### Step 2: Review or Open a Contract
-1. From the Contracts list, click into an active or awarded contract (e.g. `TB-2026-001`).
+1. From the Contracts list (`/app/client/contracts`), click into an active or awarded contract (e.g. `TB-2026-001`).
 2. Notice the navigation tabs:
    - **Milestones**: Breakdown of deliverables, acceptance criteria and status badges.
-   - **Legal SOW**: Plain-language AI-drafted statement of work and exclusions.
+   - **Legal SOW**: Plain-language AI-drafted statement of work, content hash, and exclusions.
    - **Payments**: The PayPal Funding & Disbursement Hub.
-   - **Audit Activity**: Immutable chronological event log.
+   - **Audit Activity**: Immutable chronological event log with SHA-256 integrity proofs.
 
 ### Step 3: Fund Milestone 1 with PayPal
 1. Open the **Payments** tab.
@@ -87,9 +87,9 @@ Follow this 5-minute path to verify every stage of the contract and payment life
    - Audit trail registers `payment_capture_completed`.
 
 ### Step 4: Switch to Freelancer & Submit Work
-1. Click **Switch workspace** in the sidebar to toggle into **Freelancer Mode** (or sign in as `freelancer.demo@trustbroker.ai`).
-2. Open the contract and navigate to **Deliver & Inspect** (`/dashboard/contracts/{id}/delivery`).
-3. Notice that evidence submission is unlocked because Milestone 1 is funded.
+1. Click **Switch to Freelancer** in the sidebar or header to toggle into **Freelancer Mode** (or sign in as `freelancer.demo@trustbroker.ai`).
+2. Open the contract and navigate to **Deliver & Inspect** (`/app/freelancer/work/:id/deliver`).
+3. Notice that evidence submission is unlocked because Milestone 1 is staged in sandbox.
 4. Freelancer provides deliverable links (GitHub repo URL, live demo URL, screenshots).
 5. Click **Submit Deliverable Evidence**.
 
@@ -114,7 +114,7 @@ Follow this 5-minute path to verify every stage of the contract and payment life
 
 ### Step 7: Freelancer Inspects Real Earnings Ledger
 1. Switch to **Freelancer Workspace**.
-2. Navigate to **Earnings & PayPal Payouts** (`/dashboard/payouts`).
+2. Navigate to **Earnings & PayPal Payouts** (`/app/freelancer/earnings`).
 3. Observe:
    - **Cleared Payouts**: Real aggregated sum of successful PayPal payouts.
    - **PayPal Disbursement Ledger**: Real row displaying:
@@ -126,12 +126,13 @@ Follow this 5-minute path to verify every stage of the contract and payment life
      - Timestamp
 
 ### Step 8: Test AG Studio Financial Operations & AI Copilot
-1. In either the **Client** or **Freelancer** workspace, click **Operations** in the sidebar (or navigate to `/app/client/operations` or `/app/freelancer/operations`).
+1. In either the **Client** or **Freelancer** workspace, click **Operations** or **Analytics Studio** in the sidebar (navigating to `/app/client/studio` or `/app/freelancer/studio`).
 2. Observe live KPI widgets:
    - Total Committed, Staged in Sandbox, Cleared Payouts and Pending Verification.
+   - Interactive Lifecycle Funnel and Category breakdowns with cross-filtering.
 3. Test the **AG Studio Copilot Agent**:
-   - Click one of the 3 prompt starters (e.g. *"Summarize total staged funds and pending milestone verifications"* or *"Which milestone is currently in verification and what is its status?"*).
-   - Notice the agent answers with real-time database context queried directly from PostgreSQL.
+   - Click one of the prompt starters (e.g. *"Summarize total staged funds and pending milestone verifications"* or *"Which submissions have been waiting for verification the longest?"*).
+   - Notice the agent answers with real-time operational context queried directly from the ledger.
 4. Inspect the **AG Grid Financial Ledger**:
    - Filter and sort across milestone amounts, counterparty names and lifecycle status pills.
 
