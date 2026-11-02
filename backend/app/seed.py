@@ -762,11 +762,24 @@ def seed_database():
                 vr_tariro = VettingReport(
                     id=uuid.uuid4(),
                     application_id=app_tariro.id,
-                    score=92,
+                    score=94,
                     recommendation=VettingRecommendation.STRONG_FIT.value,
                     reasons={
-                        "summary": "Proven track record with PayPal Payouts APIs and FastAPI architecture.",
+                        "summary": "Proven track record with PayPal Payouts APIs and FastAPI architecture. 94/100 canonical alignment.",
                         "matched_skills": ["Python", "FastAPI", "React", "TypeScript", "PayPal API"],
+                        "dimension_scores": {
+                            "skills_match": 95,
+                            "past_delivery": 92,
+                            "portfolio_relevance": 95,
+                            "communication": 92,
+                            "risk": 5,
+                        },
+                        "weights": {
+                            "skills": 0.40,
+                            "past_delivery": 0.25,
+                            "portfolio": 0.20,
+                            "communication": 0.15,
+                        },
                         "profile_completeness": 95,
                         "risk_factors": [],
                     },

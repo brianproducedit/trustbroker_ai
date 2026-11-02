@@ -20,19 +20,19 @@ def count_past_contracts(session: Session, freelancer_id) -> int:
 def _cover_communication_score(cover: str) -> int:
     text = (cover or "").strip()
     if len(text) >= 180:
-        return 82
+        return 92
     if len(text) >= 80:
-        return 68
+        return 78
     if len(text) >= 20:
-        return 52
-    return 40
+        return 65
+    return 45
 
 
 def _skills_match_score(freelancer: UserProfile, contract: Contract) -> int:
     required = [s.lower() for s in (contract.required_skills or []) if s]
     have = [s.lower() for s in (freelancer.skills or []) if s]
     if not required:
-        return 70 if have else 55
+        return 75 if have else 55
     if not have:
         return 45
     hits = sum(1 for s in required if any(s in h or h in s for h in have))
@@ -42,9 +42,9 @@ def _skills_match_score(freelancer: UserProfile, contract: Contract) -> int:
 def _portfolio_score(freelancer: UserProfile, snapshot: Optional[List[Dict[str, Any]]]) -> int:
     items = snapshot if snapshot is not None else (freelancer.portfolio or [])
     if not items:
-        return 35
+        return 40
     with_url = sum(1 for p in items if (p.get("url") or p.get("title")))
-    return min(95, 55 + with_url * 12)
+    return min(95, 60 + with_url * 12)
 
 
 def _deterministic_vet(
@@ -61,11 +61,13 @@ def _deterministic_vet(
     newcomer = past_count == 0
 
     if newcomer:
-        overall = int(round(0.40 * skills + 0.45 * portfolio + 0.15 * communication))
+        # Canonical newcomer weights: 40% skills, 35% portfolio, 15% communication, 10% completeness
+        overall = int(round(0.40 * skills + 0.35 * portfolio + 0.15 * communication + 0.10 * min(90, completeness)))
         past_delivery: Any = "insufficient_evidence"
     else:
-        past_delivery = min(90, 50 + past_count * 12)
-        overall = int(round(0.30 * skills + 0.25 * portfolio + 0.25 * past_delivery + 0.20 * communication))
+        # Canonical established weights: 40% skills, 25% past delivery track record, 20% portfolio, 15% communication
+        past_delivery = min(95, 65 + past_count * 12)
+        overall = int(round(0.40 * skills + 0.25 * past_delivery + 0.20 * portfolio + 0.15 * communication))
 
     overall = max(25, min(100, overall))
 
@@ -76,6 +78,9 @@ def _deterministic_vet(
     elif newcomer and portfolio >= 70:
         recommendation = VettingRecommendation.NEW_TALENT.value
         rationale = "New talent · high portfolio match. No completed TrustBroker jobs — do not treat that as a zero score."
+    elif overall >= 90:
+        recommendation = VettingRecommendation.STRONG_FIT.value
+        rationale = "Exceptional fit · 90+ AI alignment score across tech stack, portfolio evidence and delivery readiness."
     elif overall >= 80:
         recommendation = VettingRecommendation.STRONG_FIT.value
         rationale = "Strong skills and evidence match for this listing."
@@ -125,12 +130,13 @@ def vet_application(
     cover = application.cover_note or ""
 
     system = (
-        "You are TrustBroker AI applicant vetting. Score a freelancer for one open contract. "
+        "You are TrustBroker AI applicant vetting. Score a freelancer for one open contract using canonical dimension weights: "
+        "40% skills_match, 25% past_delivery (or newcomer portfolio weight), 20% portfolio_relevance, 15% communication. "
         "Never invent employers, GitHub stars, or completed jobs. "
         "If completed_contracts_count is 0, set past_delivery to the string insufficient_evidence, "
-        "NOT a numeric 0. Weight skills_match and portfolio_relevance higher for newcomers. "
+        "NOT a numeric 0. For strong matches (score >= 90), recommendation must be strong_fit. "
         "If profile_completeness < 40, recommendation must be insufficient_evidence. "
-        "If newcomer with strong portfolio, recommendation new_talent. "
+        "If newcomer with strong portfolio (>=70), recommendation new_talent. "
         "Return ONLY JSON: {score:int, recommendation:str, rationale:str, newcomer:bool, "
         "dimension_scores:{skills_match:int, portfolio_relevance:int, past_delivery:int|str, "
         "communication:int, risk:int}}"

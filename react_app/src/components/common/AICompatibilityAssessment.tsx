@@ -135,6 +135,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
   }
 
   const skillsMatchData = parseDimScore(dims.skills_match)
+  const pastDeliveryData = parseDimScore(dims.past_delivery)
   const portfolioData = parseDimScore(dims.portfolio_relevance)
   const commsData = parseDimScore(dims.communication)
   const riskData = parseDimScore(dims.risk)
@@ -215,17 +216,22 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
       {/* 4-Dimension Evaluation Grid */}
       {(dims.skills_match !== undefined || dims.portfolio_relevance !== undefined) && (
         <div className="space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
-            Core Assessment Dimensions
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
+              Core Assessment Dimensions (Canonical 40/25/20/15 Weights)
+            </span>
+            <span className="text-[10px] font-mono text-slate-500">
+              Deterministic + AI Assisted
+            </span>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {/* 1. Skills Match */}
+            {/* 1. Skills Match (40%) */}
             <div className="bg-[#131B2E] border border-[#222A3D] rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Code2 className="w-3.5 h-3.5 text-blue-400" />
                   <span className="text-xs font-semibold text-slate-200">
-                    Required Skills Match
+                    Required Skills (40%)
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-white">
@@ -243,13 +249,39 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
               </p>
             </div>
 
-            {/* 2. Portfolio Relevance */}
+            {/* 2. Past Delivery & Track Record (25%) */}
+            <div className="bg-[#131B2E] border border-[#222A3D] rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-xs font-semibold text-slate-200">
+                    Track Record (25%)
+                  </span>
+                </div>
+                <span className="text-xs font-mono font-bold text-white">
+                  {isNewcomer ? 'Newcomer' : pastDeliveryData.scoreText}
+                </span>
+              </div>
+              <div className="w-full bg-[#0B1120] rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${isNewcomer ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                  style={{ width: `${isNewcomer ? 30 : pastDeliveryData.pct}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 leading-normal">
+                {isNewcomer
+                  ? 'First contract on platform. Zero completed milestone history on record.'
+                  : `Verified delivery history across ${pastContracts ?? 'active'} platform milestones. Risk index: ${riskData.scoreText}.`}
+              </p>
+            </div>
+
+            {/* 3. Portfolio Relevance (20%) */}
             <div className="bg-[#131B2E] border border-[#222A3D] rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
                   <span className="text-xs font-semibold text-slate-200">
-                    Portfolio Relevance
+                    Portfolio Quality (20%)
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-white">
@@ -267,13 +299,13 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
               </p>
             </div>
 
-            {/* 3. Communication & Proposal Quality */}
+            {/* 4. Communication & Proposal Quality (15%) */}
             <div className="bg-[#131B2E] border border-[#222A3D] rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-3.5 h-3.5 text-teal-400" />
                   <span className="text-xs font-semibold text-slate-200">
-                    Proposal Clarity
+                    Proposal Clarity (15%)
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-white">
@@ -288,32 +320,6 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
               </div>
               <p className="text-[10px] text-slate-400 leading-normal">
                 Thoroughness, professionalism and technical articulation in the submitted cover proposal.
-              </p>
-            </div>
-
-            {/* 4. Platform Track Record / Risk */}
-            <div className="bg-[#131B2E] border border-[#222A3D] rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-xs font-semibold text-slate-200">
-                    Track Record & Risk
-                  </span>
-                </div>
-                <span className="text-xs font-mono font-bold text-white">
-                  {isNewcomer ? 'Newcomer' : riskData.scoreText}
-                </span>
-              </div>
-              <div className="w-full bg-[#0B1120] rounded-full h-1.5 overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${isNewcomer ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                  style={{ width: `${isNewcomer ? 25 : riskData.pct}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-slate-400 leading-normal">
-                {isNewcomer
-                  ? 'First contract on platform. Zero completed escrow history on record.'
-                  : `Completed past contracts: ${pastContracts}. Risk index: ${riskData.scoreText}.`}
               </p>
             </div>
           </div>
