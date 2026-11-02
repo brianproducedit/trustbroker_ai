@@ -78,8 +78,19 @@ def run_verification_orchestration(
         facts: Dict[str, Any] = {}
         llm_eval: Optional[Dict[str, Any]] = None
 
-        # 1. LIVE URL
-        if etype in ["live_url", "url", "staging_url"]:
+        title_lower = (c.title or "").lower()
+        desc_lower = (c.description or "").lower()
+        is_repo_criterion = etype in ["repo", "repository", "github"] or any(
+            k in title_lower or k in desc_lower
+            for k in ["repo", "github", "git repository", "repository initialized", "repository setup", "codebase"]
+        )
+
+        # 1. REPOSITORY / CODE LINK
+        if is_repo_criterion and delivery.repo_url:
+            facts = repo_meta.inspect_repository(delivery.repo_url)
+
+        # 2. LIVE URL
+        elif etype in ["live_url", "url", "staging_url"]:
             target_url = delivery.live_url or (doc_files[0].storage_path if doc_files else None)
             facts = http_probe.probe_live_url(target_url or "")
             
@@ -98,8 +109,12 @@ def run_verification_orchestration(
                 if not img_fact.get("passed", False):
                     facts["passed"] = False
                     facts["error"] = img_fact.get("observation", "Screenshot failed vision check")
+                elif not facts.get("passed", False) and img_fact.get("passed", False):
+                    # If live URL was blocked by cloud DDoS challenge but screenshot is verified by vision
+                    facts["passed"] = True
+                    facts["error"] = None
 
-        # 2. SCREENSHOT / DESIGN FILE
+        # 3. SCREENSHOT / DESIGN FILE
         elif etype in ["screenshot", "design_file", "image"]:
             img_file = image_files[0] if image_files else None
             img_path = img_file.storage_path if img_file else (delivery.live_url or "")
@@ -112,15 +127,32 @@ def run_verification_orchestration(
             if facts.get("model_used"):
                 models_used.append(facts["model_used"])
 
-        # 3. DOCUMENT / SPEC / PDF
+        # 4. DOCUMENT / SPEC / PDF / ARCHITECTURE DIAGRAM FILE
         elif etype in ["document", "pdf", "file"]:
-            doc_file = doc_files[0] if doc_files else None
-            facts = document.inspect_document(
-                file_name=doc_file.file_name if doc_file else "document.pdf",
-                criterion_title=c.title,
-                criterion_description=c.description,
-                file_path=doc_file.storage_path if doc_file else None,
-            )
+            if doc_files:
+                doc_file = doc_files[0]
+                facts = document.inspect_document(
+                    file_name=doc_file.file_name,
+                    criterion_title=c.title,
+                    criterion_description=c.description,
+                    file_path=doc_file.storage_path,
+                )
+            elif image_files:
+                # Freelancer provided an image diagram/screenshot for this file criterion
+                img_file = image_files[0]
+                facts = vision.inspect_screenshot_with_vision(
+                    image_source=img_file.storage_path or img_file.file_name,
+                    criterion_title=c.title,
+                    criterion_description=c.description,
+                    mime_type=img_file.mime_type or "image/png",
+                )
+            else:
+                facts = document.inspect_document(
+                    file_name="document.pdf",
+                    criterion_title=c.title,
+                    criterion_description=c.description,
+                    file_path=None,
+                )
             if facts.get("model_used"):
                 models_used.append(facts["model_used"])
 

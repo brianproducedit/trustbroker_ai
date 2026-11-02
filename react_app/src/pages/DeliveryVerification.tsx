@@ -63,14 +63,10 @@ export const DeliveryVerification: React.FC = () => {
   const selectedMilestone = contract?.milestones.find((m) => m.id === selectedMilestoneId) || contract?.milestones[0]
 
   // Form State
-  const [repoUrl, setRepoUrl] = useState('https://github.com/devstudio/react-landing-verified')
-  const [liveUrl, setLiveUrl] = useState('https://react-landing-demo.vercel.app')
-  const [notes, setNotes] = useState(
-    'Production deliverables completed. Strict TypeScript build compiles cleanly without warnings. Components match responsiveness criteria.'
-  )
-  const [fileAttachments, setFileAttachments] = useState<Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>>([
-    { name: 'screenshot_desktop.png', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71', sizeBytes: 245000, mimeType: 'image/png' }
-  ])
+  const [repoUrl, setRepoUrl] = useState('')
+  const [liveUrl, setLiveUrl] = useState('')
+  const [notes, setNotes] = useState('')
+  const [fileAttachments, setFileAttachments] = useState<Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>>([])
   const [newFileName, setNewFileName] = useState('')
   const [newFileUrl, setNewFileUrl] = useState('')
 
