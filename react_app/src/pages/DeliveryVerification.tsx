@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -31,9 +31,10 @@ import {
   Camera,
   Check,
   Plus,
-  Trash2,
   Lock,
-  Unlock
+  Unlock,
+  X,
+  FolderOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -72,6 +73,10 @@ export const DeliveryVerification: React.FC = () => {
   ])
   const [newFileName, setNewFileName] = useState('')
   const [newFileUrl, setNewFileUrl] = useState('')
+
+  // Drag-and-drop + file picker state
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false)
@@ -115,6 +120,53 @@ export const DeliveryVerification: React.FC = () => {
   const handleRemoveAttachment = (idx: number) => {
     setFileAttachments(fileAttachments.filter((_, i) => i !== idx))
   }
+
+  // ── Drag-and-drop + file picker helpers ──────────────────────────────────
+  const processFiles = useCallback((files: FileList | File[]) => {
+    const allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'application/zip', 'text/plain', 'text/markdown']
+    Array.from(files).forEach((file) => {
+      if (file.size > 25 * 1024 * 1024) {
+        toast.error(`${file.name} exceeds the 25 MB limit and was skipped.`)
+        return
+      }
+      const mime = allowed.includes(file.type) ? file.type : 'application/octet-stream'
+      // Create an object URL so the AI engine can reference the local blob
+      const objectUrl = URL.createObjectURL(file)
+      setFileAttachments((prev) => [
+        ...prev,
+        { name: file.name, url: objectUrl, sizeBytes: file.size, mimeType: mime },
+      ])
+    })
+  }, [fileAttachments])
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files)
+    }
+  }
+
+  const handleFilePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files)
+      e.target.value = '' // reset so same file can be re-added if removed
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleSubmitEvidence = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -432,65 +484,136 @@ export const DeliveryVerification: React.FC = () => {
                     <Label className="text-xs text-slate-300 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <Camera className="w-3.5 h-3.5 text-slate-400" />
-                        Attached Evidence Files ({fileAttachments.length})
+                        Attached Evidence Files
+                        {fileAttachments.length > 0 && (
+                          <span className="ml-1 text-[10px] font-mono bg-blue-600/30 text-blue-300 border border-blue-600/40 px-1.5 py-0.5 rounded-full">
+                            {fileAttachments.length}
+                          </span>
+                        )}
                       </span>
-                      <span className="text-[10px] text-slate-500">PNG, JPG, PDF, ZIP up to 25MB</span>
+                      <span className="text-[10px] text-slate-500">Drag & drop or click to browse</span>
                     </Label>
 
                     {fileAttachments.length > 0 && (
                       <div className="space-y-1.5">
-                        {fileAttachments.map((file, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2 rounded-lg bg-[#0B1326] border border-[#222A3D] text-xs"
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span className="text-slate-200 font-mono text-[11px] truncate">{file.name}</span>
-                              <span className="text-[10px] text-slate-500 font-mono">
-                                ({Math.round(file.sizeBytes / 1024)} KB)
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAttachment(idx)}
-                              className="text-slate-500 hover:text-rose-400 transition-colors p-1"
-                              title="Remove attachment"
+                        {fileAttachments.map((file, idx) => {
+                          const isImg = file.mimeType.startsWith('image/')
+                          const isPdf = file.mimeType === 'application/pdf'
+                          const isZip = file.mimeType === 'application/zip'
+                          const typeBadge = isImg ? 'IMAGE' : isPdf ? 'PDF' : isZip ? 'ZIP' : 'FILE'
+                          const badgeColor = isImg
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                            : isPdf
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                            : isZip
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 rounded-lg bg-[#0B1326] border border-[#222A3D] text-xs group"
                             >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                                <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span className="text-slate-200 font-mono text-[11px] truncate">{file.name}</span>
+                                <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                  ({Math.round(file.sizeBytes / 1024)} KB)
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${badgeColor}`}>
+                                  {typeBadge}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAttachment(idx)}
+                                  className="text-slate-600 hover:text-rose-400 transition-colors p-0.5 rounded"
+                                  title="Remove attachment"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
 
-                    {/* Add Attachment Inputs */}
-                    <div className="p-2.5 rounded-lg bg-[#0B1326]/60 border border-dashed border-[#2D3449] space-y-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <Input
-                          placeholder="File name (e.g. proof.png, spec.pdf)"
-                          value={newFileName}
-                          onChange={(e) => setNewFileName(e.target.value)}
-                          className="bg-[#131B2E] border-[#2D3449] text-white text-[11px] h-7"
-                        />
-                        <Input
-                          placeholder="Evidence URL or storage link"
-                          value={newFileUrl}
-                          onChange={(e) => setNewFileUrl(e.target.value)}
-                          className="bg-[#131B2E] border-[#2D3449] text-white text-[11px] h-7"
-                        />
+                    {/* Drag-and-Drop Upload Zone */}
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${
+                        isDragging
+                          ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
+                          : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
+                      }`}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf,.zip,.txt,.md"
+                        className="sr-only"
+                        onChange={handleFilePickerChange}
+                      />
+                      <div className="flex flex-col items-center justify-center gap-2 py-6 px-4 pointer-events-none select-none">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
+                          {isDragging ? (
+                            <FolderOpen className="w-5 h-5 text-blue-400" />
+                          ) : (
+                            <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <p className={`text-xs font-semibold transition-colors ${isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
+                            {isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
+                          </p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer
+                          </p>
+                          <p className="text-[10px] text-slate-600 mt-1">
+                            PNG, JPG, GIF, WebP, PDF, ZIP, TXT · Max 25 MB per file
+                          </p>
+                        </div>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleAddAttachment}
-                        disabled={!newFileName.trim()}
-                        className="w-full bg-[#1A2338] hover:bg-[#222D47] text-slate-200 text-xs h-7 gap-1 font-medium border border-[#2D3449]"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Evidence File</span>
-                      </Button>
                     </div>
+
+                    {/* Manual URL entry (still available as fallback) */}
+                    <details className="group">
+                      <summary className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer select-none list-none flex items-center gap-1 pt-1">
+                        <Plus className="w-3 h-3" />
+                        Add file by URL instead
+                      </summary>
+                      <div className="pt-2 space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <input
+                            placeholder="File name (e.g. proof.png)"
+                            value={newFileName}
+                            onChange={(e) => setNewFileName(e.target.value)}
+                            className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                          />
+                          <input
+                            placeholder="Evidence URL or storage link"
+                            value={newFileUrl}
+                            onChange={(e) => setNewFileUrl(e.target.value)}
+                            className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleAddAttachment}
+                          disabled={!newFileName.trim()}
+                          className="w-full bg-[#1A2338] hover:bg-[#222D47] text-slate-200 text-xs h-7 gap-1 font-medium border border-[#2D3449]"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add by URL</span>
+                        </Button>
+                      </div>
+                    </details>
                   </div>
 
                   <Button
