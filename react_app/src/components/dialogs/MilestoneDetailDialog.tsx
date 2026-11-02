@@ -237,14 +237,23 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
   const handleReleasePayment = async () => {
     setIsReleasing(true)
     try {
-      await api.payments.releasePayout({
+      const result = await api.payments.releasePayout({
         contract_id: contract.id,
         milestone_id: milestone.id,
+      })
+      const amount = milestone.amount ? `$${Number(milestone.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'funds'
+      toast.success(`💸 Payment disbursed! ${amount} sent to freelancer via PayPal.`, {
+        description: result?.paypal_batch_id
+          ? `PayPal Batch ID: ${result.paypal_batch_id}`
+          : 'Payout processed successfully. Funds are on their way.',
+        duration: 6000,
       })
       onMilestoneUpdated?.()
       onOpenChange(false)
     } catch (err: any) {
-      setFundingError(formatApiError(err))
+      const msg = err?.detail || err?.message || 'Failed to release payout. Please try again.'
+      setFundingError(msg)
+      toast.error(`Payout failed: ${msg}`)
     } finally {
       setIsReleasing(false)
     }

@@ -70,7 +70,7 @@ def list_earnings(
     session: Session = Depends(get_session),
 ):
     """PayPal payout ledger for the signed-in user (freelancer earnings or client disbursements)."""
-    if current_user.primary_workspace == "client" or current_user.role == "client":
+    if current_user.primary_workspace == "client":
         return payment_service.list_client_payouts(session, current_user)
     return payment_service.list_my_payouts(session, current_user)
 
