@@ -12,7 +12,9 @@ class CreateOrderRequest(BaseModel):
 
 
 class CaptureOrderRequest(BaseModel):
-    paypal_order_id: str
+    paypal_order_id: Optional[str] = None
+    contract_id: Optional[uuid.UUID] = None
+    milestone_id: Optional[uuid.UUID] = None
 
 
 class ReleasePayoutRequest(BaseModel):

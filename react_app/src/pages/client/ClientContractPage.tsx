@@ -35,6 +35,7 @@ import {
   Lock,
   Unlock,
   CheckCircle2,
+  Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -524,8 +525,9 @@ export const ClientContractPage: React.FC = () => {
                     ) : (
                       (contract.milestones || []).map((m: any, idx: number) => {
                         const isVerified = m.status === 'verified' || m.status === 'settled'
-                        const isStaged = m.paymentStatus === 'staged_in_sandbox'
-                        const isReleased = m.paymentStatus === 'released'
+                        const isStaged = m.paymentStatus === 'staged_in_sandbox' || m.paymentStatus === 'funded'
+                        const isReleased = m.paymentStatus === 'released' || m.paymentStatus === 'release_authorized'
+                        const isOrderCreated = m.paymentStatus === 'checkout_created'
 
                         return (
                           <tr
@@ -576,7 +578,9 @@ export const ClientContractPage: React.FC = () => {
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                     : isStaged
                                     ? 'bg-blue-950 text-blue-300 border border-blue-800'
-                                    : 'bg-amber-950/40 text-amber-400 border border-amber-800/50'
+                                    : isOrderCreated
+                                    ? 'bg-amber-950/40 text-amber-300 border border-amber-600/50'
+                                    : 'bg-slate-800/60 text-slate-400 border border-slate-700/50'
                                 }`}
                               >
                                 {isReleased ? (
@@ -589,9 +593,14 @@ export const ClientContractPage: React.FC = () => {
                                     <Unlock className="w-3 h-3 text-blue-400" />
                                     Staged (Unlocked)
                                   </>
+                                ) : isOrderCreated ? (
+                                  <>
+                                    <Clock className="w-3 h-3 text-amber-400" />
+                                    Order Created (Awaiting Capture)
+                                  </>
                                 ) : (
                                   <>
-                                    <Lock className="w-3 h-3 text-amber-400" />
+                                    <Lock className="w-3 h-3 text-slate-400" />
                                     Unfunded (Locked)
                                   </>
                                 )}

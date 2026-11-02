@@ -43,8 +43,9 @@ async def capture_order(
     """Capture payment after client approves PayPal popup modal."""
     return await payment_service.capture_milestone_escrow_payment(
         session=session,
-        paypal_order_id=req.paypal_order_id,
         client=current_user,
+        paypal_order_id=req.paypal_order_id,
+        milestone_id=req.milestone_id,
     )
 
 

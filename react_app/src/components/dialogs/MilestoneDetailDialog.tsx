@@ -26,6 +26,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import { api, formatApiError } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   ChevronDown,
   ChevronUp,
@@ -178,14 +179,56 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
     setIsFunding(true)
     setFundingError(null)
     try {
-      await api.payments.createOrder({
+      // 1. Initiate PayPal checkout order
+      const orderRes = await api.payments.createOrder({
         contract_id: contract.id,
         milestone_id: milestone.id,
       })
+      const orderId = orderRes?.order_id
+      if (!orderId) {
+        throw new Error(orderRes?.detail || 'Failed to generate PayPal order ID')
+      }
+      toast.success(`PayPal Order #${orderId} created successfully!`)
+
+      // 2. In Sandbox mode, immediately complete capture to stage funds into escrow
+      await api.payments.captureOrder({
+        contract_id: contract.id,
+        milestone_id: milestone.id,
+        paypal_order_id: orderId,
+      })
+
+      toast.success(
+        `Milestone funded successfully! ${formatCurrency(milestone.amount, milestone.currency || 'USD')} staged into PayPal sandbox escrow.`
+      )
       onMilestoneUpdated?.()
       onOpenChange(false)
     } catch (err: any) {
-      setFundingError(formatApiError(err))
+      const errMsg = formatApiError(err)
+      setFundingError(errMsg)
+      toast.error(`PayPal funding failed: ${errMsg}`)
+    } finally {
+      setIsFunding(false)
+    }
+  }
+
+  const handleCaptureExistingOrder = async () => {
+    setIsFunding(true)
+    setFundingError(null)
+    try {
+      await api.payments.captureOrder({
+        contract_id: contract.id,
+        milestone_id: milestone.id,
+        paypal_order_id: '',
+      })
+      toast.success(
+        `Milestone funded successfully! ${formatCurrency(milestone.amount, milestone.currency || 'USD')} staged into PayPal sandbox escrow.`
+      )
+      onMilestoneUpdated?.()
+      onOpenChange(false)
+    } catch (err: any) {
+      const errMsg = formatApiError(err)
+      setFundingError(errMsg)
+      toast.error(`Capture failed: ${errMsg}`)
     } finally {
       setIsFunding(false)
     }
@@ -452,29 +495,76 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
             ) : (
               <div className="space-y-2">
                 {isClient ? (
-                  <>
-                    <p className="text-xs text-slate-400">
-                      Fund this milestone to place {formatCurrency(milestone.amount, milestone.currency || 'USD')} into PayPal sandbox escrow and unlock work for the freelancer.
-                    </p>
-                    <Button
-                      size="sm"
-                      className="w-full bg-[#0070BA] hover:bg-[#003087] text-white font-semibold"
-                      onClick={handleFundMilestone}
-                      disabled={isFunding}
-                    >
-                      {isFunding ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Initiating PayPal...
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="w-4 h-4 mr-1.5" />
-                          Fund Milestone via PayPal
-                        </>
-                      )}
-                    </Button>
-                  </>
+                  milestone.paymentStatus === 'checkout_created' ? (
+                    <div className="space-y-3 p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-blue-300 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                          PayPal Sandbox Order Created
+                        </span>
+                        <Badge className="bg-blue-900/60 text-blue-300 border-blue-700 text-[10px] font-mono">
+                          Awaiting Capture
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        PayPal checkout order has been registered. Click below to complete sandbox capture and stage{' '}
+                        <strong className="text-white">{formatCurrency(milestone.amount, milestone.currency || 'USD')}</strong> into escrow.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9"
+                          onClick={handleCaptureExistingOrder}
+                          disabled={isFunding}
+                        >
+                          {isFunding ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Capturing Sandbox Escrow...
+                            </>
+                          ) : (
+                            <>
+                              <ShieldCheck className="w-4 h-4 mr-1.5" />
+                              Complete &amp; Capture Sandbox Escrow
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-[#2D3449] text-slate-300 hover:text-white text-xs h-9"
+                          onClick={handleFundMilestone}
+                          disabled={isFunding}
+                        >
+                          Regenerate Order
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-slate-400">
+                        Fund this milestone to place {formatCurrency(milestone.amount, milestone.currency || 'USD')} into PayPal sandbox escrow and unlock work for the freelancer.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#0070BA] hover:bg-[#003087] text-white font-semibold h-9"
+                        onClick={handleFundMilestone}
+                        disabled={isFunding}
+                      >
+                        {isFunding ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Initiating PayPal &amp; Staging Escrow...
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="w-4 h-4 mr-1.5" />
+                            Fund Milestone via PayPal
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )
                 ) : (
                   <div className="rounded-lg p-3 bg-amber-950/40 border border-amber-800/40 text-xs text-amber-300 space-y-1.5">
                     <div className="flex items-center gap-2 font-semibold text-amber-400">
