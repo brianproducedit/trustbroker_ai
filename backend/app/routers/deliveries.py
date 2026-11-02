@@ -1,6 +1,6 @@
 import uuid
 from typing import List
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models.user import UserProfile
@@ -156,7 +156,7 @@ def list_milestone_deliveries(
 def request_milestone_revision(
     contract_id: uuid.UUID,
     milestone_id: uuid.UUID,
-    req: RevisionRequest = RevisionRequest(),
+    req: RevisionRequest = Body(default_factory=RevisionRequest),
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):

@@ -212,17 +212,22 @@ export const DeliveryVerification: React.FC = () => {
     }
   }
 
-  const handleConfirmRevision = () => {
+  const handleConfirmRevision = async () => {
     if (!revisionNotes.trim()) return
-    requestRevision(contract.id, selectedMilestone.id, revisionNotes.trim())
-    setRevisionDialogOpen(false)
-    toast.info('Revision request sent to freelancer')
-    addNotification({
-      title: 'Revision Requested',
-      description: `Client requested adjustments for milestone: "${revisionNotes.slice(0, 50)}..."`,
-      type: 'revision',
-      link: `/dashboard/deliveries/${contract.id}`,
-    })
+    try {
+      await requestRevision(contract.id, selectedMilestone.id, revisionNotes.trim())
+      setRevisionDialogOpen(false)
+      toast.success('Revision request sent to freelancer')
+      addNotification({
+        title: 'Revision Requested',
+        description: `Client requested adjustments for milestone: "${revisionNotes.slice(0, 50)}..."`,
+        type: 'revision',
+        link: `/dashboard/deliveries/${contract.id}`,
+      })
+      setRevisionNotes('')
+    } catch (err: any) {
+      toast.error(err?.detail || 'Failed to submit revision request')
+    }
   }
 
   const handleConfirmOverride = async () => {

@@ -8,6 +8,7 @@ from app.models.delivery import Delivery, DeliveryFile
 from app.models.user import UserProfile
 from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, DeliveryFileRead
 from app.services.audit_service import log_audit_event
+from app.services.notification_service import queue_notification
 from app.services.verification_service import orchestrate_delivery_verification
 from app.services.verification.safety import validate_evidence_file, sanitize_filename
 from app.services.policy_engine import PolicyEngine
@@ -203,6 +204,17 @@ def request_revision(
         actor_name=client.full_name or client.email,
         metadata={"milestone_id": str(milestone.id), "notes": notes},
     )
+
+    if contract.freelancer_id:
+        queue_notification(
+            session=session,
+            user_id=contract.freelancer_id,
+            type="revision_requested",
+            title=f"Revision Requested: {milestone.title}",
+            body=f"Client requested adjustments on milestone '{milestone.title}': {notes[:120] if notes else 'Please review criteria and update evidence.'}",
+            entity_type="contract",
+            entity_id=contract.id,
+        )
 
     return {
         "status": "revision_requested",
