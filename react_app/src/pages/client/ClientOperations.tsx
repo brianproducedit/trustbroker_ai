@@ -151,7 +151,7 @@ export const ClientOperations: React.FC = () => {
       },
       {
         field: 'stagedAmount',
-        headerName: 'Staged Escrow',
+        headerName: 'Staged in Sandbox',
         width: 140,
         cellRenderer: (params: ICellRendererParams) => (
           <span className="font-mono text-xs font-semibold text-amber-400">
@@ -228,7 +228,7 @@ export const ClientOperations: React.FC = () => {
                 </Badge>
               </div>
               <p className="text-sm text-slate-400 mt-1">
-                Real-time financial telemetry, escrow allocations and AI-driven operations for {user?.email}
+                Real-time financial telemetry, sandbox allocations and AI-driven operations for {user?.email}
               </p>
             </div>
 
@@ -261,7 +261,7 @@ export const ClientOperations: React.FC = () => {
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">
-                    Staged in PayPal Escrow
+                    Staged in PayPal Sandbox
                   </span>
                   <div className="text-2xl font-bold font-mono text-amber-400 mt-0.5">
                     {formatCurrency(metrics.totalStaged, 'USD')}

@@ -26,7 +26,7 @@ export const ClientProfilePublic: React.FC = () => {
     name: 'Elena Rostova',
     organization: 'Acme Global Ventures LLC',
     headline: 'Managing Partner & Technology Sponsor',
-    bio: 'Backing global developers building resilient fintech and AI products. All contracts feature pre-funded milestone escrow in PayPal Sandbox with AI automated verification checks.',
+    bio: 'Backing global developers building resilient fintech and AI products. All contracts feature pre-funded milestone staging in PayPal Sandbox with AI automated verification checks.',
     website: 'https://acmeglobalventures.com',
     memberSince: 'March 2026',
     verified: true,
@@ -83,7 +83,7 @@ export const ClientProfilePublic: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <Badge className="bg-blue-950 text-blue-300 border-blue-800 text-xs px-3 py-1">
-                100% Escrow Funded
+                100% Sandbox Funded
               </Badge>
             </div>
           </div>

@@ -339,7 +339,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
             </p>
             {trial.amount && (
               <div className="flex items-center gap-2 pt-1">
-                <span className="text-[11px] text-slate-400 font-mono">Suggested Trial Escrow:</span>
+                <span className="text-[11px] text-slate-400 font-mono">Suggested Trial Staging:</span>
                 <span className="font-mono text-xs bg-amber-900/50 text-amber-200 px-2.5 py-0.5 rounded border border-amber-800/60 font-bold">
                   ${trial.amount} {trial.currency || 'USD'}
                 </span>

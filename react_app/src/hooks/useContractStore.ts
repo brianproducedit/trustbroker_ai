@@ -471,7 +471,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 actor: isClient ? `${c.client.name} (Client)` : `${c.freelancer.name} (Freelancer)`,
                 action: bothAccepted ? 'CONTRACT_ACTIVATED' : 'TERMS_ACCEPTED',
                 details: bothAccepted
-                  ? 'All parties signed. Contract is now ACTIVE and escrow staging is unlocked.'
+                  ? 'All parties signed. Contract is now ACTIVE and milestone staging is unlocked.'
                   : `${isClient ? 'Client' : 'Freelancer'} accepted contract terms.`,
               },
             ],
@@ -616,7 +616,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 timestamp: new Date().toISOString(),
                 actor: 'PayPal Sandbox Gateway',
                 action: 'PAYMENT_STAGED',
-                details: `Escrow hold captured: $${amount} USD staged into PayPal sandbox (Order #${paypalOrderId.slice(0, 10)}...).`,
+                details: `Funds captured: $${amount} USD staged into PayPal sandbox (Order #${paypalOrderId.slice(0, 10)}...).`,
               },
             ],
           }

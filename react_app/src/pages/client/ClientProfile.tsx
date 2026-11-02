@@ -161,7 +161,7 @@ export const ClientProfile: React.FC = () => {
           </Card>
 
           <Card className="bg-[#131B2E] border border-amber-900/30 text-white p-4">
-            <span className="text-xs text-amber-400">Total Escrow Staged</span>
+            <span className="text-xs text-amber-400">Total Staged Funds</span>
             <div className="text-2xl font-bold font-mono text-amber-300 mt-1">
               {formatCurrency(totalStaged, 'USD')}
             </div>
@@ -292,7 +292,7 @@ export const ClientProfile: React.FC = () => {
                     PayPal Sandbox Settlement
                   </span>
                   <div className="text-xs text-emerald-400 flex items-center gap-1.5 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Escrow Pre-Funding Enabled
+                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Sandbox Pre-Funding Enabled
                   </div>
                 </div>
               </div>

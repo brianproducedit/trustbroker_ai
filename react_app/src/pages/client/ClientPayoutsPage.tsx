@@ -126,7 +126,7 @@ export const ClientPayoutsPage: React.FC = () => {
   const contractMap = new Map(contracts.map((c) => [c.id, c]))
 
   // Metrics
-  const totalEscrowed = ledger.total_staged
+  const totalStaged = ledger.total_staged
   const totalReleased = ledger.total_released
   const inFlight = ledger.payouts.filter(
     (p) => ['pending', 'processing', 'submitted'].includes((p.status || '').toLowerCase())
@@ -197,7 +197,7 @@ export const ClientPayoutsPage: React.FC = () => {
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-white">{formatCurrency(totalEscrowed)}</p>
+            <p className="text-2xl font-bold text-white">{formatCurrency(totalStaged)}</p>
             <p className="text-xs text-slate-500 mt-1">Staged in PayPal Sandbox</p>
           </div>
 

@@ -128,7 +128,7 @@ export const ContractOverviewDialog: React.FC<ContractOverviewDialogProps> = ({
               <div className="font-mono text-lg font-bold text-amber-400">
                 {formatCurrency(Number(contract.stagedAmount) || 0, contract.currency)}
               </div>
-              <div className="text-[10px] text-slate-500">In escrow</div>
+              <div className="text-[10px] text-slate-500">Staged in Sandbox</div>
             </div>
 
             <div className="rounded-xl border border-[#222A3D] bg-[#0B1120] p-4 space-y-1">
