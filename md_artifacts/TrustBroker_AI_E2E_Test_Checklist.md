@@ -169,3 +169,4 @@ Every project in TrustBroker AI follows an immutable, evidence-linked lifecycle:
 - [ ] No occurrences of "escrow" appear in modal titles, table headers, or alerts.
 - [ ] PayPal regional capability notice is prominent on all payment pages.
 - [ ] Content hash fingerprint matches between Client and Freelancer contract views.
+

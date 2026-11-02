@@ -93,3 +93,4 @@ def test_contract_fixture(session: Session, client_user: UserProfile, freelancer
     session.commit()
     session.refresh(contract)
     return contract
+
