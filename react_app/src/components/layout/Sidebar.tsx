@@ -58,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
     { label: 'New Contract', icon: PlusCircle, path: ROUTES.NEW_PROJECT },
     { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
     { label: 'Analytics Studio', icon: Sparkles, path: ROUTES.CLIENT_STUDIO },
+    { label: 'Payouts', icon: Wallet, path: ROUTES.CLIENT_PAYOUTS },
     { label: 'Notifications', icon: Bell, path: '/app/notifications' },
     { label: 'Profile', icon: UserCircle2, path: ROUTES.CLIENT_PROFILE },
   ]

@@ -499,6 +499,60 @@ def list_my_payouts(session: Session, freelancer: UserProfile) -> List[PayoutRea
     return [PayoutRead.model_validate(p) for p in rows]
 
 
+def list_client_payouts(session: Session, client: UserProfile) -> List[PayoutRead]:
+    """Retrieve all payouts disbursed across contracts owned by this client."""
+    client_contract_ids = list(
+        session.exec(select(Contract.id).where(Contract.client_id == client.id)).all()
+    )
+    if not client_contract_ids:
+        return []
+    payouts = list(
+        session.exec(
+            select(Payout)
+            .where(Payout.contract_id.in_(client_contract_ids))
+            .order_by(Payout.created_at.desc())
+        ).all()
+    )
+    return [PayoutRead.model_validate(p) for p in payouts]
+
+
+def list_client_ledger(session: Session, client: UserProfile) -> Dict[str, Any]:
+    """Comprehensive client payout management ledger: payouts, payment attempts, and money movements."""
+    contracts = list(
+        session.exec(select(Contract).where(Contract.client_id == client.id)).all()
+    )
+    contract_ids = [c.id for c in contracts]
+    if not contract_ids:
+        return {
+            "payouts": [],
+            "payment_attempts": [],
+            "total_staged": 0.0,
+            "total_released": 0.0,
+        }
+    payouts = list(
+        session.exec(
+            select(Payout)
+            .where(Payout.contract_id.in_(contract_ids))
+            .order_by(Payout.created_at.desc())
+        ).all()
+    )
+    attempts = list(
+        session.exec(
+            select(PaymentAttempt)
+            .where(PaymentAttempt.contract_id.in_(contract_ids))
+            .order_by(PaymentAttempt.created_at.desc())
+        ).all()
+    )
+    total_staged = sum(float(c.staged_amount) for c in contracts)
+    total_released = sum(float(c.released_amount) for c in contracts)
+    return {
+        "payouts": [PayoutRead.model_validate(p).model_dump(mode="json") for p in payouts],
+        "payment_attempts": [PaymentAttemptRead.model_validate(a).model_dump(mode="json") for a in attempts],
+        "total_staged": total_staged,
+        "total_released": total_released,
+    }
+
+
 async def process_paypal_webhook(
     session: Session,
     headers: Dict[str, str],

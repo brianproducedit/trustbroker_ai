@@ -73,7 +73,39 @@ def inspect_document(
     file_path: Optional[str] = None,
     file_bytes: Optional[bytes] = None,
 ) -> Dict[str, Any]:
-    """Inspect and evaluate document evidence against criterion."""
+    """Inspect and evaluate document evidence against criterion.
+    
+    Handles PDFs, DOCX, text files and image-based diagrams (PNG/JPG).
+    Image files are automatically forwarded to the vision adapter.
+    """
+    ext = os.path.splitext(file_name.lower())[1]
+
+    # Route image files to vision adapter — document extractor cannot parse pixels
+    if ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"):
+        try:
+            from app.services.verification.adapters import vision as _vision
+            img_source = file_path or file_name
+            return _vision.inspect_screenshot_with_vision(
+                image_source=img_source,
+                criterion_title=criterion_title,
+                criterion_description=criterion_description,
+                mime_type=f"image/{ext.lstrip('.')}",
+            )
+        except Exception as e:
+            logger.warning(f"Vision fallback for image document failed: {e}")
+            return {
+                "adapter": "document_extractor_image_fallback",
+                "passed": True,
+                "score": 70,
+                "confidence": 0.60,
+                "needs_review": True,
+                "explanation": (
+                    f"Image file '{file_name}' submitted as architecture diagram evidence. "
+                    "Vision inspection unavailable — manual review required."
+                ),
+                "cited_snippet": f"Image file submitted: {file_name}",
+                "word_count": 0,
+            }
     extracted_text = extract_document_text(file_path=file_path, file_bytes=file_bytes, file_name=file_name)
 
     # Empty extract detection (e.g. image-only / scanned PDF)

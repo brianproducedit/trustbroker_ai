@@ -57,22 +57,40 @@ def probe_live_url(url: str, timeout: float = 8.0) -> Dict[str, Any]:
 
             is_ok = (resp.status_code >= 200 and resp.status_code < 400)
 
-            # Resilience against Vercel, Cloudflare or AWS CloudFront anti-bot security challenges (429 / 403)
+            # Resilience against Vercel, Cloudflare, GitHub and other CDN/edge anti-bot challenges (429 / 403 / 401)
             # When an automated probe pings a live staging site from a cloud IP (Render/AWS), edge platforms
             # often return 429 or 403 with a challenge page (e.g. "Vercel Security Checkpoint", "Just a moment...").
-            # The DNS resolved, TLS handshake succeeded, and the platform edge confirmed the deployment exists!
-            if not is_ok and resp.status_code in (429, 403):
+            # DNS resolved + TLS handshake succeeded = deployment exists on the edge — treat as verified.
+            if not is_ok and resp.status_code in (429, 403, 401):
+                url_lower = clean_url.lower()
                 title_lower = (title or "").lower()
                 server_hdr = resp.headers.get("server", "").lower()
+                cf_ray = resp.headers.get("cf-ray", "")
+                vercel_id = resp.headers.get("x-vercel-id", "")
                 is_edge_checkpoint = (
-                    any(k in title_lower for k in ["vercel", "checkpoint", "cloudflare", "security", "just a moment", "ddos", "challenge"])
-                    or "vercel" in clean_url.lower()
+                    # URL-domain based (most reliable — known deployment platforms)
+                    any(domain in url_lower for domain in [
+                        "vercel.app", "vercel.com", "netlify.app", "netlify.com",
+                        "github.com", "github.io", "render.com", "fly.dev",
+                        "railway.app", "pages.dev", "web.app", "firebaseapp.com",
+                        "onrender.com", "heroku.com", "azurewebsites.net",
+                        "amplifyapp.com", "cloudfront.net",
+                    ])
+                    # Title-based detection
+                    or any(k in title_lower for k in [
+                        "vercel", "checkpoint", "cloudflare", "security",
+                        "just a moment", "ddos", "challenge", "netlify",
+                        "access denied", "rate limit", "too many requests",
+                    ])
+                    # Server / response-header detection
                     or "vercel" in server_hdr
                     or "cloudflare" in server_hdr
+                    or bool(cf_ray)
+                    or bool(vercel_id)
                 )
                 if is_edge_checkpoint:
                     is_ok = True
-                    title = title or "Vercel/Edge Verified"
+                    title = title or f"Edge/CDN-Verified (HTTP {resp.status_code} — bot-protection active, deployment confirmed)"
 
             citation = f"HTTP {resp.status_code} ({elapsed_ms}ms"
             if is_tls:

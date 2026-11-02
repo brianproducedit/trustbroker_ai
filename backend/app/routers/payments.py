@@ -64,13 +64,24 @@ async def release_payout(
     )
 
 
-@router.get("/earnings", response_model=List[PayoutRead], summary="Freelancer payout rows")
+@router.get("/earnings", response_model=List[PayoutRead], summary="Freelancer or Client payout rows")
 def list_earnings(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """PayPal payout ledger for the signed-in freelancer."""
+    """PayPal payout ledger for the signed-in user (freelancer earnings or client disbursements)."""
+    if current_user.primary_workspace == "client" or current_user.role == "client":
+        return payment_service.list_client_payouts(session, current_user)
     return payment_service.list_my_payouts(session, current_user)
+
+
+@router.get("/client-ledger", summary="Get all payouts and payment attempts across client contracts")
+def get_client_ledger(
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Full escrow and payout ledger for the signed-in client."""
+    return payment_service.list_client_ledger(session, current_user)
 
 
 @router.get("/payouts/{contract_id}", response_model=List[PayoutRead], summary="Payouts for a contract")

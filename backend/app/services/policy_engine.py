@@ -5,6 +5,7 @@ Enforces pure, verifiable access and state rules:
 """
 from dataclasses import dataclass
 from typing import Optional
+from app.config import settings
 from app.models.contract import Contract, ContractStatus, ContractVisibility
 from app.models.marketplace import Application, ApplicationStatus
 from app.models.milestone import Milestone, MilestoneStatus, PaymentStatus

@@ -28,6 +28,7 @@ export const ROUTES = {
   CONTRACT_APPLICANTS: (id: string = ':id') => `/app/client/contracts/${id}/applicants`,
   CLIENT_OPERATIONS: '/app/client/operations',
   CLIENT_STUDIO: '/app/client/studio',
+  CLIENT_PAYOUTS: '/app/client/payouts',
 
   // Freelancer Workspace
   FREELANCER_HOME: '/app/freelancer',

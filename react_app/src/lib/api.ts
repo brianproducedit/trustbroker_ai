@@ -321,6 +321,12 @@ export const api = {
     payouts: (contractId: string) =>
       apiFetch<any[]>(`/payments/payouts/${contractId}`),
     earnings: () => apiFetch<any[]>('/payments/earnings'),
+    clientLedger: () => apiFetch<{
+      payouts: any[]
+      payment_attempts: any[]
+      total_staged: number
+      total_released: number
+    }>('/payments/client-ledger'),
   },
 
   listings: {

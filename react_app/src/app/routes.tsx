@@ -29,6 +29,7 @@ import { ClientContractPage } from '@/pages/client/ClientContractPage'
 import { ClientApplications } from '@/pages/client/ClientApplications'
 import { ClientProfile } from '@/pages/client/ClientProfile'
 import { ClientProfilePublic } from '@/pages/client/ClientProfilePublic'
+import { ClientPayoutsPage } from '@/pages/client/ClientPayoutsPage'
 import { FreelancerWork } from '@/pages/freelancer/FreelancerWork'
 import { NotificationsPage } from '@/pages/Notifications'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -139,6 +140,14 @@ export const AppRoutes: React.FC = () => {
             <React.Suspense fallback={<StudioFallback />}>
               <ClientStudio />
             </React.Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/payouts"
+        element={
+          <ProtectedRoute>
+            <ClientPayoutsPage />
           </ProtectedRoute>
         }
       />

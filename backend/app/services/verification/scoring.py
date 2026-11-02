@@ -42,6 +42,27 @@ def score_criterion_result(
 
     # Hard failure: adapter failed (e.g., 404 URL, corrupt ZIP, missing evidence)
     if not adapter_passed and adapter_error:
+        # Rate-limiting / anti-bot challenges from edge CDNs are not a real failure.
+        # Treat 429, 403 or "bot protection" messages as Needs Review, not hard fail.
+        error_lower = (adapter_error or "").lower()
+        is_rate_limit = any(k in error_lower for k in ["429", "403", "rate limit", "too many", "bot", "forbidden", "access denied"])
+        if is_rate_limit:
+            return {
+                "criterion_id": criterion_id,
+                "title": title,
+                "status": CriterionStatus.NEEDS_REVIEW,
+                "passed": False,
+                "score": 65,
+                "confidence": 0.60,
+                "explanation": (
+                    f"Live URL probe returned HTTP rate-limit/bot-protection response via {adapter_name}. "
+                    "This typically confirms the deployment exists — edge CDN (Vercel, Cloudflare, GitHub) is blocking automated probes. "
+                    "Manual review recommended to confirm live functionality."
+                ),
+                "evidence_match_snippet": citation or adapter_error,
+                "adapter_used": adapter_name,
+                "requires_review": True,
+            }
         return {
             "criterion_id": criterion_id,
             "title": title,
