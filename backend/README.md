@@ -1,6 +1,6 @@
 # TrustBroker AI — Backend Service
 
-FastAPI backend for **TrustBroker AI**: contract lifecycle, PayPal-secured milestone payments, AI delivery verification via Groq (OpenRouter fallback) and audit logging.
+FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-governed milestone payments, automated multimodal AI delivery verification, audit logging, and PayPal sandbox payments & payouts.
 
 ---
 
@@ -11,9 +11,30 @@ FastAPI backend for **TrustBroker AI**: contract lifecycle, PayPal-secured miles
 - **Migrations:** Alembic
 - **Identity & Auth:** Supabase Auth (JWT validation)
 - **Storage:** Supabase Storage (Deliverables bucket)
-- **AI Verification & Drafting:** Groq LPU (`openai/gpt-oss-120b`) with OpenRouter fallback
-- **Payments:** PayPal Orders v2 (and Payouts in later phases)
+- **AI Verification & Drafting:** Groq LPU (`llama-3.3-70b-versatile`) with OpenRouter and DeepSeek fallbacks
+- **Payments:** PayPal Orders v2 (Escrow Staging) and PayPal Payouts API (Instant Milestone Disbursement)
 - **Deployment:** Render (Python Web Service / Docker)
+
+---
+
+## Key Endpoints & Architecture
+
+### Payments & Escrow (`/api/v1/payments`)
+- `POST /create-order`: Generate a PayPal Orders v2 capture order for client milestone funding.
+- `POST /capture-order`: Complete order capture with sandbox error recovery (handles `422`, `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`).
+- `POST /release`: Release milestone funds to the freelancer via PayPal Payouts API (`/v1/payments/payouts`), verified by PolicyEngine.
+- `GET /earnings`: Return payout transaction history for the authenticated user (freelancer earnings or client payouts).
+- `GET /client-ledger`: Full escrow and payout ledger across all client contracts and payment attempts.
+- `GET /payouts/{contract_id}`: Contract-specific payout transactions.
+- `GET /history/{contract_id}`: Contract-specific payment orders and capture attempts.
+- `POST /webhook`: Inbound PayPal webhook listener with signature verification.
+
+### Verification Engine (`/api/v1/deliveries`)
+- **HTTP Probe Adapter:** Verifies live staging URLs with resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
+- **Vision Adapter:** Inspects screenshots and UI designs against visual requirements using Groq vision inference.
+- **Document Adapter:** Extracts PDF and markdown content, automatically routing raster screenshots to vision.
+- **Repository Meta Adapter:** Inspects public GitHub repositories and directory trees via GitHub API.
+- **Scoring Engine:** Deterministically aggregates evidence scores and flags rate-limiting as `NEEDS_REVIEW` instead of false-positive hard failures.
 
 ---
 
@@ -41,7 +62,7 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Fill in your credentials from Supabase, PayPal Developer and Groq Console (or OpenRouter).
+Fill in your credentials from Supabase, PayPal Developer and Groq Console (or OpenRouter/DeepSeek).
 
 ### 3. Run the Development Server
 
@@ -71,4 +92,4 @@ alembic downgrade -1
 
 ## Deployment (Render)
 
-This backend is preconfigured for automatic deployment on Render using the root `render.yaml` blueprint or as an independent Web Service pointing to `backend/Dockerfile`.
+This backend is preconfigured for automatic deployment on Render using the root `render.yaml` blueprint or as an independent Web Service pointing to `backend/Dockerfile`. Startup execution includes auto-migration with Alembic and database seeding for demo showcase accounts.

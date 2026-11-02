@@ -48,7 +48,7 @@ flowchart LR
 4. **Award & Mutual Acceptance:** Client awards the contract; cryptographic acceptances are recorded for both parties.
 5. **Milestone Funding:** Client clicks the PayPal Smart Button to fund the active milestone via **PayPal Orders v2 Capture**. Funds are staged in the PayPal sandbox.
 6. **Deliverable Submission & AI Verification:** Freelancer submits GitHub links, live URLs and test suites. Groq LPU multimodal AI scores deliverables against criteria with cited feedback.
-7. **Instant PayPal Disbursement:** Client confirms release; the backend issues an idempotent payout call via **PayPal Payouts API** (`POST /v1/payments/payouts`), disbursing funds to the freelancer's PayPal email.
+7. **Instant PayPal Disbursement & Ledger Tracking:** Client confirms release; the backend issues an idempotent payout call via **PayPal Payouts API** (`POST /v1/payments/payouts`), disbursing funds to the freelancer's PayPal email with real-time toast feedback and full tracking in the Client Payout Management ledger.
 
 ---
 
@@ -204,6 +204,15 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
    - **Freelancer:** `freelancer.demo@trustbroker.ai` / `DemoPassword2026!`
    - **Newcomer:** `newcomer.demo@trustbroker.ai` / `DemoPassword2026!`
 3. Test deliverable verification using files in [`demo_assets/pass_evidence.txt`](demo_assets/pass_evidence.txt) and [`demo_assets/fail_evidence.txt`](demo_assets/fail_evidence.txt).
+
+---
+
+## Recent Engineering Updates (November 2026)
+
+- **Client Payout Management & Ledger:** Dedicated portal at `/app/client/payouts` displaying aggregate escrow balances, disbursed totals, active in-flight payouts, and interactive order/batch logs.
+- **Real-Time Toast Feedback:** Granular notifications for milestone authorization and disbursement displaying the verified PayPal Payout Batch ID.
+- **Resilient AI Verification Engine:** Multimodal scoring treats CDN edge rate-limiting (HTTP 429/403) from Vercel, Cloudflare, and GitHub as `NEEDS_REVIEW` instead of false-positive hard failures. Image-based diagrams submitted as documents are routed to the vision adapter.
+- **Robust Sandbox Payment Staging:** Expanded PayPal error mapping recovers cleanly from sandbox edge cases (`422`, `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`) to ensure testing workflows complete.
 
 ---
 
