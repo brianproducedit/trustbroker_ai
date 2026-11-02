@@ -227,7 +227,7 @@ async def capture_milestone_escrow_payment(
         exc_str = str(exc)
         # Sandbox mode resilience: If PayPal sandbox returns ORDER_NOT_APPROVED because payer hasn't
         # navigated the external PayPal sandbox browser login, complete the sandbox staging reliably.
-        if settings.paypal_mode == "sandbox" and ("ORDER_NOT_APPROVED" in exc_str or "UNPROCESSABLE_ENTITY" in exc_str):
+        if settings.paypal_mode.lower() == "sandbox" and ("ORDER_NOT_APPROVED" in exc_str or "UNPROCESSABLE_ENTITY" in exc_str):
             capture_data = {
                 "id": f"SANDBOX-CAP-{active_order_id[:16]}",
                 "status": "COMPLETED",

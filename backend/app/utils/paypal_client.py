@@ -8,7 +8,7 @@ PAYPAL_LIVE_BASE = "https://api-m.paypal.com"
 
 
 def get_base_url() -> str:
-    return PAYPAL_SANDBOX_BASE if settings.paypal_mode == "sandbox" else PAYPAL_LIVE_BASE
+    return PAYPAL_SANDBOX_BASE if settings.paypal_mode.lower() == "sandbox" else PAYPAL_LIVE_BASE
 
 
 async def get_paypal_access_token() -> str:
