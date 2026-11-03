@@ -1,8 +1,33 @@
+import os
+import sys
 import asyncio
+from pathlib import Path
 import httpx
+from dotenv import load_dotenv
 
-SUPABASE_URL = "https://fgdvlrfbpzkaetwwjhxq.supabase.co"
-SERVICE_ROLE_KEY = "REDACTED_SERVICE_ROLE_KEY"
+# Load backend/.env if present
+env_path = Path(__file__).resolve().parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+
+if not SUPABASE_URL:
+    print("[ERROR] Missing SUPABASE_URL environment variable.")
+    print("Please set SUPABASE_URL in backend/.env or your environment.")
+    sys.exit(1)
+
+if not SERVICE_ROLE_KEY:
+    print("=" * 60)
+    print("[ERROR] SUPABASE_SERVICE_ROLE_KEY is not set.")
+    print("Please set SUPABASE_SERVICE_ROLE_KEY in your backend/.env before running.")
+    print("Obtain your service_role key from your Supabase Dashboard:")
+    print("  Settings -> API -> Project API Keys -> service_role")
+    print("=" * 60)
+    sys.exit(1)
 
 admin_url = f"{SUPABASE_URL}/auth/v1/admin/users"
 
