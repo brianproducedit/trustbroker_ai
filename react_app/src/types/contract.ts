@@ -31,6 +31,13 @@ export interface Milestone {
   status: MilestoneStatus
   acceptanceCriteria: AcceptanceCriterion[]
   assessment?: VerificationAssessment
+  submittedEvidence?: {
+    repoUrl?: string
+    liveUrl?: string
+    description?: string
+    fileAttachments?: Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>
+    submittedAt: string
+  }
   paymentStatus: PaymentStatus
 }
 

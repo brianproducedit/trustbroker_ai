@@ -25,6 +25,8 @@ def compute_contract_hash(
     milestones: list,
 ) -> str:
     """Compute a deterministic canonical SHA-256 fingerprint for a contract version."""
+    if isinstance(total_amount, list) and not isinstance(milestones, list):
+        total_amount, milestones = milestones, total_amount
     m_list = []
     for m in milestones:
         if hasattr(m, "title"):

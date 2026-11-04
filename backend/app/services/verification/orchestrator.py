@@ -253,7 +253,7 @@ def run_verification_orchestration(
     # State transitions
     if passed:
         milestone.status = MilestoneStatus.VERIFIED
-        if milestone.payment_status in [PaymentStatus.STAGED_IN_SANDBOX, PaymentStatus.FUNDED, "staged_in_sandbox", "funded", "staged"]:
+        if milestone.payment_status in [PaymentStatus.STAGED_IN_SANDBOX, "staged_in_sandbox", "funded", "staged"]:
             milestone.payment_status = PaymentStatus.RELEASE_AUTHORIZED
     elif requires_human_review:
         milestone.status = MilestoneStatus.SUBMITTED

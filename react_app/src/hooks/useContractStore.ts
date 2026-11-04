@@ -82,6 +82,7 @@ interface ContractStore {
   overrideReview: (contractId: string, milestoneId: string, reason: string) => Promise<void>
   resubmitDelivery: (contractId: string, milestoneId: string) => void
   releasePayment: (contractId: string, milestoneId: string) => Promise<void>
+  manualVerify: (contractId: string, milestoneId: string, rationale: string) => Promise<void>
 
   // Add Audit Event
   addAuditLog: (contractId: string, action: string, details: string, actor: string) => void
@@ -712,6 +713,13 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                           ? ('release_authorized' as PaymentStatus)
                           : m.paymentStatus,
                         assessment,
+                        submittedEvidence: {
+                          repoUrl: submission.repoUrl,
+                          liveUrl: submission.liveUrl,
+                          description: submission.description,
+                          fileAttachments: submission.fileAttachments,
+                          submittedAt: new Date().toISOString(),
+                        },
                       }
                     }
                     return m
@@ -730,37 +738,18 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       }
     }
 
-    // High-fidelity fallback verification simulation for offline resilience
+    // Offline fallback — AI engine unavailable, requires manual client review
     const assessment: VerificationAssessment = {
       id: `assess-${Date.now()}`,
       submissionId: `sub-${Date.now()}`,
-      overallScore: 94,
-      passed: true,
-      criteriaResults: [
-        {
-          id: 'c-fallback-1',
-          title: 'Code Quality & Type Safety',
-          description: 'Verified deliverables meet strict TypeScript standards with zero compile errors.',
-          status: 'pass',
-          aiConfidence: 0.96,
-          evidenceMatchSnippet: 'Full repository analysis completed. All interfaces typed correctly.',
-          feedback: 'Excellent clean code architecture.',
-        },
-        {
-          id: 'c-fallback-2',
-          title: 'Deliverable Verification',
-          description: 'Core functionality verified matching SOW milestone expectations.',
-          status: 'pass',
-          aiConfidence: 0.92,
-          evidenceMatchSnippet: 'Live environment and endpoints verified operational.',
-          feedback: 'Deliverable verified successfully.',
-        },
-      ],
+      overallScore: 0,
+      passed: false,
+      criteriaResults: [],
       summaryAnalysis:
-        'All milestone criteria validated. AI verification confirms work matches contract specifications.',
+        'AI verification engine is currently unavailable. Manual client review is required to approve or request revision for this milestone.',
       assessedAt: new Date().toISOString(),
-      modelUsed: 'Groq LPU (openai/gpt-oss-120b)',
-      requiresHumanReview: false,
+      modelUsed: 'Offline (manual review required)',
+      requiresHumanReview: true,
     }
 
     set((state) => ({
@@ -772,9 +761,16 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               if (m.id === milestoneId) {
                 return {
                   ...m,
-                  status: 'verified' as MilestoneStatus,
-                  paymentStatus: 'release_authorized' as PaymentStatus,
+                  status: 'submitted' as MilestoneStatus,
+                  paymentStatus: m.paymentStatus,
                   assessment,
+                  submittedEvidence: {
+                    repoUrl: submission.repoUrl,
+                    liveUrl: submission.liveUrl,
+                    description: submission.description,
+                    fileAttachments: submission.fileAttachments,
+                    submittedAt: new Date().toISOString(),
+                  },
                 }
               }
               return m
@@ -785,8 +781,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 actor: 'TrustBroker AI Verifier',
-                action: 'AI_VERIFICATION_PASSED',
-                details: `Evidence for milestone "${milestoneId}" verified. Score: ${assessment.overallScore}%.`,
+                action: 'AI_VERIFICATION_OFFLINE',
+                details: `AI engine offline for milestone "${milestoneId}". Evidence recorded; client manual review required.`,
               },
             ],
           }
@@ -945,6 +941,50 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       })
       return { contracts: updated }
     })
+  },
+
+  manualVerify: async (contractId, milestoneId, rationale) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+    if (isUuid) {
+      try {
+        await api.deliveries.overrideReview(contractId, milestoneId, rationale)
+      } catch (err) {
+        console.warn('Backend manualVerify warning:', err)
+      }
+    }
+
+    set((state) => ({
+      contracts: state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          return {
+            ...c,
+            milestones: c.milestones.map((m) => {
+              if (m.id === milestoneId) {
+                return {
+                  ...m,
+                  status: 'verified' as MilestoneStatus,
+                  paymentStatus: (m.paymentStatus === 'staged_in_sandbox'
+                    ? 'release_authorized'
+                    : m.paymentStatus) as PaymentStatus,
+                }
+              }
+              return m
+            }),
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: workspaceActor(state.activeRole),
+                action: 'MANUAL_VERIFICATION',
+                details: `Client manually verified milestone. Rationale: "${rationale}".`,
+              },
+            ],
+          }
+        }
+        return c
+      }),
+    }))
   },
 
   addAuditLog: (contractId, action, details, actor) => {

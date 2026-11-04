@@ -12,6 +12,7 @@ import asyncio
 import os
 import sys
 import uuid
+import pytest
 from decimal import Decimal
 from datetime import datetime, timezone
 
@@ -171,6 +172,7 @@ def test_webhook_idempotency():
         print(f"  [PASS] Webhook event {event_id} correctly identified as already processed")
 
 
+@pytest.mark.asyncio
 async def test_paypal_sandbox_oauth():
     """Verify connection and OAuth2 token generation against PayPal Developer sandbox."""
     print("\n--- [4/5] Testing PayPal Sandbox API Connectivity ---")

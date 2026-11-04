@@ -262,9 +262,7 @@ class PolicyEngine:
                 f"Milestone must be funded in PayPal before payout (current: '{milestone.payment_status.value}').",
             )
         if freelancer is not None and not (freelancer.paypal_payout_email or "").strip():
-            # In sandbox, default will be applied if empty
-            if settings.paypal_mode.lower() != "sandbox":
-                return PolicyResult(False, "Freelancer PayPal payout email is required before release.")
+            return PolicyResult(False, "Freelancer PayPal payout email is required before release.")
         return PolicyResult(True)
 
     @classmethod

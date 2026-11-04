@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -16,6 +17,8 @@ import {
   AlertCircle,
   TrendingUp,
   FileText,
+  Unlock,
+  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -77,7 +80,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 }
 
 export const ClientPayoutsPage: React.FC = () => {
-  const { contracts, fetchContracts } = useContractStore()
+  const { contracts, fetchContracts, releasePayment } = useContractStore()
   const [ledger, setLedger] = useState<ClientLedger>({
     payouts: [],
     payment_attempts: [],
@@ -87,6 +90,7 @@ export const ClientPayoutsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [disbursingId, setDisbursingId] = useState<string | null>(null)
 
   const loadLedger = async () => {
     try {
@@ -117,6 +121,20 @@ export const ClientPayoutsPage: React.FC = () => {
     loadLedger()
   }
 
+  const handleDisburse = async (contractId: string, milestoneId: string, amount: number) => {
+    const key = `${contractId}-${milestoneId}`
+    setDisbursingId(key)
+    try {
+      await releasePayment(contractId, milestoneId)
+      toast.success(`Payment of ${formatCurrency(amount)} disbursed to freelancer!`)
+      loadLedger()
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to disburse payment.')
+    } finally {
+      setDisbursingId(null)
+    }
+  }
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
     setCopiedId(id)
@@ -134,6 +152,17 @@ export const ClientPayoutsPage: React.FC = () => {
   const totalSpend = ledger.payment_attempts
     .filter((a) => ['captured', 'completed', 'success'].includes((a.status || '').toLowerCase()))
     .reduce((sum, a) => sum + (Number(a.amount) || 0), 0)
+
+  // Collect staged milestones from local contract store (funded but not released)
+  const stagedMilestones = contracts.flatMap((c) =>
+    c.milestones
+      .filter((m) =>
+        m.paymentStatus === 'staged_in_sandbox' ||
+        m.paymentStatus === 'release_authorized' ||
+        (m as any).paymentStatus === 'staged'
+      )
+      .map((m) => ({ contract: c, milestone: m }))
+  )
 
   if (isLoading) {
     return (
@@ -237,6 +266,84 @@ export const ClientPayoutsPage: React.FC = () => {
             <p className="text-xs text-slate-500 mt-1">Total payments captured</p>
           </div>
         </div>
+
+        {/* Staged Milestones — Ready to Disburse */}
+        {stagedMilestones.length > 0 && (
+          <div className="rounded-xl bg-[#0E1528] border border-teal-500/30 overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#222A3D] flex items-center justify-between bg-teal-950/20">
+              <div className="flex items-center gap-2">
+                <Unlock className="w-4 h-4 text-teal-400" />
+                <h2 className="text-sm font-semibold text-white">Staged Milestones — Ready to Disburse</h2>
+                <span className="text-xs text-teal-400 font-mono">({stagedMilestones.length})</span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono">Client-funded · Awaiting disbursement</span>
+            </div>
+
+            <div className="divide-y divide-[#222A3D]/50">
+              {stagedMilestones.map(({ contract, milestone }) => {
+                const key = `${contract.id}-${milestone.id}`
+                const isDisbursingThis = disbursingId === key
+                const isVerified =
+                  milestone.status === 'verified' ||
+                  milestone.paymentStatus === 'release_authorized'
+
+                return (
+                  <div
+                    key={key}
+                    className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-semibold text-blue-400">{contract.code}</span>
+                        <span className="text-white text-sm font-medium truncate">{milestone.title}</span>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            isVerified
+                              ? 'bg-teal-500/15 text-teal-400 border-teal-500/30'
+                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                          }`}
+                        >
+                          {isVerified ? 'Verified' : 'Staged'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 truncate max-w-sm">{milestone.description}</p>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500 font-mono">
+                        <span>Freelancer: {contract.freelancer.name || contract.freelancer.email || '—'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xl font-bold font-mono text-emerald-400">
+                        {formatCurrency(milestone.amount, contract.currency)}
+                      </span>
+
+                      <Link
+                        to={`/dashboard/deliveries/${contract.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#131B2E] border border-[#222A3D] hover:border-slate-500 text-xs text-slate-300 hover:text-white transition-colors"
+                      >
+                        Review
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+
+                      <Button
+                        size="sm"
+                        disabled={isDisbursingThis}
+                        onClick={() => handleDisburse(contract.id, milestone.id, milestone.amount)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-8 font-semibold"
+                      >
+                        {isDisbursingThis ? (
+                          <><RefreshCw className="w-3 h-3 animate-spin" />Disbursing…</>
+                        ) : (
+                          <><DollarSign className="w-3 h-3" />Disburse</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Payout Ledger */}
         <div className="rounded-xl bg-[#0E1528] border border-[#222A3D] overflow-hidden">

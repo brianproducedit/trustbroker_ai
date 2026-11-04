@@ -54,6 +54,14 @@ class Contract(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
     updated_at: datetime = Field(default_factory=utc_now, nullable=False)
 
+    @property
+    def version(self) -> int:
+        return self.current_version
+
+    @version.setter
+    def version(self, value: int) -> None:
+        self.current_version = value
+
 
 class ContractVersion(SQLModel, table=True):
     __tablename__ = "contract_versions"

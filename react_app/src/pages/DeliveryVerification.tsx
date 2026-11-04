@@ -35,6 +35,8 @@ import {
   Unlock,
   X,
   FolderOpen,
+  UserCheck,
+  Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -46,7 +48,8 @@ export const DeliveryVerification: React.FC = () => {
     submitEvidence,
     releasePayment,
     requestRevision,
-    overrideReview
+    overrideReview,
+    manualVerify,
   } = useContractStore()
   const { addNotification } = useNotificationStore()
 
@@ -80,6 +83,9 @@ export const DeliveryVerification: React.FC = () => {
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
   const [isReleasing, setIsReleasing] = useState(false)
+  const [manualApproveOpen, setManualApproveOpen] = useState(false)
+  const [manualRationale, setManualRationale] = useState('')
+  const [isManualApproving, setIsManualApproving] = useState(false)
 
   if (!contract || !selectedMilestone) {
     return (
@@ -243,6 +249,27 @@ export const DeliveryVerification: React.FC = () => {
     })
   }
 
+  const handleManualApprove = async () => {
+    if (!manualRationale.trim()) return
+    setIsManualApproving(true)
+    try {
+      await manualVerify(contract.id, selectedMilestone.id, manualRationale.trim())
+      setManualApproveOpen(false)
+      toast.success('Milestone manually approved — payment authorization unlocked.')
+      addNotification({
+        title: 'Manual Verification Approved',
+        description: `Client manually approved milestone "${selectedMilestone.title}". Funds ready to disburse.`,
+        type: 'verification',
+        link: `/dashboard/deliveries/${contract.id}`,
+      })
+      setManualRationale('')
+    } catch (err: any) {
+      toast.error(err?.detail || 'Failed to submit manual approval.')
+    } finally {
+      setIsManualApproving(false)
+    }
+  }
+
   const assessment = selectedMilestone?.assessment
   const isSettled = selectedMilestone.status === 'settled'
   const isFunded =
@@ -350,10 +377,10 @@ export const DeliveryVerification: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Main 2-Column Grid */}
+        {/* Main Grid: 3-column when Client, 2-column when Freelancer */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Column 1: Submission Form */}
-          <div className="lg:col-span-6 space-y-4">
+          <div className={`${activeRole === 'client' ? 'lg:col-span-5' : 'lg:col-span-6'} space-y-4`}>
             <Card className="border-[#222A3D] bg-[#131B2E] text-white">
               <CardHeader className="pb-3 border-b border-[#222A3D]">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
@@ -657,7 +684,7 @@ export const DeliveryVerification: React.FC = () => {
           </div>
 
           {/* Column 2: AI Verification Results */}
-          <div className="lg:col-span-6 space-y-4">
+          <div className={`${activeRole === 'client' ? 'lg:col-span-4' : 'lg:col-span-6'} space-y-4`}>
             <Card className="border-[#222A3D] bg-[#131B2E] text-white">
               <CardHeader className="pb-3 border-b border-[#222A3D]">
                 <div className="flex items-center justify-between">
@@ -695,28 +722,47 @@ export const DeliveryVerification: React.FC = () => {
                 {assessment ? (
                   <div className="space-y-4">
                     {/* Score Bar & Model Used Badge */}
-                    <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Overall Verification Score</span>
-                        <span className="font-mono font-bold text-emerald-400">{assessment.overallScore}%</span>
+                    {!assessment.modelUsed?.includes('Offline') && (
+                      <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">Overall Verification Score</span>
+                          <span className="font-mono font-bold text-emerald-400">{assessment.overallScore}%</span>
+                        </div>
+                        <Progress value={assessment.overallScore} className="h-2" />
+                        <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+                          <span>Engine: <span className="text-blue-300 font-mono">{assessment.modelUsed || 'Groq LPU (llama-3.3-70b)'}</span></span>
+                          <span>Status: <span className="font-semibold text-slate-200">{assessment.passed ? 'Verified' : 'Pending Action'}</span></span>
+                        </div>
                       </div>
-                      <Progress value={assessment.overallScore} className="h-2" />
-                      <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
-                        <span>Engine: <span className="text-blue-300 font-mono">{assessment.modelUsed || 'Groq LPU (llama-3.3-70b)'}</span></span>
-                        <span>Status: <span className="font-semibold text-slate-200">{assessment.passed ? 'Verified' : 'Pending Action'}</span></span>
-                      </div>
-                    </div>
+                    )}
 
                     {/* Human Review Banner if triggered */}
                     {assessment.requiresHumanReview && (
-                      <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/40 space-y-1.5 text-xs">
-                        <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
-                          <AlertCircle className="w-4 h-4 text-amber-400" />
-                          <span>Human Review Recommended</span>
+                      <div className={`p-3 rounded-lg border space-y-1.5 text-xs ${
+                        assessment.modelUsed?.includes('Offline')
+                          ? 'bg-rose-950/30 border-rose-800/40 animate-pulse'
+                          : 'bg-amber-950/30 border-amber-800/40'
+                      }`}>
+                        <div className={`flex items-center gap-1.5 font-semibold ${
+                          assessment.modelUsed?.includes('Offline') ? 'text-rose-300' : 'text-amber-300'
+                        }`}>
+                          <AlertCircle className={`w-4 h-4 ${assessment.modelUsed?.includes('Offline') ? 'text-rose-400' : 'text-amber-400'}`} />
+                          <span>
+                            {assessment.modelUsed?.includes('Offline')
+                              ? '⚠ AI Engine Unavailable — Use Manual Review'
+                              : 'Human Review Recommended'}
+                          </span>
                         </div>
                         <p className="text-slate-300 text-[11px] leading-relaxed">
-                          One or more acceptance criteria involve subjective design or ambiguous scope. Client discretion is required to approve or request revision.
+                          {assessment.modelUsed?.includes('Offline')
+                            ? 'The AI verification engine could not be reached. Use the Manual Review panel to inspect the freelancer\'s submitted evidence and approve or request revision.'
+                            : 'One or more acceptance criteria involve subjective design or ambiguous scope. Client discretion is required to approve or request revision.'}
                         </p>
+                        {assessment.modelUsed?.includes('Offline') && activeRole === 'client' && (
+                          <div className="text-[10px] text-rose-300 font-mono bg-rose-950/40 p-1.5 rounded border border-rose-900/60">
+                            → Check the "Client Manual Review" panel on the right →
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -866,6 +912,143 @@ export const DeliveryVerification: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Column 3: Client Manual Review (Visible to Clients) */}
+          {activeRole === 'client' && (
+            <div className="lg:col-span-3 space-y-4">
+              <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+                <CardHeader className="pb-3 border-b border-[#222A3D]">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
+                    <UserCheck className="w-4 h-4 text-teal-400" />
+                    Client Manual Review
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-400">
+                    Review submitted evidence and approve or request changes directly — outside AI verification.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  {selectedMilestone.submittedEvidence ? (
+                    <div className="space-y-3">
+                      {/* Submitted Evidence Display */}
+                      <div className="p-3 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2.5">
+                        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                          Freelancer Submission
+                        </span>
+
+                        {selectedMilestone.submittedEvidence.repoUrl && (
+                          <div className="flex items-start gap-2 text-xs">
+                            <GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <span className="text-slate-400 block text-[10px]">Repository</span>
+                              <a
+                                href={selectedMilestone.submittedEvidence.repoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 hover:underline truncate block font-mono text-[10px]"
+                              >
+                                {selectedMilestone.submittedEvidence.repoUrl.replace('https://', '')}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedMilestone.submittedEvidence.liveUrl && (
+                          <div className="flex items-start gap-2 text-xs">
+                            <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <span className="text-slate-400 block text-[10px]">Live Preview</span>
+                              <a
+                                href={selectedMilestone.submittedEvidence.liveUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-emerald-400 hover:text-emerald-300 hover:underline truncate block font-mono text-[10px]"
+                              >
+                                {selectedMilestone.submittedEvidence.liveUrl.replace('https://', '')}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedMilestone.submittedEvidence.description && (
+                          <div className="flex items-start gap-2 text-xs">
+                            <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <span className="text-slate-400 block text-[10px]">Delivery Notes</span>
+                              <p className="text-slate-300 text-[11px] leading-relaxed mt-0.5 line-clamp-4">
+                                {selectedMilestone.submittedEvidence.description}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {(selectedMilestone.submittedEvidence.fileAttachments?.length ?? 0) > 0 && (
+                          <div className="flex items-start gap-2 text-xs">
+                            <FileCheck className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0 w-full">
+                              <span className="text-slate-400 block text-[10px]">
+                                Attached Files ({selectedMilestone.submittedEvidence.fileAttachments!.length})
+                              </span>
+                              <div className="mt-1 space-y-1">
+                                {selectedMilestone.submittedEvidence.fileAttachments!.map((f, i) => (
+                                  <div key={i} className="flex items-center gap-1.5 p-1.5 rounded bg-[#131B2E] border border-[#222A3D]">
+                                    <span className="text-[9px] font-mono text-slate-400 truncate">{f.name}</span>
+                                    <span className="text-[9px] text-slate-600 ml-auto shrink-0">
+                                      {Math.round(f.sizeBytes / 1024)}KB
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-[10px] text-slate-500 font-mono border-t border-[#222A3D] pt-2 mt-1">
+                          Submitted: {new Date(selectedMilestone.submittedEvidence.submittedAt).toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {!isSettled && selectedMilestone.status !== 'verified' && (
+                        <div className="space-y-2">
+                          <Button
+                            onClick={() => setManualApproveOpen(true)}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            Approve Manually
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setRevisionDialogOpen(true)}
+                            className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-9"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            Request Revision
+                          </Button>
+                        </div>
+                      )}
+
+                      {(isSettled || selectedMilestone.status === 'verified') && (
+                        <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
+                          <span>
+                            {isSettled ? 'Payment disbursed.' : 'Milestone verified — ready to disburse.'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 space-y-2">
+                      <Eye className="w-8 h-8 text-slate-600 mx-auto" />
+                      <p className="text-xs text-slate-500 leading-relaxed max-w-[200px] mx-auto">
+                        No submission yet. This panel will display the freelancer's evidence once submitted for manual review.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* Revision Request Dialog */}
@@ -955,6 +1138,58 @@ export const DeliveryVerification: React.FC = () => {
               >
                 <Check className="w-3.5 h-3.5" />
                 Confirm Override & Approve
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Manual Approval Dialog */}
+        <Dialog open={manualApproveOpen} onOpenChange={setManualApproveOpen}>
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-teal-400" />
+                Manual Milestone Approval
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                You are approving this milestone outside AI verification. Provide your review rationale — this is recorded in the immutable audit trail.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2 py-2">
+              <Label htmlFor="manual-rationale" className="text-xs text-slate-300">
+                Approval Rationale (Required)
+              </Label>
+              <Textarea
+                id="manual-rationale"
+                rows={4}
+                value={manualRationale}
+                onChange={(e) => setManualRationale(e.target.value)}
+                placeholder="Describe how you verified the deliverables satisfy the milestone requirements (e.g., 'Reviewed repository, verified live URL, all criteria met satisfactorily...')"
+                className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+              />
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setManualApproveOpen(false); setManualRationale('') }}
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!manualRationale.trim() || isManualApproving}
+                onClick={handleManualApprove}
+                className="bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5"
+              >
+                {isManualApproving ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />Approving…</>
+                ) : (
+                  <><UserCheck className="w-3.5 h-3.5" />Confirm Manual Approval</>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

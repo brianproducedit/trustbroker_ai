@@ -188,6 +188,8 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         new_version = ContractVersion(
             contract_id=contract.id,
             version_number=2,
+            title="Title A",
+            description="Description Modified",
             sow_content={"title": "Title A", "description": "Description Modified"},
             content_hash=updated_hash,
         )
@@ -279,7 +281,8 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
             milestone_id=milestone.id,
             paypal_order_id="SANDBOX-ORDER-422",
             amount=Decimal("500.00"),
-            status="PENDING",
+            status=PaymentStatus.CHECKOUT_CREATED,
+            paypal_status="PENDING",
         )
         self.session.add(contract)
         self.session.add(milestone)
@@ -287,7 +290,8 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         self.session.commit()
 
         # Simulate sandbox capture resilience recovery
-        attempt.status = "COMPLETED"
+        attempt.status = PaymentStatus.STAGED_IN_SANDBOX
+        attempt.paypal_status = "COMPLETED"
         attempt.paypal_capture_id = "SANDBOX-CAP-422-RECOVERED"
         milestone.payment_status = PaymentStatus.STAGED_IN_SANDBOX
         contract.staged_amount = Decimal("500.00")
@@ -297,7 +301,8 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         self.session.commit()
 
         self.assertEqual(milestone.payment_status, PaymentStatus.STAGED_IN_SANDBOX)
-        self.assertEqual(attempt.status, "COMPLETED")
+        self.assertEqual(attempt.status, PaymentStatus.STAGED_IN_SANDBOX)
+        self.assertEqual(attempt.paypal_status, "COMPLETED")
         self.assertEqual(contract.staged_amount, Decimal("500.00"))
 
     # 7. test_payout_idempotency
