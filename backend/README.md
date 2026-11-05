@@ -19,7 +19,29 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 
 ## Key Endpoints & Architecture
 
-### Payments & Escrow (`/api/v1/payments`)
+### Contracts & Milestones (`/api/v1/contracts`)
+- `POST /`: Create contract with SOW milestones and criteria.
+- `GET /`: List user contracts with status filtering and pagination.
+- `GET /{contract_id}`: Fetch detailed contract agreement, milestones, and version history.
+- `DELETE /{contract_id}`: **Guarded delete** for `DRAFT` contracts only, cascading across draft milestones and criteria.
+- `PATCH /{contract_id}/milestones/{milestone_id}`: Update individual milestone title, description, amount, or deadline for draft contracts (recalculates contract totals and SHA-256 content hash).
+- `DELETE /{contract_id}/milestones/{milestone_id}`: Delete an unstarted draft milestone (enforces 1 milestone minimum).
+- `PATCH /{contract_id}/milestones/{milestone_id}/criteria/{criterion_id}`: Update individual acceptance criterion.
+- `DELETE /{contract_id}/milestones/{milestone_id}/criteria/{criterion_id}`: Delete an individual acceptance criterion.
+- `POST /{contract_id}/accept`: Cryptographically record mutual acceptance with deterministic SHA-256 fingerprinting.
+
+### Applications & Marketplace (`/api/v1/applications`)
+- `POST /contracts/{contract_id}/applications`: Freelancer submits bid with portfolio links.
+- `GET /mine`: List current freelancer's submitted applications and AI vetting scores.
+- `DELETE /{application_id}`: Freelancer withdraws pending application before award.
+
+### Notifications (`/api/v1/notifications`)
+- `GET /`: List user notifications across payment, verification, and contract milestones.
+- `PATCH /{id}/read` & `PATCH /read-all`: Mark notifications as read.
+- `DELETE /{id}`: Delete a single notification.
+- `DELETE /`: Bulk-clear all read notifications.
+
+### Payments & Milestone Disbursals (`/api/v1/payments`)
 - `POST /create-order`: Generate a PayPal Orders v2 capture order for client milestone funding.
 - `POST /capture-order`: Complete order capture with sandbox error recovery (handles `422`, `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`).
 - `POST /release`: Release milestone funds to the freelancer via PayPal Payouts API (`/v1/payments/payouts`), verified by PolicyEngine.
@@ -35,6 +57,10 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - **Document Adapter:** Extracts PDF and markdown content, automatically routing raster screenshots to vision.
 - **Repository Meta Adapter:** Inspects public GitHub repositories and directory trees via GitHub API.
 - **Scoring Engine:** Deterministically aggregates evidence scores and flags rate-limiting as `NEEDS_REVIEW` instead of false-positive hard failures.
+
+### Immutability Safeguards
+- Contracts in `ACTIVE`, `IN_VERIFICATION`, or `COMPLETED` states are strictly protected from mutation or deletion.
+- Financial records (`payment_attempts`, `payouts`, `audit_events`, `deliveries`, `verification_reports`) are permanently immutable.
 
 ---
 

@@ -61,6 +61,7 @@ interface ClarifyQuestion {
 const WIZARD_STORAGE_KEY = 'tb_contract_wizard_v1'
 
 const CATEGORIES = [
+  { value: 'web', label: 'Web Development' },
   { value: 'software', label: 'Software Development' },
   { value: 'design', label: 'UI/UX & Product Design' },
   { value: 'ai_ml', label: 'AI, LLM & Machine Learning' },
@@ -539,7 +540,7 @@ export const CreateProject: React.FC = () => {
                   </SelectContent>
                 </Select>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {CATEGORIES.slice(0, 6).map((c) => (
+                  {CATEGORIES.slice(0, 7).map((c) => (
                     <button
                       key={c.value}
                       type="button"

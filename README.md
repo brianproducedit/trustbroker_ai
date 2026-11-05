@@ -209,8 +209,12 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
 
 ## Recent Engineering Updates (November 2026)
 
-- **Client Payout Management & Ledger:** Dedicated portal at `/app/client/payouts` displaying aggregate escrow balances, disbursed totals, active in-flight payouts, and interactive order/batch logs.
-- **Real-Time Toast Feedback:** Granular notifications for milestone authorization and disbursement displaying the verified PayPal Payout Batch ID.
+- **Guarded CRUD Operations & Record Immutability:** Implemented fine-grained, secure CRUD operations across contracts, milestones, acceptance criteria, applications, notifications, and profiles. Draft contracts can be deleted with full cascade cleanup of uncommitted milestones and criteria; pending applications can be withdrawn; read notifications can be batch-cleared. Crucially, all active and completed contracts, payment attempts, payouts, audit events, deliveries, and legal signatures remain permanently immutable to guarantee financial and legal non-repudiation.
+- **Manual Client Verification Overrides & Staged Disbursals:** Empowered clients with direct deliverable verification capabilities alongside multimodal AI evaluation, giving human oversight for nuanced submissions and seamless staged disbursement of milestone funds.
+- **Web Development Category:** Added **Web Development** to contract creation category dropdowns and one-click filter chips.
+- **Studio AI Copilot Ergonomics:** Upgraded the floating operations copilot with expanded vertical height (`700px` / `82vh`), unconstrained flex scrolling, and high-contrast typography for effortless reading of telemetry analyses and suggested queries.
+- **Client Payout Management & Ledger:** Dedicated portal at `/app/client/payouts` displaying aggregate balances, disbursed totals, active in-flight payouts, and interactive order/batch logs.
+- **Automated Startup Schema Migrations:** Integrated auto-reconciliation in the FastAPI lifespan to automatically detect and apply missing PostgreSQL columns (`content_hash`, `ip_address`, `user_agent`) in Supabase.
 - **Resilient AI Verification Engine:** Multimodal scoring treats CDN edge rate-limiting (HTTP 429/403) from Vercel, Cloudflare, and GitHub as `NEEDS_REVIEW` instead of false-positive hard failures. Image-based diagrams submitted as documents are routed to the vision adapter.
 - **Robust Sandbox Payment Staging:** Expanded PayPal error mapping recovers cleanly from sandbox edge cases (`422`, `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`) to ensure testing workflows complete.
 

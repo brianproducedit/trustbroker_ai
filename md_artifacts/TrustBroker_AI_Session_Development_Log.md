@@ -519,5 +519,54 @@ This session resolved critical production edge cases encountered during end-to-e
 | **Phase 5** | Payment Coordination, Sandbox Resilience & Payout Ledger | ✅ Complete | `415e817` |
 | **Phase 6** | AG Studio Operations Experience & Whole-Project Refactoring | ✅ Complete | `384c6e8` |
 | **Phase 7** | Automated Test Suite & 5-Project E2E Validation | ✅ Complete | `backend/tests/test_e2e_lifecycle.py` |
+| **Phase 8** | Manual Client Verification Overrides, Staged Payment Disbursal & Brand Logos | ✅ Complete | `057d9f6` |
+| **Phase 9** | Guarded CRUD Endpoints, Immutability Guards & Action Wiring | ✅ Complete | `a0bf82b` |
+| **Phase 10** | Web Development Category & Studio AI Copilot Vertical Ergonomics | ✅ Complete | `origin/main` |
 
-**Final Verification:** Zero TypeScript errors on production build (`tsc -b && vite build` built in ~5s). All 7 phases pushed to `origin/main` on GitHub triggering Render redeploy.
+---
+
+## 7. Phase 8: Manual Client Verification Overrides & Staged Payment Disbursals
+- **Context:** To address potential edge cases in multimodal AI evaluation (such as complex visual nuances or external approvals), clients required the ability to manually inspect and verify deliverable submissions directly, stage funds freely, and disburse PayPal payouts without friction.
+- **Key Enhancements:**
+  - **Manual Verification Controls:** Implemented client review actions that complement automated AI verification, allowing manual sign-off and revision requests.
+  - **Staged Payment Disbursal Panel:** Added an interactive management interface for clients to stage milestone funds and trigger idempotent PayPal Payouts with real-time toast confirmations.
+  - **Official Brand Logos Integration:** Embedded official TrustBroker AI portal and public site logo assets into `Logo.tsx`, navbar headers, and landing layouts.
+  - **Database Auto-Migration:** Implemented `run_auto_migrations(engine)` in the FastAPI startup lifecycle (`app/main.py`) and `backend/apply_migrations.py` to automatically reconcile schema differences (`content_hash`, `ip_address`, `user_agent`) in Supabase PostgreSQL without manual intervention.
+
+---
+
+## 8. Phase 9: Guarded CRUD Architecture & Legal/Financial Immutability
+- **Context:** Added complete Create, Read, Update, and Delete operations across the platform while strictly maintaining auditability and legal/financial non-repudiation.
+- **Safety Rules Enforced:**
+  - **Active/Completed/Cancelled Contracts:** Immutable. Deletion or structural updates are strictly prohibited (`403 Forbidden`).
+  - **Funded Milestones:** Any milestone with `payment_status != not_started` cannot be deleted or mutated (`409 Conflict`).
+  - **Financial Records:** `payment_attempts`, `payouts`, `audit_events`, `contract_versions`, `contract_acceptances`, `deliveries`, and `verification_reports` are permanently preserved.
+- **Backend Implementations:**
+  - `DELETE /api/v1/contracts/{id}`: Soft/cascade delete for `draft` contracts only, clearing uncommitted milestones, criteria, versions, and recording an audit trail.
+  - `PATCH /api/v1/contracts/{id}/milestones/{milestone_id}`: Partial milestone updates for draft contracts; automatically recalculates contract total amount and updates the deterministic SHA-256 `content_hash`.
+  - `DELETE /api/v1/contracts/{id}/milestones/{milestone_id}`: Removes unstarted draft milestones (enforcing a minimum of 1 milestone).
+  - `PATCH / DELETE /api/v1/contracts/{id}/milestones/{milestone_id}/criteria/{criterion_id}`: Fine-grained criterion updates and deletion.
+  - `DELETE /api/v1/applications/{id}`: Freelancer proposal withdrawal for bids in `pending`/`submitted` status.
+  - `DELETE /api/v1/notifications/{id}` & `DELETE /api/v1/notifications`: Individual notification deletion and bulk-clearing of read items.
+  - `GET /api/v1/profiles/{id}` & `GET /api/v1/profiles/search`: Public profile query and search with PayPal payout email masking.
+- **Frontend UI Wiring:**
+  - `ClientContracts.tsx`: Integrated delete icon button in AG Grid Actions column for `draft` contracts + modal confirmation dialog.
+  - `ContractDetail.tsx`: Added "Delete Draft" button in header action bar + confirmation modal + wired milestone deletion to backend API.
+  - `MyApplications.tsx`: Added "Withdraw" action button for submitted/pending applications with loading state and optimistic UI removal.
+  - `Notifications.tsx`: Added per-notification delete buttons (`X`) and a header "Clear Read" action.
+- **Verification:** All 35 backend tests passed (`pytest -q`); frontend compiled cleanly with zero errors.
+
+---
+
+## 9. Phase 10: Contract Creation Web Development Category & Studio AI Copilot Ergonomics
+- **Contract Creation Categories:**
+  - Added **"Web Development"** (`value: 'web'`) as a top-level category option in `CreateProject.tsx`.
+  - Expanded quick-select chips to include Web Development right alongside Software Development, UI/UX Design, and AI/ML.
+- **Studio AI Copilot Ergonomics (`AICopilotFAB.tsx`):**
+  - Expanded modal dimensions to `w-[94vw] sm:w-[480px] md:w-[540px] h-[82vh] sm:h-[700px] max-h-[88vh]`, providing vastly increased vertical reading space.
+  - Removed artificial scroll clamping (`max-h-[400px]`), allowing the message list to use full vertical flex height.
+  - Improved message typography, line height (`leading-relaxed`), and bubble contrast for both user and AI responses.
+  - Redesigned suggested query chips with larger tap targets, clearer fonts, and enhanced hover highlights.
+  - Upgraded input field to `h-10` with refined focus states and responsive styling.
+
+**Final Verification:** Full TypeScript compilation and production build verified (`tsc -b && vite build` built in 9.99s with zero errors). All changes synced and committed to `main`.
