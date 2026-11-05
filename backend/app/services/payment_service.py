@@ -324,12 +324,9 @@ async def release_milestone_payout(
     if not milestone or milestone.contract_id != contract.id:
         raise HTTPException(status_code=404, detail="Milestone not found for this contract")
 
-    # In sandbox mode, allow contract parties to disburse once AI verification has authorized release
+    # Only the contract's client can authorize milestone payout release
     if contract.client_id != client.id:
-        if settings.paypal_mode.lower() == "sandbox" and milestone.payment_status == PaymentStatus.RELEASE_AUTHORIZED:
-            require_contract_party(client, contract)
-        else:
-            require_client(client, contract)
+        require_client(client, contract)
 
     freelancer = session.get(UserProfile, contract.freelancer_id) if contract.freelancer_id else None
     release_policy = PolicyEngine.can_release_payout(client, contract, milestone, freelancer)

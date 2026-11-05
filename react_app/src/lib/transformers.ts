@@ -71,6 +71,17 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
     ? c.milestones.map(transformMilestone)
     : []
 
+  const milestoneSum = transformedMilestones.reduce(
+    (acc, m) => acc + (Number(m.amount) || 0),
+    0
+  )
+  const computedTotal =
+    Number(c.total_amount) ||
+    Number(c.totalAmount) ||
+    Number(c.budget) ||
+    milestoneSum ||
+    0
+
   const transformedAuditLogs: ContractAuditLog[] = Array.isArray(auditLogs) && auditLogs.length > 0
     ? auditLogs.map((a: any) => ({
         id: String(a.id),
@@ -94,9 +105,11 @@ export function transformContract(c: any, auditLogs: any[] = []): Contract {
     code: c.code || `TB-2026-${String(c.id).slice(0, 4)}`,
     title: c.title || 'Untitled Project',
     description: c.description || '',
+    category: c.category || 'General',
     version: currentVersion,
     status: c.status || 'draft',
-    totalAmount: Number(c.total_amount) || 0,
+    totalAmount: computedTotal,
+    budget: computedTotal,
     currency: c.currency || 'USD',
     stagedAmount: Number(c.staged_amount) || 0,
     releasedAmount: Number(c.released_amount) || 0,

@@ -68,6 +68,8 @@ export interface Contract {
   code: string // e.g. "TB-2026-084"
   title: string
   description: string
+  category?: string
+  budget?: number
   version: number
   status: ContractStatus
   totalAmount: number

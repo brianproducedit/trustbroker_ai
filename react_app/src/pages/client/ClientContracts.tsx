@@ -150,9 +150,17 @@ export const ClientContracts: React.FC = () => {
       cellRenderer: StatusCell,
     },
     {
-      field: 'budget',
       headerName: 'Budget',
       width: 140,
+      valueGetter: (params) => {
+        const c = params.data
+        if (!c) return 0
+        const milestoneSum = (c.milestones || []).reduce(
+          (sum: number, m: any) => sum + (Number(m.amount) || 0),
+          0
+        )
+        return Number(c.totalAmount ?? c.budget ?? c.total_amount) || milestoneSum || 0
+      },
       cellRenderer: (params: ICellRendererParams) => (
         <span className="font-mono text-xs font-semibold text-white">
           {formatCurrency(Number(params.value) || 0, params.data?.currency)}

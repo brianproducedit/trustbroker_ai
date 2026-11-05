@@ -46,6 +46,7 @@ interface PaymentAttempt {
   amount: number | string
   currency: string
   status: string
+  paypal_status?: string | null
   created_at: string
 }
 
@@ -149,9 +150,17 @@ export const ClientPayoutsPage: React.FC = () => {
   const inFlight = ledger.payouts.filter(
     (p) => ['pending', 'processing', 'submitted'].includes((p.status || '').toLowerCase())
   ).reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
-  const totalSpend = ledger.payment_attempts
-    .filter((a) => ['captured', 'completed', 'success'].includes((a.status || '').toLowerCase()))
+
+  const paymentAttemptsCaptured = ledger.payment_attempts
+    .filter((a) =>
+      ['staged_in_sandbox', 'release_authorized', 'released', 'captured', 'completed', 'success'].includes(
+        (a.status || '').toLowerCase()
+      ) ||
+      ['completed', 'captured'].includes((a.paypal_status || '').toLowerCase())
+    )
     .reduce((sum, a) => sum + (Number(a.amount) || 0), 0)
+
+  const totalCaptured = Math.max(paymentAttemptsCaptured, totalStaged + totalReleased)
 
   // Collect staged milestones from local contract store (funded but not released)
   const stagedMilestones = contracts.flatMap((c) =>
@@ -262,7 +271,7 @@ export const ClientPayoutsPage: React.FC = () => {
                 <TrendingUp className="w-4 h-4 text-violet-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-violet-400">{formatCurrency(totalSpend)}</p>
+            <p className="text-2xl font-bold text-violet-400">{formatCurrency(totalCaptured)}</p>
             <p className="text-xs text-slate-500 mt-1">Total payments captured</p>
           </div>
         </div>

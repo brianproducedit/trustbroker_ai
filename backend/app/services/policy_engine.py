@@ -239,14 +239,8 @@ class PolicyEngine:
         milestone: Milestone,
         freelancer: Optional[UserProfile] = None,
     ) -> PolicyResult:
-        """Client only (or contract party in sandbox when release authorized); milestone verified; funds staged; freelancer payout email present."""
-        is_client = cls.is_client(user, contract)
-        is_sandbox_party = (
-            settings.paypal_mode.lower() == "sandbox"
-            and cls.is_party(user, contract)
-            and milestone.payment_status == PaymentStatus.RELEASE_AUTHORIZED
-        )
-        if not (is_client or is_sandbox_party):
+        """Client only; milestone verified; funds staged; freelancer payout email present."""
+        if not cls.is_client(user, contract):
             return PolicyResult(False, "Only the client can authorize payout release.")
         if milestone.status not in (MilestoneStatus.VERIFIED, MilestoneStatus.SUBMITTED) and milestone.payment_status != PaymentStatus.RELEASE_AUTHORIZED:
             return PolicyResult(

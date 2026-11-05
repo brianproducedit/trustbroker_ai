@@ -522,6 +522,7 @@ This session resolved critical production edge cases encountered during end-to-e
 | **Phase 8** | Manual Client Verification Overrides, Staged Payment Disbursal & Brand Logos | ✅ Complete | `057d9f6` |
 | **Phase 9** | Guarded CRUD Endpoints, Immutability Guards & Action Wiring | ✅ Complete | `a0bf82b` |
 | **Phase 10** | Web Development Category & Studio AI Copilot Vertical Ergonomics | ✅ Complete | `origin/main` |
+| **Phase 11** | Payout Disbursal Role Isolation, Seller Escrow Protection & Financial Telemetry Fixes | ✅ Complete | `origin/main` |
 
 ---
 
@@ -570,3 +571,29 @@ This session resolved critical production edge cases encountered during end-to-e
   - Upgraded input field to `h-10` with refined focus states and responsive styling.
 
 **Final Verification:** Full TypeScript compilation and production build verified (`tsc -b && vite build` built in 9.99s with zero errors). All changes synced and committed to `main`.
+
+---
+
+## 10. Phase 11: Payout Disbursal Role Isolation, Seller Escrow Protection & Financial Telemetry Fixes
+- **Client-Only Payout Disbursal Role Isolation:**
+  - Security audit revealed that after AI verification succeeded, the freelancer portal in `DeliveryVerification.tsx` was presenting a "Disburse PayPal Payout" button. Money release must strictly remain a client action after conducting manual verification outside the system.
+  - `policy_engine.py`: Removed sandbox party bypass in `can_release_payout()`, strictly requiring client identity (`require_client(user, contract)`).
+  - `payment_service.py`: Enforced `if contract.client_id != client.id: require_client(client, contract)` in `release_milestone_payout()`.
+  - `MilestoneDetailDialog.tsx`: Changed release button authorization condition to strictly `isClient`. Non-clients receive a verification / awaiting client release status banner.
+  - `DeliveryVerification.tsx`: Replaced freelancer "Disburse PayPal Payout" button with an "AI Verification Passed — Awaiting Client Release" card.
+- **Freelancer Protection & Recourse Mechanism:**
+  - Added **TrustBroker Buyer & Seller Protection Policy Notice**: Displays clear 7-day review window information. Following AI verification, clients have 7 days to review and authorize release or request specific revisions before automated escrow settlement or arbitration eligibility kicks in.
+  - Added **"Send Disbursal Reminder to Client"** action: Freelancers can nudge the client when verification passes, triggering real-time toast and in-app notification to the client.
+  - Embedded quick link to Freelancer Earnings Ledger (`/app/freelancer/earnings`).
+- **Contracts Ledger Table Budget Column Fix:**
+  - In `ClientContracts.tsx`, the Budget column was showing `$0` for contracts even though the modal dialog showed the accurate budget (e.g. `$700`).
+  - Root cause: AG Grid column definition used `field: 'budget'`, but backend transformer only populated `totalAmount`.
+  - Solution: Added `budget` and `category` to `Contract` type, populated `budget: computedTotal` and `category` fallback in `transformers.ts`, and updated AG Grid column with a resilient `valueGetter` checking `c.totalAmount ?? c.budget ?? c.total_amount` with milestone sum fallback.
+- **Payment Management KPI Cards Telemetry Fix:**
+  - In `ClientPayoutsPage.tsx`, the **Captured** KPI card showed `$0` despite `$5,500` staged and `$750` released.
+  - Root cause: Metric calculation filtered `ledger.payment_attempts` with `['captured', 'completed', 'success'].includes(a.status)`. In SQLModel, `PaymentAttempt.status` is a `PaymentStatus` enum (`staged_in_sandbox`, `release_authorized`, `released`), while PayPal capture state is stored in `paypal_status`.
+  - Solution: Updated captured metric calculation to check both `status` (`staged_in_sandbox`, `release_authorized`, `released`) and `paypal_status` (`completed`, `captured`), computing `totalCaptured = Math.max(paymentAttemptsCaptured, totalStaged + totalReleased)`. The Captured card now accurately displays `$6,250` ($5,500 staged + $750 released).
+- **Universal Dialog Viewport Ergonomics:**
+  - Added `max-h-[calc(100dvh-2.5rem)] overflow-y-auto` across dialog components (`dialog.tsx`, `ContractDetailDialog.tsx`, `MilestoneDetailDialog.tsx`, and `DeliveryVerification.tsx` modals) to eliminate viewport overflow and clipping across all screen sizes.
+
+**Final Verification:** Full TypeScript compilation and production build verified (`tsc -b && vite build` built in 10.88s with zero errors). All 35 backend tests passed (`pytest -q` in 23.11s).

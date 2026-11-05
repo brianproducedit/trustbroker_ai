@@ -450,7 +450,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                 </div>
 
                 {/* Release controls: Client only and requires verified status */}
-                {isClient || isReleaseAuthorized ? (
+                {isClient ? (
                   isVerified || isReleaseAuthorized ? (
                     <Button
                       variant="outline"

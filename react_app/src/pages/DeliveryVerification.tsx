@@ -37,6 +37,7 @@ import {
   FolderOpen,
   UserCheck,
   Eye,
+  BellRing,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -86,6 +87,7 @@ export const DeliveryVerification: React.FC = () => {
   const [manualApproveOpen, setManualApproveOpen] = useState(false)
   const [manualRationale, setManualRationale] = useState('')
   const [isManualApproving, setIsManualApproving] = useState(false)
+  const [isNudged, setIsNudged] = useState(false)
 
   if (!contract || !selectedMilestone) {
     return (
@@ -201,6 +203,10 @@ export const DeliveryVerification: React.FC = () => {
   }
 
   const handleAuthorizeRelease = async () => {
+    if (activeRole !== 'client') {
+      toast.error('Only the contract client can authorize payment release.')
+      return
+    }
     setIsReleasing(true)
     try {
       await releasePayment(contract.id, selectedMilestone.id)
@@ -216,6 +222,17 @@ export const DeliveryVerification: React.FC = () => {
     } finally {
       setIsReleasing(false)
     }
+  }
+
+  const handleNudgeClient = () => {
+    setIsNudged(true)
+    addNotification({
+      title: 'Disbursal Requested by Freelancer',
+      description: `Freelancer requested payout release for verified milestone "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount, contract.currency)}).`,
+      type: 'payment',
+      link: `/dashboard/deliveries/${contract.id}`,
+    })
+    toast.success('Disbursal reminder sent to client!')
   }
 
   const handleConfirmRevision = async () => {
@@ -848,30 +865,59 @@ export const DeliveryVerification: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Notice & Disbursal for Freelancer after verification */}
+                    {/* Notice & Status for Freelancer after verification */}
                     {activeRole === 'freelancer' && !isSettled && (
                       <div className="pt-2">
                         {assessment.passed || selectedMilestone.status === 'verified' || selectedMilestone.paymentStatus === 'release_authorized' ? (
-                          <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 space-y-3">
-                            <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-sm">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                              <span>AI Verification Passed — Ready for PayPal Disbursal</span>
+                          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <span>AI Verification Passed — Awaiting Client Release</span>
+                              </div>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Escrow Staged
+                              </span>
                             </div>
+
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) are staged in PayPal Sandbox, approved and ready for transfer directly to your registered PayPal account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
+                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely locked in PayPal Escrow Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
                             </p>
-                            <p className="text-[10px] text-slate-400 italic bg-[#0B1326] p-2 rounded border border-[#222A3D]">
-                              Notice: PayPal Developer Sandbox simulation active. In live production, PayPal Payouts capabilities are subject to recipient country regulations and regional PayPal account capabilities (e.g., Zimbabwe accounts are currently Send-Only in PayPal production).
-                            </p>
+
+                            {/* TrustBroker Seller Protection Policy */}
+                            <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
+                              <div className="flex items-center gap-1.5 font-semibold text-blue-400">
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                                <span>TrustBroker Buyer &amp; Seller Protection Active</span>
+                              </div>
+                              <p className="text-slate-400 text-[10px] leading-relaxed">
+                                Clients have a standard 7-day review window following AI verification to inspect deliverables and release escrow funds. If the client does not respond or request revisions within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
+                              </p>
+                            </div>
+
                             <div className="pt-1 flex flex-col sm:flex-row gap-2">
                               <Button
-                                onClick={handleAuthorizeRelease}
-                                disabled={isReleasing}
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                                onClick={handleNudgeClient}
+                                disabled={isNudged}
+                                className={`flex-1 text-xs gap-1.5 h-9 font-semibold transition-all ${
+                                  isNudged
+                                    ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
+                                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                                }`}
                               >
-                                <DollarSign className="w-3.5 h-3.5" />
-                                {isReleasing ? 'Executing PayPal Disbursement...' : `Disburse PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
+                                {isNudged ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    Disbursal Reminder Sent to Client
+                                  </>
+                                ) : (
+                                  <>
+                                    <BellRing className="w-3.5 h-3.5" />
+                                    Send Disbursal Reminder to Client
+                                  </>
+                                )}
                               </Button>
+
                               <Link
                                 to={ROUTES.FREELANCER_PAYOUTS}
                                 className="inline-flex items-center justify-center px-3.5 py-2 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-xs font-medium text-slate-300 border border-[#222A3D] transition-colors"
