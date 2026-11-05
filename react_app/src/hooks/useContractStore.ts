@@ -82,6 +82,7 @@ interface ContractStore {
   overrideReview: (contractId: string, milestoneId: string, reason: string) => Promise<void>
   resubmitDelivery: (contractId: string, milestoneId: string) => void
   releasePayment: (contractId: string, milestoneId: string) => Promise<void>
+  reclaimMilestoneEscrow: (contractId: string, milestoneId: string, reason?: string) => Promise<void>
   manualVerify: (contractId: string, milestoneId: string, rationale: string) => Promise<void>
 
   // Add Audit Event
@@ -812,7 +813,12 @@ export const useContractStore = create<ContractStore>((set, get) => ({
             ...c,
             milestones: c.milestones.map((m) => {
               if (m.id === milestoneId) {
-                return { ...m, status: 'revision_requested' as MilestoneStatus }
+                return {
+                  ...m,
+                  status: 'revision_requested' as MilestoneStatus,
+                  revisionNotes: notes,
+                  revisionRequestedAt: new Date().toISOString(),
+                }
               }
               return m
             }),
@@ -933,6 +939,54 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 actor: 'PayPal Sandbox Gateway',
                 action: 'PAYMENT_RELEASED',
                 details: `Disbursement executed for milestone: $${releasedDelta} USD released to freelancer.`,
+              },
+            ],
+          }
+        }
+        return c
+      })
+      return { contracts: updated }
+    })
+  },
+
+  reclaimMilestoneEscrow: async (contractId, milestoneId, reason) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
+    if (isUuid) {
+      try {
+        await api.payments.refundEscrow(contractId, milestoneId, reason)
+      } catch (err) {
+        console.warn('Backend refund escrow warning:', err)
+      }
+    }
+
+    set((state) => {
+      const updated = state.contracts.map((c) => {
+        if (c.id === contractId || c.code === contractId) {
+          let reclaimedAmount = 0
+          const updatedMilestones = c.milestones.map((m) => {
+            if (m.id === milestoneId) {
+              reclaimedAmount = m.amount
+              return {
+                ...m,
+                status: 'pending' as const,
+                paymentStatus: 'not_started' as const,
+              }
+            }
+            return m
+          })
+
+          return {
+            ...c,
+            stagedAmount: Math.max(0, c.stagedAmount - reclaimedAmount),
+            milestones: updatedMilestones,
+            auditLogs: [
+              ...c.auditLogs,
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                actor: 'Client (Buyer Protection)',
+                action: 'ESCROW_RECLAIMED',
+                details: `Milestone escrow ($${reclaimedAmount} USD) reclaimed by client due to freelancer inactivity: ${reason || 'Unaddressed revision timeout.'}`,
               },
             ],
           }

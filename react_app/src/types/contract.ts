@@ -38,6 +38,8 @@ export interface Milestone {
     fileAttachments?: Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>
     submittedAt: string
   }
+  revisionNotes?: string
+  revisionRequestedAt?: string
   paymentStatus: PaymentStatus
 }
 

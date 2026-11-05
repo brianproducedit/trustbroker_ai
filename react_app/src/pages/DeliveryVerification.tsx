@@ -38,6 +38,9 @@ import {
   UserCheck,
   Eye,
   BellRing,
+  Scale,
+  ShieldAlert,
+  Undo2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -48,6 +51,7 @@ export const DeliveryVerification: React.FC = () => {
     activeRole,
     submitEvidence,
     releasePayment,
+    reclaimMilestoneEscrow,
     requestRevision,
     overrideReview,
     manualVerify,
@@ -88,6 +92,10 @@ export const DeliveryVerification: React.FC = () => {
   const [manualRationale, setManualRationale] = useState('')
   const [isManualApproving, setIsManualApproving] = useState(false)
   const [isNudged, setIsNudged] = useState(false)
+  const [reclaimDialogOpen, setReclaimDialogOpen] = useState(false)
+  const [reclaimReason, setReclaimReason] = useState('Freelancer inactive / unaddressed revision timeout')
+  const [isReclaiming, setIsReclaiming] = useState(false)
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false)
 
   if (!contract || !selectedMilestone) {
     return (
@@ -287,8 +295,33 @@ export const DeliveryVerification: React.FC = () => {
     }
   }
 
+  const handleConfirmReclaim = async () => {
+    setIsReclaiming(true)
+    try {
+      await reclaimMilestoneEscrow(contract.id, selectedMilestone.id, reclaimReason)
+      setReclaimDialogOpen(false)
+      toast.success(`Escrow funds of ${formatCurrency(selectedMilestone.amount)} reclaimed back to your account.`)
+      addNotification({
+        title: 'Escrow Funds Reclaimed',
+        description: `Client reclaimed staged escrow for "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount)}). Reason: ${reclaimReason}`,
+        type: 'payment',
+        link: `/dashboard/contracts/${contract.id}`,
+      })
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to reclaim escrow funds.')
+    } finally {
+      setIsReclaiming(false)
+    }
+  }
+
   const assessment = selectedMilestone?.assessment
   const isSettled = selectedMilestone.status === 'settled'
+  const isRevisionRequested = selectedMilestone.status === 'revision_requested'
+  const isVerified =
+    (Boolean(assessment?.passed) ||
+      selectedMilestone.status === 'verified' ||
+      selectedMilestone.paymentStatus === 'release_authorized') &&
+    !isRevisionRequested
   const isFunded =
     selectedMilestone.paymentStatus === 'staged_in_sandbox' ||
     selectedMilestone.paymentStatus === 'release_authorized' ||
@@ -832,43 +865,163 @@ export const DeliveryVerification: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Action Buttons for Client */}
+                    {/* Action Buttons & Status for Client */}
                     {activeRole === 'client' && !isSettled && (
-                      <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
-                        {assessment.passed || selectedMilestone.status === 'verified' || selectedMilestone.paymentStatus === 'release_authorized' ? (
-                          <Button
-                            onClick={handleAuthorizeRelease}
-                            disabled={isReleasing}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
-                          >
-                            <DollarSign className="w-3.5 h-3.5" />
-                            {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => setOverrideDialogOpen(true)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
-                          >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            Client Override & Approve (${selectedMilestone.amount})
-                          </Button>
-                        )}
+                      <div className="pt-2">
+                        {isRevisionRequested ? (
+                          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+                                <RotateCcw className="w-4 h-4 text-amber-400" />
+                                <span>Revision Requested — Auto-Release Frozen</span>
+                              </div>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Clock Paused
+                              </span>
+                            </div>
 
-                        <Button
-                          variant="outline"
-                          onClick={() => setRevisionDialogOpen(true)}
-                          className="border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-9"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          Request Revision
-                        </Button>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              You have requested revisions on this milestone deliverable. The 7-day auto-disbursal clock is strictly suspended. The freelancer ({contract.freelancer?.name || 'Freelancer'}) must submit an updated delivery addressing your feedback before release can proceed.
+                            </p>
+
+                            {selectedMilestone.revisionNotes && (
+                              <div className="p-2.5 rounded-lg bg-[#0B1326] border border-amber-500/30 space-y-1">
+                                <span className="text-[10px] text-amber-400 font-semibold block uppercase tracking-wider">Your Revision Notes:</span>
+                                <p className="text-slate-200 text-xs font-mono">{selectedMilestone.revisionNotes}</p>
+                              </div>
+                            )}
+
+                            {/* Buyer Protection Inactivity Guarantee */}
+                            <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
+                              <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Buyer Protection: 7-Day Inactivity Reclamation Guarantee</span>
+                              </div>
+                              <p className="text-slate-400 text-[10px] leading-relaxed">
+                                Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded. If the freelancer ignores this revision or fails to submit updated deliverables within 7 days, you can reclaim your staged escrow funds back to your account without penalty.
+                              </p>
+                            </div>
+
+                            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => setReclaimDialogOpen(true)}
+                                className="flex-1 border-rose-500/40 text-rose-400 hover:text-white hover:bg-rose-950/40 text-xs gap-1.5 h-9"
+                              >
+                                <Undo2 className="w-3.5 h-3.5" />
+                                Reclaim Staged Escrow
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setDisputeDialogOpen(true)}
+                                className="border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-9"
+                              >
+                                <Scale className="w-3.5 h-3.5" />
+                                AI Dispute Mediation
+                              </Button>
+                              <Button
+                                onClick={() => setOverrideDialogOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Override &amp; Approve
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col sm:flex-row gap-2.5">
+                            {isVerified ? (
+                              <Button
+                                onClick={handleAuthorizeRelease}
+                                disabled={isReleasing}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={() => setOverrideDialogOpen(true)}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Client Override &amp; Approve (${selectedMilestone.amount})
+                              </Button>
+                            )}
+
+                            <Button
+                              variant="outline"
+                              onClick={() => setRevisionDialogOpen(true)}
+                              className="border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-9"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Request Revision
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Notice & Status for Freelancer after verification */}
                     {activeRole === 'freelancer' && !isSettled && (
                       <div className="pt-2">
-                        {assessment.passed || selectedMilestone.status === 'verified' || selectedMilestone.paymentStatus === 'release_authorized' ? (
+                        {isRevisionRequested ? (
+                          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+                                <RotateCcw className="w-4 h-4 text-amber-400" />
+                                <span>Revision Requested by Client — Auto-Release Clock Frozen</span>
+                              </div>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Clock Paused
+                              </span>
+                            </div>
+
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              The client ({contract.client?.name || 'Client'}) has reviewed your deliverable and requested adjustments. While in revision status, the 7-day auto-disbursal clock is strictly suspended. Escrow funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) remain securely held in PayPal sandbox.
+                            </p>
+
+                            {selectedMilestone.revisionNotes && (
+                              <div className="p-2.5 rounded-lg bg-[#0B1326] border border-amber-500/30 space-y-1">
+                                <span className="text-[10px] text-amber-400 font-semibold block uppercase tracking-wider">Client Revision Feedback:</span>
+                                <p className="text-slate-200 text-xs font-mono">{selectedMilestone.revisionNotes}</p>
+                              </div>
+                            )}
+
+                            {/* 7-Day Freelancer Response Deadline */}
+                            <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
+                              <div className="flex items-center gap-1.5 font-semibold text-amber-400">
+                                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                                <span>7-Day Freelancer Response Deadline (Buyer Protection Active)</span>
+                              </div>
+                              <p className="text-slate-400 text-[10px] leading-relaxed">
+                                You have 7 days to address the client's revision notes and submit updated deliverables using the form on the left. If no revision or response is provided within 7 days, the client is protected and may reclaim their staged escrow funds.
+                              </p>
+                            </div>
+
+                            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                              <Button
+                                onClick={() => {
+                                  window.scrollTo({ top: 300, behavior: 'smooth' })
+                                  const notesEl = document.getElementById('delivery-notes')
+                                  if (notesEl) notesEl.focus()
+                                }}
+                                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                              >
+                                <UploadCloud className="w-3.5 h-3.5" />
+                                Submit Revised Deliverables
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setDisputeDialogOpen(true)}
+                                className="border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-9"
+                              >
+                                <Scale className="w-3.5 h-3.5" />
+                                Request AI Dispute Mediation
+                              </Button>
+                            </div>
+                          </div>
+                        ) : isVerified ? (
                           <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
@@ -891,7 +1044,7 @@ export const DeliveryVerification: React.FC = () => {
                                 <span>TrustBroker Buyer &amp; Seller Protection Active</span>
                               </div>
                               <p className="text-slate-400 text-[10px] leading-relaxed">
-                                Clients have a standard 7-day review window following AI verification to inspect deliverables and release escrow funds. If the client does not respond or request revisions within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
+                                Clients have a standard 7-day review window following AI verification to inspect deliverables and release escrow funds. If the client requests revisions, the timer freezes. If the client takes no action within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
                               </p>
                             </div>
 
@@ -1236,6 +1389,164 @@ export const DeliveryVerification: React.FC = () => {
                 ) : (
                   <><UserCheck className="w-3.5 h-3.5" />Confirm Manual Approval</>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Escrow Reclaim Dialog (Buyer Protection) */}
+        <Dialog open={reclaimDialogOpen} onOpenChange={setReclaimDialogOpen}>
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Undo2 className="w-4 h-4 text-rose-400" />
+                Reclaim Staged Escrow — Buyer Protection
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                You are reclaiming your staged milestone funds due to freelancer inactivity or failure to address revision feedback. This action is permanently logged in the contract audit trail.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2">
+              <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-500/30 text-xs text-rose-300 space-y-1">
+                <p className="font-semibold">Amount to reclaim: <span className="text-rose-200">{formatCurrency(selectedMilestone.amount, contract.currency)}</span></p>
+                <p>Milestone: <span className="text-slate-200">{selectedMilestone.title}</span></p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="reclaim-reason" className="text-xs text-slate-300">
+                  Reason for Reclaiming (Required)
+                </Label>
+                <Textarea
+                  id="reclaim-reason"
+                  rows={3}
+                  value={reclaimReason}
+                  onChange={(e) => setReclaimReason(e.target.value)}
+                  placeholder="e.g., Freelancer did not submit revisions within 7 days..."
+                  className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+                />
+              </div>
+              <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-300">
+                <strong>Note:</strong> The freelancer will be notified and the milestone will reset to pending status. They may resubmit deliverables if the contract remains active.
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReclaimDialogOpen(false)}
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!reclaimReason.trim() || isReclaiming}
+                onClick={handleConfirmReclaim}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs gap-1.5"
+              >
+                {isReclaiming ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />Reclaiming…</>
+                ) : (
+                  <><Undo2 className="w-3.5 h-3.5" />Confirm Escrow Reclaim</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* AI Dispute Mediation Dialog */}
+        <Dialog open={disputeDialogOpen} onOpenChange={setDisputeDialogOpen}>
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Scale className="w-4 h-4 text-blue-400" />
+                AI Dispute Mediation
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                TrustBroker provides impartial AI-assisted dispute resolution based on contract SOW, acceptance criteria, and submitted evidence.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              {/* Mediation Protocol */}
+              <div className="p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/30 space-y-3 text-xs">
+                <div className="flex items-center gap-2 font-semibold text-blue-300">
+                  <Scale className="w-4 h-4 text-blue-400" />
+                  <span>TrustBroker Dispute Mediation Protocol</span>
+                </div>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  When a revision request is disputed, TrustBroker AI conducts an independent evidence audit: re-evaluating the original SOW acceptance criteria, submitted deliverables, the client's revision notes, and the freelancer's response — rendering an impartial recommendation.
+                </p>
+                <div className="space-y-1.5">
+                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span className="text-blue-400 font-bold mt-0.5">1.</span>
+                    <span><strong className="text-white">Evidence Re-audit:</strong> AI re-scores all original deliverables against the milestone acceptance criteria independently of prior verification runs.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span className="text-blue-400 font-bold mt-0.5">2.</span>
+                    <span><strong className="text-white">Revision Notes Assessment:</strong> AI evaluates whether the client's revision request is specific, within-scope of the original SOW, and reasonable.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span className="text-blue-400 font-bold mt-0.5">3.</span>
+                    <span><strong className="text-white">Binding Recommendation:</strong> AI issues a recommendation — Release funds (freelancer wins), Revise further (client wins), or Partial settlement — recorded in the immutable audit trail.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span className="text-blue-400 font-bold mt-0.5">4.</span>
+                    <span><strong className="text-white">Human Escalation:</strong> Either party may request a manual TrustBroker administrator review if unsatisfied with the AI recommendation.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline & Current State */}
+              <div className="p-3 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-2 text-xs">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] block">Dispute Timeline</span>
+                <div className="flex items-center gap-3 text-[11px]">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <div className="w-px h-5 bg-slate-700" />
+                    <div className="w-2 h-2 rounded-full bg-amber-400" />
+                    <div className="w-px h-5 bg-slate-700" />
+                    <div className="w-2 h-2 rounded-full bg-blue-400" />
+                  </div>
+                  <div className="space-y-3 text-slate-300">
+                    <p><span className="text-emerald-400 font-semibold">AI Verified</span> — Milestone passed initial verification ({assessment?.overallScore ?? 'N/A'}/100)</p>
+                    <p><span className="text-amber-400 font-semibold">Revision Requested</span> — Client flagged issues for freelancer to address</p>
+                    <p><span className="text-blue-400 font-semibold">Mediation Requested</span> — Awaiting AI dispute evidence re-audit</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/40 text-[10px] text-slate-400 italic">
+                <strong className="text-slate-300">Hackathon Demo Note:</strong> In production, this triggers a background AI re-audit task. For demonstration, run a fresh AI verification check using the left panel submission form to simulate a mediation re-score.
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDisputeDialogOpen(false)}
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+              >
+                Close
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setDisputeDialogOpen(false)
+                  toast.info('AI Dispute Mediation initiated. Both parties will be notified of the outcome within 24 hours.')
+                  addNotification({
+                    title: 'Dispute Mediation Initiated',
+                    description: `AI dispute mediation requested for milestone "${selectedMilestone.title}". Evidence re-audit in progress.`,
+                    type: 'verification',
+                    link: `/dashboard/deliveries/${contract.id}`,
+                  })
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5"
+              >
+                <Scale className="w-3.5 h-3.5" />
+                Initiate AI Mediation
               </Button>
             </DialogFooter>
           </DialogContent>

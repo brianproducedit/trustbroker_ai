@@ -1,6 +1,6 @@
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import List, Optional
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models.user import UserProfile
@@ -61,6 +61,24 @@ async def release_payout(
         contract_id=req.contract_id,
         milestone_id=req.milestone_id,
         client=current_user,
+    )
+
+
+@router.post("/{contract_id}/{milestone_id}/refund", summary="Client reclaims staged escrow due to freelancer inactivity or unaddressed revisions")
+def refund_staged_escrow(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    reason: Optional[str] = Body(None, embed=True),
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Buyer Protection: Client reclaims staged milestone escrow funds."""
+    return payment_service.refund_milestone_escrow(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        client=current_user,
+        reason=reason,
     )
 
 

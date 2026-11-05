@@ -480,6 +480,71 @@ async def release_milestone_payout(
     }
 
 
+def refund_milestone_escrow(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    client: UserProfile,
+    reason: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Client reclaims staged milestone escrow funds under Buyer Protection due to freelancer inactivity or unaddressed revisions."""
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    require_client(client, contract)
+
+    milestone = session.get(Milestone, milestone_id)
+    if not milestone or milestone.contract_id != contract.id:
+        raise HTTPException(status_code=404, detail="Milestone not found for this contract")
+
+    if milestone.status == MilestoneStatus.SETTLED or milestone.payment_status == PaymentStatus.RELEASED:
+        raise HTTPException(status_code=409, detail="Cannot refund a milestone that has already been released")
+
+    if milestone.payment_status not in (
+        PaymentStatus.STAGED_IN_SANDBOX,
+        PaymentStatus.CHECKOUT_CREATED,
+        PaymentStatus.RELEASE_AUTHORIZED,
+    ):
+        raise HTTPException(status_code=409, detail=f"Milestone is not funded (current payment status: {milestone.payment_status.value})")
+
+    reclaimed = float(milestone.amount)
+    contract.staged_amount = max(Decimal("0.00"), contract.staged_amount - milestone.amount)
+    milestone.payment_status = PaymentStatus.CANCELLED
+    milestone.status = MilestoneStatus.PENDING
+
+    session.add(contract)
+    session.add(milestone)
+
+    log_audit_event(
+        session=session,
+        action="escrow_reclaimed",
+        details=f"Buyer Protection: Client reclaimed staged escrow ({reclaimed} {contract.currency}) for milestone '{milestone.title}'. Reason: {reason or 'Freelancer inactivity / unaddressed revision timeout'}.",
+        contract_id=contract.id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"milestone_id": str(milestone.id), "amount": reclaimed, "reason": reason},
+    )
+
+    if contract.freelancer_id:
+        queue_notification(
+            session=session,
+            user_id=contract.freelancer_id,
+            type="payment",
+            title=f"Escrow Reclaimed: {milestone.title}",
+            body=f"Client reclaimed staged escrow for milestone '{milestone.title}' due to revision timeout or inactivity.",
+            entity_type="contract",
+            entity_id=contract.id,
+        )
+
+    session.commit()
+    return {
+        "status": "refunded",
+        "milestone_id": str(milestone.id),
+        "amount_reclaimed": reclaimed,
+        "contract_staged_amount": float(contract.staged_amount),
+    }
+
+
 def list_contract_payouts(session: Session, contract_id: uuid.UUID, user: UserProfile) -> List[PayoutRead]:
     contract = session.get(Contract, contract_id)
     if not contract:
