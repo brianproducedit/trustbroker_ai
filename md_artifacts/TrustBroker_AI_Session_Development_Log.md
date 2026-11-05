@@ -522,7 +522,8 @@ This session resolved critical production edge cases encountered during end-to-e
 | **Phase 8** | Manual Client Verification Overrides, Staged Payment Disbursal & Brand Logos | ✅ Complete | `057d9f6` |
 | **Phase 9** | Guarded CRUD Endpoints, Immutability Guards & Action Wiring | ✅ Complete | `a0bf82b` |
 | **Phase 10** | Web Development Category & Studio AI Copilot Vertical Ergonomics | ✅ Complete | `origin/main` |
-| **Phase 11** | Payout Disbursal Role Isolation, Seller Escrow Protection & Financial Telemetry Fixes | ✅ Complete | `origin/main` |
+| **Phase 11** | Payout Disbursal Role Isolation, Seller Escrow Protection & Financial Telemetry Fixes | ✅ Complete | `fbb2037` |
+| **Phase 12** | Revision Clock Freeze, Client Escrow Reclaim, Freelancer Deadline Notice & AI Dispute Mediation | ✅ Complete | `a0418dc` |
 
 ---
 
@@ -597,3 +598,166 @@ This session resolved critical production edge cases encountered during end-to-e
   - Added `max-h-[calc(100dvh-2.5rem)] overflow-y-auto` across dialog components (`dialog.tsx`, `ContractDetailDialog.tsx`, `MilestoneDetailDialog.tsx`, and `DeliveryVerification.tsx` modals) to eliminate viewport overflow and clipping across all screen sizes.
 
 **Final Verification:** Full TypeScript compilation and production build verified (`tsc -b && vite build` built in 10.88s with zero errors). All 35 backend tests passed (`pytest -q` in 23.11s).
+
+
+---
+
+## 11. Phase 12: Dual-Party Escrow Protection — Revision Clock Freeze, Client Reclaim & AI Dispute Mediation
+
+### Context
+After enforcing client-only payout release (Phase 11), two critical protection gaps remained:
+
+1. **Freelancer withholding risk** — a client could approve delivery via AI verification and simply never authorize the PayPal payout, holding funds indefinitely.
+2. **Client revision-ignore risk** — once a client requested a revision and froze the auto-release clock, a freelancer could ignore the request entirely. After 7 days the original design had no client remedy — funds could potentially remain stuck or auto-release with the revision un-addressed.
+
+The goal was a **symmetric, legally-grounded dual-protection model** suitable for hackathon demonstration:
+
+| Scenario | Protection |
+|---|---|
+| Client withholds after verified delivery | Freelancer "Send Disbursal Reminder" nudge + TrustBroker Seller Protection policy notice |
+| Freelancer ignores revision request for 7+ days | Client "Reclaim Staged Escrow" + AI Dispute Mediation |
+
+---
+
+### 11.1 Revision-State Auto-Release Clock Freeze
+
+**Mechanism:** When a client calls `POST /api/v1/contracts/{id}/milestones/{id}/revision` (setting `milestone.status = MilestoneStatus.REVISION_REQUESTED`), the existing `policy_engine.py` rule `milestone.status not in (VERIFIED, SUBMITTED)` prevents *any* release — the 7-day auto-disbursal window is **suspended** as long as the milestone remains in `revision_requested` state.
+
+**Frontend computed vars in `DeliveryVerification.tsx`:**
+```ts
+const isRevisionRequested = selectedMilestone?.status === 'revision_requested';
+const isVerified = (assessment?.passed || status === 'verified' || paymentStatus === 'release_authorized')
+  && !isRevisionRequested;
+```
+`isVerified` gates the "Awaiting Client Release" banner — it is `false` while a revision is active, preventing any payment flow UI from appearing.
+
+---
+
+### 11.2 Backend Escrow Reclaim Endpoint
+
+**New function:** `refund_milestone_escrow()` in `backend/app/services/payment_service.py`
+
+**Logic:**
+1. Client-only enforcement: `require_client(client, contract)`.
+2. Rejects if milestone is already `COMPLETED`, `RELEASED`, or `CANCELLED`.
+3. Sets `milestone.payment_status = PaymentStatus.CANCELLED`.
+4. Sets `milestone.status = MilestoneStatus.PENDING` (unfunds the milestone, allows re-funding after resubmission).
+5. Deducts from `contract.staged_amount`.
+6. Logs immutable `AuditEvent` with actor, reason, and timestamp.
+7. Creates in-app `Notification` to the freelancer: "Client has reclaimed staged escrow for milestone X — revision was not addressed within 7 days."
+8. Returns updated contract and milestone.
+
+**New endpoint:** `POST /api/v1/payments/{contract_id}/{milestone_id}/refund` in `backend/app/routers/payments.py`
+```python
+@router.post("/{contract_id}/{milestone_id}/refund")
+async def reclaim_milestone_escrow(
+    contract_id: str, milestone_id: str,
+    body: Optional[dict] = Body(default=None),
+    ...
+)
+```
+
+---
+
+### 11.3 Frontend API, Store & Type Updates
+
+**`react_app/src/lib/api.ts`:**
+```ts
+refundEscrow(contractId: string, milestoneId: string, reason?: string): Promise<...>
+// → POST /payments/{contractId}/{milestoneId}/refund
+```
+
+**`react_app/src/hooks/useContractStore.ts`:**
+- Added `reclaimMilestoneEscrow(contractId, milestoneId, reason?)` store action.
+- Optimistic UI: immediately sets milestone `status → 'pending'`, `payment_status → 'not_started'`, deducts from `stagedAmount`.
+- `requestRevision` stores `revisionNotes` and `revisionRequestedAt` on the milestone object in state.
+
+**`react_app/src/types/contract.ts`:**
+- Added `revisionNotes?: string` and `revisionRequestedAt?: string` to `Milestone` interface.
+
+---
+
+### 11.4 DeliveryVerification.tsx — Dual-Party Protection Panels
+
+#### Client Panel (when `isRevisionRequested === true`)
+```
+┌─ ⏸ Revision Requested — Auto-Release Frozen ─────────────────┐
+│  Clock paused badge  |  Revision Notes from client           │
+│                                                               │
+│  🛡 TrustBroker Buyer Protection (7-Day Inactivity Reclaim)  │
+│  If freelancer does not respond within 7 days of this        │
+│  revision request, you may reclaim the staged escrow funds.  │
+│                                                               │
+│  [Reclaim Staged Escrow]  [AI Dispute Mediation]  [Override] │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**"Override & Approve"** — client can bypass revision state and authorize payout anyway (trust decision).
+
+**"Reclaim Staged Escrow" Dialog:**
+- Textarea for reclaim reason.
+- Calls `reclaimMilestoneEscrow(contractId, milestoneId, reason)`.
+- Toast: "Staged escrow reclaimed. Milestone reset to Pending."
+
+#### Client Panel (when `isVerified === true`, no revision)
+- "Authorize PayPal Payout" button (existing).
+- "Request Revision" button (existing).
+
+#### Freelancer Panel (when `isRevisionRequested === true`)
+```
+┌─ ⏸ Revision Requested — Auto-Release Clock Frozen ───────────┐
+│  Client's revision notes displayed                           │
+│                                                               │
+│  ⚠️ TrustBroker Buyer Protection — 7-Day Response Deadline   │
+│  You must address this revision within 7 days. If you do    │
+│  not respond, the client may reclaim the staged escrow.      │
+│                                                               │
+│  [Submit Revised Deliverables]  [Request AI Dispute]         │
+└───────────────────────────────────────────────────────────────┘
+```
+- "Submit Revised Deliverables" scrolls the page to the evidence upload form.
+
+#### Freelancer Panel (when `isVerified === true`, no revision)
+- Existing "AI Verification Passed — Awaiting Client Release" card.
+- "Send Disbursal Reminder to Client" nudge button.
+
+---
+
+### 11.5 AI Dispute Mediation Dialog
+
+A modal dialog available to **both parties** in revision state. Displays the 4-step mediation protocol:
+
+| Step | Protocol |
+|---|---|
+| 1 | Evidence Review — AI re-audits all submitted deliverable evidence |
+| 2 | Criterion Mapping — Each SOW criterion re-evaluated against evidence |
+| 3 | Impartial Assessment — Neutral score generated independent of previous verification |
+| 4 | Recommendation — AI produces binding arbitration recommendation for TrustBroker review team |
+
+Clicking "Initiate AI Mediation" triggers an in-app notification to both parties and a toast confirming mediation has been requested. *(For hackathon demo purposes this is simulated; production would queue a real AI audit job.)*
+
+---
+
+### 11.6 Validation & Deployment
+
+| Check | Result |
+|---|---|
+| Backend tests (`pytest -q`) | ✅ **35/35 passed** in 12.86s |
+| Frontend TypeScript build (`tsc -b && vite build`) | ✅ **Built in 7.54s**, zero errors |
+| Git commit | ✅ `a0418dc` — "feat(escrow): add client escrow reclaim, revision-state clock freeze, AI dispute mediation & dual-party protection flows" |
+| Remote push | ✅ Pushed to `origin/main` |
+| Render auto-deploy | ✅ Triggered |
+
+---
+
+### 11.7 Phase 12 Summary Table
+
+| Feature | Backend | Frontend | Commit |
+|---|---|---|---|
+| Revision-state clock freeze | `policy_engine.py` — existing guard now explicitly leveraged | `isRevisionRequested`, `isVerified` computed vars | `a0418dc` |
+| `POST /payments/{id}/{id}/refund` escrow reclaim endpoint | `payment_service.py` + `routers/payments.py` | `api.ts` `refundEscrow()` | `a0418dc` |
+| `reclaimMilestoneEscrow` store action + optimistic UI | — | `useContractStore.ts` | `a0418dc` |
+| Client revision-state panel (reclaim + override + dispute) | — | `DeliveryVerification.tsx` | `a0418dc` |
+| Freelancer revision-state panel (submit + dispute deadline) | — | `DeliveryVerification.tsx` | `a0418dc` |
+| AI Dispute Mediation dialog (4-step protocol) | — | `DeliveryVerification.tsx` | `a0418dc` |
+| `revisionNotes`, `revisionRequestedAt` on `Milestone` type | — | `contract.ts` | `a0418dc` |
