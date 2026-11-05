@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, List, Optional, Tuple
 from fastapi import HTTPException, status
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, delete as sql_delete
 from app.models.contract import Contract, ContractStatus, ContractVisibility, ContractVersion
 from app.models.milestone import Milestone, MilestoneStatus, AcceptanceCriterion, CriterionStatus, PaymentStatus
 from app.models.acceptance import ContractAcceptance
@@ -719,8 +719,18 @@ def delete_contract(
     Active, completed, awarded, or cancelled contracts cannot be deleted —
     use cancel_contract() for those.  Financial records (payment_attempts,
     payouts) are immutable and block deletion if they exist.
+
+    Deletion cascade order (FK-safe, explicit SQL deletes):
+      criterion_results → verification_reports → delivery_files → deliveries
+      → acceptance_criteria → milestones → contract_versions
+      → contract_acceptances → vetting_reports → applications
+      → audit_events → contracts
     """
     from app.models.payment import PaymentAttempt
+    from app.models.delivery import Delivery, DeliveryFile
+    from app.models.verification import VerificationReport, CriterionResult
+    from app.models.marketplace import VettingReport, Payout
+    from app.models.audit import AuditEvent
 
     contract = session.get(Contract, contract_id)
     if not contract:
@@ -743,19 +753,68 @@ def delete_contract(
             detail="Cannot delete a contract that has existing payment records. Cancel it instead.",
         )
 
-    # Delete child records in dependency order
-    milestones = list(session.exec(select(Milestone).where(Milestone.contract_id == contract_id)).all())
-    for m in milestones:
-        criteria = list(session.exec(select(AcceptanceCriterion).where(AcceptanceCriterion.milestone_id == m.id)).all())
-        for c in criteria:
-            session.delete(c)
-        session.delete(m)
+    # Collect milestone IDs for child FK deletes
+    milestone_ids = [
+        m.id for m in session.exec(select(Milestone.id).where(Milestone.contract_id == contract_id)).all()
+    ]
 
-    # Delete contract versions
-    for cv in list(session.exec(select(ContractVersion).where(ContractVersion.contract_id == contract_id)).all()):
-        session.delete(cv)
+    # 1. CriterionResults → VerificationReports (FK on verification_reports.id and acceptance_criteria.id)
+    report_ids = [
+        r.id for r in session.exec(
+            select(VerificationReport.id).where(VerificationReport.contract_id == contract_id)
+        ).all()
+    ]
+    if report_ids:
+        session.exec(sql_delete(CriterionResult).where(CriterionResult.report_id.in_(report_ids)))
 
-    session.delete(contract)
+    # 2. VerificationReports (FK on contracts.id, milestones.id, deliveries.id)
+    session.exec(sql_delete(VerificationReport).where(VerificationReport.contract_id == contract_id))
+
+    # 3. DeliveryFiles → Deliveries (FK on deliveries.id)
+    delivery_ids = [
+        d.id for d in session.exec(
+            select(Delivery.id).where(Delivery.contract_id == contract_id)
+        ).all()
+    ]
+    if delivery_ids:
+        session.exec(sql_delete(DeliveryFile).where(DeliveryFile.delivery_id.in_(delivery_ids)))
+
+    # 4. Deliveries (FK on contracts.id, milestones.id)
+    session.exec(sql_delete(Delivery).where(Delivery.contract_id == contract_id))
+
+    # 5. AcceptanceCriteria (FK on milestones.id)
+    if milestone_ids:
+        session.exec(sql_delete(AcceptanceCriterion).where(AcceptanceCriterion.milestone_id.in_(milestone_ids)))
+
+    # 6. Milestones (FK on contracts.id)
+    session.exec(sql_delete(Milestone).where(Milestone.contract_id == contract_id))
+
+    # 7. ContractVersions (FK on contracts.id) ← the failing constraint
+    session.exec(sql_delete(ContractVersion).where(ContractVersion.contract_id == contract_id))
+
+    # 8. ContractAcceptances (FK on contracts.id)
+    session.exec(sql_delete(ContractAcceptance).where(ContractAcceptance.contract_id == contract_id))
+
+    # 9. VettingReports → Applications (FK on applications.id via vetting_reports.application_id)
+    app_ids = [
+        a.id for a in session.exec(
+            select(Application.id).where(Application.contract_id == contract_id)
+        ).all()
+    ]
+    if app_ids:
+        session.exec(sql_delete(VettingReport).where(VettingReport.application_id.in_(app_ids)))
+
+    # 10. Applications (FK on contracts.id)
+    session.exec(sql_delete(Application).where(Application.contract_id == contract_id))
+
+    # 11. AuditEvents (FK on contracts.id — optional reference, but clean it up)
+    session.exec(sql_delete(AuditEvent).where(AuditEvent.contract_id == contract_id))
+
+    # 12. Payouts (FK on contracts.id — only reached if payment guard above was somehow bypassed)
+    session.exec(sql_delete(Payout).where(Payout.contract_id == contract_id))
+
+    # 13. Finally: delete the contract itself
+    session.exec(sql_delete(Contract).where(Contract.id == contract_id))
     session.commit()
 
     return {"deleted": True, "contract_id": str(contract_id)}
