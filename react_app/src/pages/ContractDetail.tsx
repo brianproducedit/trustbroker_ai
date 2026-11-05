@@ -887,7 +887,7 @@ export const ContractDetail: React.FC = () => {
                       )
                     })}
                     <Dialog open={Boolean(awardTarget)} onOpenChange={(o) => !o && setAwardTarget(null)}>
-                      <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+                      <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
                         <DialogHeader>
                           <DialogTitle>Award this freelancer?</DialogTitle>
                           <DialogDescription className="text-xs text-slate-400">
@@ -2133,7 +2133,7 @@ export const ContractDetail: React.FC = () => {
 
         {/* DIALOG 2: DIGITAL ACCEPTANCE */}
         <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white">Accept Digital Contract Terms</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -2172,7 +2172,7 @@ export const ContractDetail: React.FC = () => {
 
         {/* DIALOG 3: REQUEST REVISION */}
         <Dialog open={revisionDialogOpen} onOpenChange={setRevisionDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white">Request Milestone Revision</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -2218,7 +2218,7 @@ export const ContractDetail: React.FC = () => {
 
         {/* DIALOG 4: AUTHORIZE PAYPAL PAYOUT RELEASE */}
         <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-emerald-400" />

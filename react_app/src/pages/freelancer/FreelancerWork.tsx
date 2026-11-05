@@ -446,7 +446,7 @@ export const FreelancerWork: React.FC = () => {
         {/* Work Contract Overview Dialog */}
         {selectedContract && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl bg-[#0C1916] border-[#1C3831] text-white p-6 sm:p-7 shadow-2xl">
+            <DialogContent className="w-full max-w-2xl sm:max-w-2xl md:max-w-3xl max-h-[88vh] overflow-y-auto bg-[#0C1916] border-[#1C3831] text-white p-5 sm:p-6 shadow-2xl">
               <DialogHeader>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-xs text-emerald-400 font-semibold">
@@ -456,12 +456,12 @@ export const FreelancerWork: React.FC = () => {
                     {selectedContract.status}
                   </Badge>
                 </div>
-                <DialogTitle className="text-lg text-white">
+                <DialogTitle className="text-lg text-white font-bold">
                   {selectedContract.title}
                 </DialogTitle>
-                <DialogDescription className="text-slate-400 text-xs">
+                <div className="max-h-24 overflow-y-auto pr-1 text-slate-300 text-xs leading-relaxed bg-[#06120E] p-3 rounded-lg border border-[#1C3831]/60 mt-1">
                   {selectedContract.description || 'Active milestone deliverable contract'}
-                </DialogDescription>
+                </div>
               </DialogHeader>
 
               <div className="space-y-4 py-3">
@@ -601,7 +601,7 @@ export const FreelancerWork: React.FC = () => {
 
         {/* Accept award confirmation */}
         <Dialog open={!!acceptTarget} onOpenChange={(open) => !open && setAcceptTarget(null)}>
-          <DialogContent className="w-full max-w-lg bg-[#0C1916] border-[#1C3831] text-white">
+          <DialogContent className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#0C1916] border-[#1C3831] text-white">
             <DialogHeader>
               <DialogTitle className="text-lg text-white flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -649,7 +649,7 @@ export const FreelancerWork: React.FC = () => {
             }
           }}
         >
-          <DialogContent className="w-full max-w-lg bg-[#0C1916] border-[#1C3831] text-white">
+          <DialogContent className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#0C1916] border-[#1C3831] text-white">
             <DialogHeader>
               <DialogTitle className="text-lg text-white flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-400" />

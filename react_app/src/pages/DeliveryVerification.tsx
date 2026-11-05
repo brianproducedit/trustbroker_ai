@@ -1053,7 +1053,7 @@ export const DeliveryVerification: React.FC = () => {
 
         {/* Revision Request Dialog */}
         <Dialog open={revisionDialogOpen} onOpenChange={setRevisionDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white">Request Milestone Revision</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -1099,7 +1099,7 @@ export const DeliveryVerification: React.FC = () => {
 
         {/* Client Human Review Override Dialog */}
         <Dialog open={overrideDialogOpen} onOpenChange={setOverrideDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white">Human Review Approval Override</DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
@@ -1145,7 +1145,7 @@ export const DeliveryVerification: React.FC = () => {
 
         {/* Manual Approval Dialog */}
         <Dialog open={manualApproveOpen} onOpenChange={setManualApproveOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white">
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-teal-400" />
