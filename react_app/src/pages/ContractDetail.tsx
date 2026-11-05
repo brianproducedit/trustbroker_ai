@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom'
+import { useParams, Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { PayPalCheckout } from '@/components/payments/PayPalCheckout'
@@ -51,6 +51,7 @@ export const ContractDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const {
     contracts,
     activeRole,
@@ -153,6 +154,8 @@ export const ContractDetail: React.FC = () => {
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false)
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false)
   const [releaseDialogOpen, setReleaseDialogOpen] = useState(false)
+  const [deleteDraftOpen, setDeleteDraftOpen] = useState(false)
+  const [isDeletingContract, setIsDeletingContract] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null)
   const [isReleasing, setIsReleasing] = useState(false)
   const [copiedPayId, setCopiedPayId] = useState<string | null>(null)
@@ -496,13 +499,34 @@ export const ContractDetail: React.FC = () => {
     setAddMilestoneOpen(false)
   }
 
-  const handleDeleteMilestone = (milestoneId: string, title: string) => {
+  const handleDeleteMilestone = async (milestoneId: string, title: string) => {
     if (contract.milestones.length <= 1) {
       toast.error('Contract must have at least one milestone.')
       return
     }
-    removeMilestone(contract.id, milestoneId)
-    toast.info(`Milestone "${title}" removed`)
+    try {
+      if (contract.status === 'draft') {
+        await api.contracts.deleteMilestone(contract.id, milestoneId)
+      }
+      removeMilestone(contract.id, milestoneId)
+      toast.info(`Milestone "${title}" removed`)
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to delete milestone')
+    }
+  }
+
+  const handleDeleteDraftContract = async () => {
+    setIsDeletingContract(true)
+    try {
+      await api.contracts.deleteContract(contract.id)
+      toast.success('Draft contract deleted successfully')
+      navigate(ROUTES.CLIENT_CONTRACTS)
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to delete contract')
+    } finally {
+      setIsDeletingContract(false)
+      setDeleteDraftOpen(false)
+    }
   }
 
   // Filtered Milestones
@@ -594,6 +618,19 @@ export const ContractDetail: React.FC = () => {
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Milestone</span>
+              </Button>
+            )}
+
+            {/* Client Draft Deletion */}
+            {isClient && contract.status === 'draft' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteDraftOpen(true)}
+                className="border-rose-900/50 bg-rose-950/20 text-rose-400 hover:text-rose-300 hover:bg-rose-900/40 text-xs h-7 gap-1"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Delete Draft</span>
               </Button>
             )}
           </div>
@@ -2241,6 +2278,40 @@ export const ContractDetail: React.FC = () => {
                     <span>Confirm &amp; Disburse Payout</span>
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* DIALOG 5: DELETE DRAFT CONTRACT */}
+        <Dialog open={deleteDraftOpen} onOpenChange={setDeleteDraftOpen}>
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <span>Delete Draft Contract</span>
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs">
+                Are you sure you want to delete this draft contract? All associated milestones and criteria will be permanently removed.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteDraftOpen(false)}
+                disabled={isDeletingContract}
+                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={isDeletingContract}
+                onClick={handleDeleteDraftContract}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs gap-1.5"
+              >
+                {isDeletingContract ? 'Deleting…' : 'Delete Contract'}
               </Button>
             </DialogFooter>
           </DialogContent>

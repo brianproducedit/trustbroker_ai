@@ -12,15 +12,48 @@ import {
   CheckCheck,
   ArrowRight,
   Sparkles,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 export const NotificationsPage: React.FC = () => {
   const navigate = useNavigate()
   const { notifications, unreadCount, markAsRead, markAllAsRead, fetchNotifications } =
     useNotificationStore()
   const [filter, setFilter] = useState<'all' | 'unread' | 'payment' | 'verification' | 'application'>('all')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [clearingRead, setClearingRead] = useState(false)
+
+  const handleDeleteOne = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeletingId(id)
+    try {
+      await api.notifications.deleteOne(id)
+      await fetchNotifications()
+      toast.success('Notification deleted')
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to delete notification')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const handleClearRead = async () => {
+    setClearingRead(true)
+    try {
+      await api.notifications.deleteRead()
+      await fetchNotifications()
+      toast.success('Read notifications cleared')
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to clear notifications')
+    } finally {
+      setClearingRead(false)
+    }
+  }
 
   useEffect(() => {
     fetchNotifications()
@@ -69,6 +102,18 @@ export const NotificationsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {notifications.some((n) => n.read) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearRead}
+                disabled={clearingRead}
+                className="text-xs border-[#222A3D] bg-[#131B2E] text-slate-300 hover:text-white hover:bg-slate-800 gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <span>{clearingRead ? 'Clearing…' : 'Clear Read'}</span>
+              </Button>
+            )}
             {unreadTotal > 0 && (
               <Button
                 variant="outline"
@@ -152,14 +197,24 @@ export const NotificationsPage: React.FC = () => {
                         </Badge>
                       )}
                     </div>
-                    <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap">
-                      {new Date(n.timestamp).toLocaleDateString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap">
+                        {new Date(n.timestamp).toLocaleDateString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                      <button
+                        onClick={(e) => handleDeleteOne(n.id, e)}
+                        disabled={deletingId === n.id}
+                        className="ml-1 p-1 rounded text-slate-600 hover:text-rose-400 hover:bg-rose-900/20 transition-colors disabled:opacity-40"
+                        title="Delete notification"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">{n.description}</p>

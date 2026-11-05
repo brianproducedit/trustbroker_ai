@@ -177,6 +177,26 @@ export const api = {
         method: 'POST',
       })
     },
+    deleteContract: (id: string) =>
+      apiFetch<void>(`/contracts/${id}`, { method: 'DELETE' }),
+    updateMilestone: (contractId: string, milestoneId: string, data: {
+      title?: string; description?: string; amount?: number; deadline?: string; sort_order?: number
+    }) =>
+      apiFetch<any>(`/contracts/${contractId}/milestones/${milestoneId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    deleteMilestone: (contractId: string, milestoneId: string) =>
+      apiFetch<void>(`/contracts/${contractId}/milestones/${milestoneId}`, { method: 'DELETE' }),
+    updateCriterion: (contractId: string, milestoneId: string, criterionId: string, data: {
+      title?: string; description?: string; evidence_type?: string
+    }) =>
+      apiFetch<any>(`/contracts/${contractId}/milestones/${milestoneId}/criteria/${criterionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    deleteCriterion: (contractId: string, milestoneId: string, criterionId: string) =>
+      apiFetch<void>(`/contracts/${contractId}/milestones/${milestoneId}/criteria/${criterionId}`, { method: 'DELETE' }),
   },
 
   // AI Orchestration
@@ -348,6 +368,9 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+    get: (id: string) => apiFetch<any>(`/profiles/${id}`),
+    search: (q: string, workspace?: string) =>
+      apiFetch<any[]>(`/profiles/search?q=${encodeURIComponent(q)}${workspace ? `&workspace=${workspace}` : ''}`),
   },
 
   applications: {
@@ -356,6 +379,8 @@ export const api = {
       apiFetch<any>(`/applications/${id}/award`, { method: 'POST' }),
     shortlist: (id: string) =>
       apiFetch<any>(`/applications/${id}/shortlist`, { method: 'POST' }),
+    withdraw: (id: string) =>
+      apiFetch<void>(`/applications/${id}`, { method: 'DELETE' }),
   },
 
   // Audit Logs
@@ -379,5 +404,9 @@ export const api = {
       apiFetch<any>(`/notifications/${id}/read`, { method: 'POST' }),
     markAllRead: () =>
       apiFetch<{ updated: number }>('/notifications/read-all', { method: 'POST' }),
+    deleteOne: (id: string) =>
+      apiFetch<void>(`/notifications/${id}`, { method: 'DELETE' }),
+    deleteRead: () =>
+      apiFetch<{ deleted: number }>('/notifications', { method: 'DELETE' }),
   },
 }

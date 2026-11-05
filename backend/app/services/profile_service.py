@@ -59,3 +59,53 @@ def update_profile(session: Session, profile: UserProfile, req: ProfileUpdateReq
     session.commit()
     session.refresh(profile)
     return to_read(profile)
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Public profile lookup & search
+# ---------------------------------------------------------------------------
+
+def get_public_profile(session: Session, profile_id) -> "ProfileRead":
+    """Get a public profile by ID. PayPal payout email is masked for privacy."""
+    from fastapi import HTTPException
+    profile = session.get(UserProfile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    read = ProfileRead.model_validate(profile)
+    # Mask sensitive financial field from public view
+    read.paypal_payout_email = None
+    return read
+
+
+def search_profiles(
+    session: Session,
+    query: str,
+    workspace: "Optional[str]" = None,
+    page: int = 1,
+    per_page: int = 20,
+):
+    """Search profiles by full_name or headline for client/freelancer discovery."""
+    from sqlmodel import or_
+    from sqlalchemy import func as sa_func
+
+    q = f"%{query.lower()}%"
+    stmt = select(UserProfile).where(
+        or_(
+            sa_func.lower(UserProfile.full_name).like(q),
+            sa_func.lower(UserProfile.headline).like(q),
+        )
+    )
+    if workspace:
+        stmt = stmt.where(UserProfile.primary_workspace == workspace)
+
+    total = len(list(session.exec(stmt).all()))
+    stmt = stmt.offset((page - 1) * per_page).limit(per_page)
+    rows = list(session.exec(stmt).all())
+
+    results = []
+    for p in rows:
+        read = ProfileRead.model_validate(p)
+        read.paypal_payout_email = None  # mask for privacy
+        results.append(read)
+
+    return results, total

@@ -479,3 +479,37 @@ def rerun_vetting(session: Session, application_id: uuid.UUID, user: UserProfile
     application.updated_at = datetime.now(timezone.utc)
     session.commit()
     return _application_read(session, application, include_profile=True)
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Application Withdraw (pending only)
+# ---------------------------------------------------------------------------
+
+def withdraw_application(
+    session: Session,
+    application_id: uuid.UUID,
+    freelancer: UserProfile,
+) -> dict:
+    """Freelancer withdraws a PENDING application.
+
+    Applications that have been shortlisted, awarded, or rejected cannot be
+    withdrawn — the client may have already taken action based on the submission.
+    """
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    if application.freelancer_id != freelancer.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only withdraw your own applications")
+    if application.status != ApplicationStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot withdraw application with status '{application.status}'. Only pending applications can be withdrawn.",
+        )
+
+    contract = session.get(Contract, application.contract_id)
+    contract_title = contract.title if contract else str(application.contract_id)
+
+    session.delete(application)
+    session.commit()
+
+    return {"withdrawn": True, "application_id": str(application_id), "contract_title": contract_title}

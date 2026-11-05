@@ -17,6 +17,12 @@ from app.schemas.marketplace import (
     ApplicationListResponse,
     ApplicationRead,
 )
+from app.schemas.milestone import (
+    MilestoneRead,
+    AcceptanceCriterionRead,
+    MilestoneUpdateRequest,
+    CriterionUpdateRequest,
+)
 from app.services import contract_service, marketplace_service
 from app.utils.security import (
     get_current_user,
@@ -193,5 +199,124 @@ def cancel_contract(
         contract_id=contract_id,
         user=current_user,
         reason=reason,
+    )
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Delete draft contract
+# ---------------------------------------------------------------------------
+
+@router.delete("/{contract_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Permanently delete a draft contract")
+def delete_contract(
+    contract_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Permanently delete a DRAFT contract with no payment history.
+    Active, awarded, completed, or cancelled contracts cannot be deleted.
+    Financial records (payment attempts, payouts) block deletion to protect the audit trail.
+    """
+    contract_service.delete_contract(session=session, contract_id=contract_id, client=current_user)
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Milestone individual update & delete
+# ---------------------------------------------------------------------------
+
+@router.patch(
+    "/{contract_id}/milestones/{milestone_id}",
+    response_model=MilestoneRead,
+    summary="Update a single milestone on a draft contract",
+)
+def update_milestone(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    req: MilestoneUpdateRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Partially update a milestone (title, description, amount, deadline, sort_order).
+    Only allowed on DRAFT contracts with milestones that have no payment activity.
+    """
+    return contract_service.update_milestone(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        client=current_user,
+        req=req,
+    )
+
+
+@router.delete(
+    "/{contract_id}/milestones/{milestone_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a single milestone from a draft contract",
+)
+def delete_milestone(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Delete a milestone that has no payment activity.
+    Funded, staged, or released milestones are permanently locked and cannot be removed.
+    """
+    contract_service.delete_milestone(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        client=current_user,
+    )
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Acceptance Criterion individual update & delete
+# ---------------------------------------------------------------------------
+
+@router.patch(
+    "/{contract_id}/milestones/{milestone_id}/criteria/{criterion_id}",
+    response_model=AcceptanceCriterionRead,
+    summary="Update a single acceptance criterion",
+)
+def update_criterion(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    criterion_id: uuid.UUID,
+    req: CriterionUpdateRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Partially update an acceptance criterion (title, description, evidence_type).
+    Only allowed on DRAFT contracts with milestones that have no payment activity.
+    """
+    return contract_service.update_criterion(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        criterion_id=criterion_id,
+        client=current_user,
+        req=req,
+    )
+
+
+@router.delete(
+    "/{contract_id}/milestones/{milestone_id}/criteria/{criterion_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a single acceptance criterion",
+)
+def delete_criterion(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    criterion_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Delete an acceptance criterion from a draft contract milestone with no payment activity."""
+    contract_service.delete_criterion(
+        session=session,
+        contract_id=contract_id,
+        milestone_id=milestone_id,
+        criterion_id=criterion_id,
+        client=current_user,
     )
 

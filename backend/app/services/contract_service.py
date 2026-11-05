@@ -703,3 +703,276 @@ def cancel_contract(
     session.commit()
     return get_contract_full(session, contract.id)
 
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Delete Contract (draft only, no payment records)
+# ---------------------------------------------------------------------------
+
+def delete_contract(
+    session: Session,
+    contract_id: uuid.UUID,
+    client: UserProfile,
+) -> dict:
+    """Permanently delete a DRAFT contract with no payment attempts.
+
+    Active, completed, awarded, or cancelled contracts cannot be deleted —
+    use cancel_contract() for those.  Financial records (payment_attempts,
+    payouts) are immutable and block deletion if they exist.
+    """
+    from app.models.payment import PaymentAttempt
+
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+    if contract.client_id != client.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the contract client can delete this contract")
+    if contract.status != ContractStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete a contract in '{contract.status.value}' status. Only draft contracts can be deleted. Use cancel to close active contracts.",
+        )
+
+    # Block deletion if any payment records exist — financial audit trail must be preserved
+    payment_count = session.exec(
+        select(func.count(PaymentAttempt.id)).where(PaymentAttempt.contract_id == contract_id)
+    ).one()
+    if payment_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete a contract that has existing payment records. Cancel it instead.",
+        )
+
+    # Delete child records in dependency order
+    milestones = list(session.exec(select(Milestone).where(Milestone.contract_id == contract_id)).all())
+    for m in milestones:
+        criteria = list(session.exec(select(AcceptanceCriterion).where(AcceptanceCriterion.milestone_id == m.id)).all())
+        for c in criteria:
+            session.delete(c)
+        session.delete(m)
+
+    # Delete contract versions
+    for cv in list(session.exec(select(ContractVersion).where(ContractVersion.contract_id == contract_id)).all()):
+        session.delete(cv)
+
+    session.delete(contract)
+    session.commit()
+
+    return {"deleted": True, "contract_id": str(contract_id)}
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Milestone individual update & delete (draft + not_started only)
+# ---------------------------------------------------------------------------
+
+def _assert_draft_milestone(session: Session, contract_id: uuid.UUID, milestone_id: uuid.UUID, client: UserProfile):
+    """Shared guard: contract must be DRAFT owned by client, milestone must be not_started."""
+    from app.models.milestone import PaymentStatus as PS
+
+    contract = session.get(Contract, contract_id)
+    if not contract:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+    if contract.client_id != client.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the contract client can modify milestones")
+    if contract.status != ContractStatus.DRAFT:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot modify milestones on a contract in '{contract.status.value}' status. Only draft contracts can be edited.",
+        )
+    milestone = session.get(Milestone, milestone_id)
+    if not milestone or milestone.contract_id != contract_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found on this contract")
+    if milestone.payment_status not in (PS.NOT_STARTED, PS.CANCELLED):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot modify milestone '{milestone.title}' — it already has payment activity (status: {milestone.payment_status.value}). Funded and staged milestones are locked.",
+        )
+    return contract, milestone
+
+
+def update_milestone(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    client: UserProfile,
+    req,
+) -> "MilestoneRead":
+    """Update a single milestone on a DRAFT contract with no payment activity."""
+    from app.schemas.milestone import MilestoneRead, AcceptanceCriterionRead
+
+    contract, milestone = _assert_draft_milestone(session, contract_id, milestone_id, client)
+
+    if req.title is not None:
+        milestone.title = req.title
+    if req.description is not None:
+        milestone.description = req.description
+    if req.amount is not None:
+        milestone.amount = req.amount
+    if req.deadline is not None:
+        milestone.deadline = req.deadline
+    if req.sort_order is not None:
+        milestone.sort_order = req.sort_order
+
+    milestone.updated_at = datetime.now(timezone.utc)
+    session.add(milestone)
+
+    # Recalculate contract total_amount from all milestones
+    all_milestones = list(session.exec(select(Milestone).where(Milestone.contract_id == contract_id)).all())
+    contract.total_amount = sum((m.amount for m in all_milestones), Decimal("0.00"))
+    contract.content_hash = compute_contract_hash(
+        title=contract.title,
+        description=contract.description,
+        total_amount=contract.total_amount,
+        currency=contract.currency,
+        milestones=all_milestones,
+    )
+    contract.updated_at = datetime.now(timezone.utc)
+    session.add(contract)
+    session.commit()
+    session.refresh(milestone)
+
+    log_audit_event(
+        session=session,
+        action="milestone_updated",
+        details=f"Milestone '{milestone.title}' updated by {client.full_name or client.email}",
+        contract_id=contract_id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"milestone_id": str(milestone_id)},
+    )
+
+    criteria = list(session.exec(select(AcceptanceCriterion).where(AcceptanceCriterion.milestone_id == milestone.id).order_by(AcceptanceCriterion.created_at.asc())).all())
+    criteria_reads = [
+        AcceptanceCriterionRead(
+            id=c.id, milestone_id=c.milestone_id, title=c.title, description=c.description,
+            evidence_type=c.evidence_type, status=c.status, ai_confidence=c.ai_confidence,
+            evidence_match_snippet=c.evidence_match_snippet, feedback=c.feedback, created_at=c.created_at,
+        ) for c in criteria
+    ]
+    return MilestoneRead(
+        id=milestone.id, contract_id=milestone.contract_id, title=milestone.title,
+        description=milestone.description, amount=milestone.amount, currency=milestone.currency,
+        deadline=milestone.deadline, status=milestone.status, sort_order=milestone.sort_order,
+        payment_status=milestone.payment_status, created_at=milestone.created_at,
+        updated_at=milestone.updated_at, acceptance_criteria=criteria_reads,
+    )
+
+
+def delete_milestone(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    client: UserProfile,
+) -> dict:
+    """Delete a single milestone from a DRAFT contract — only if no payment activity."""
+    contract, milestone = _assert_draft_milestone(session, contract_id, milestone_id, client)
+
+    # Remove acceptance criteria first
+    for c in list(session.exec(select(AcceptanceCriterion).where(AcceptanceCriterion.milestone_id == milestone_id)).all()):
+        session.delete(c)
+    session.delete(milestone)
+
+    # Recalculate contract totals
+    remaining = list(session.exec(select(Milestone).where(Milestone.contract_id == contract_id)).all())
+    contract.total_amount = sum((m.amount for m in remaining), Decimal("0.00"))
+    contract.content_hash = compute_contract_hash(
+        title=contract.title, description=contract.description,
+        total_amount=contract.total_amount, currency=contract.currency, milestones=remaining,
+    )
+    contract.updated_at = datetime.now(timezone.utc)
+    session.add(contract)
+    session.commit()
+
+    log_audit_event(
+        session=session,
+        action="milestone_deleted",
+        details=f"Milestone '{milestone.title}' deleted by {client.full_name or client.email}",
+        contract_id=contract_id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"milestone_id": str(milestone_id)},
+    )
+
+    return {"deleted": True, "milestone_id": str(milestone_id)}
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Acceptance Criterion individual update & delete
+# ---------------------------------------------------------------------------
+
+def _assert_draft_criterion(session: Session, contract_id: uuid.UUID, milestone_id: uuid.UUID, criterion_id: uuid.UUID, client: UserProfile):
+    """Shared guard for criterion operations — inherits all milestone guards."""
+    contract, milestone = _assert_draft_milestone(session, contract_id, milestone_id, client)
+    criterion = session.get(AcceptanceCriterion, criterion_id)
+    if not criterion or criterion.milestone_id != milestone_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Acceptance criterion not found on this milestone")
+    return contract, milestone, criterion
+
+
+def update_criterion(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    criterion_id: uuid.UUID,
+    client: UserProfile,
+    req,
+) -> "AcceptanceCriterionRead":
+    """Update a single acceptance criterion on a draft contract milestone."""
+    from app.schemas.milestone import AcceptanceCriterionRead
+
+    _, _, criterion = _assert_draft_criterion(session, contract_id, milestone_id, criterion_id, client)
+
+    if req.title is not None:
+        criterion.title = req.title
+    if req.description is not None:
+        criterion.description = req.description
+    if req.evidence_type is not None:
+        criterion.evidence_type = req.evidence_type
+
+    session.add(criterion)
+    session.commit()
+    session.refresh(criterion)
+
+    log_audit_event(
+        session=session,
+        action="criterion_updated",
+        details=f"Acceptance criterion '{criterion.title}' updated by {client.full_name or client.email}",
+        contract_id=contract_id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"criterion_id": str(criterion_id)},
+    )
+
+    return AcceptanceCriterionRead(
+        id=criterion.id, milestone_id=criterion.milestone_id, title=criterion.title,
+        description=criterion.description, evidence_type=criterion.evidence_type,
+        status=criterion.status, ai_confidence=criterion.ai_confidence,
+        evidence_match_snippet=criterion.evidence_match_snippet, feedback=criterion.feedback,
+        created_at=criterion.created_at,
+    )
+
+
+def delete_criterion(
+    session: Session,
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    criterion_id: uuid.UUID,
+    client: UserProfile,
+) -> dict:
+    """Delete a single acceptance criterion from a draft contract milestone."""
+    _, _, criterion = _assert_draft_criterion(session, contract_id, milestone_id, criterion_id, client)
+
+    log_audit_event(
+        session=session,
+        action="criterion_deleted",
+        details=f"Acceptance criterion '{criterion.title}' deleted by {client.full_name or client.email}",
+        contract_id=contract_id,
+        actor_id=client.id,
+        actor_name=client.full_name or client.email,
+        metadata={"criterion_id": str(criterion_id)},
+    )
+
+    session.delete(criterion)
+    session.commit()
+
+    return {"deleted": True, "criterion_id": str(criterion_id)}

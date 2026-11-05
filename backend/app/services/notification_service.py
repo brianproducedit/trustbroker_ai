@@ -88,3 +88,30 @@ def mark_all_read(session: Session, user: UserProfile) -> int:
         session.add(n)
     session.commit()
     return len(rows)
+
+
+# ---------------------------------------------------------------------------
+# CRUD — Notification delete
+# ---------------------------------------------------------------------------
+
+def delete_notification(session: Session, user: UserProfile, notification_id: uuid.UUID) -> dict:
+    """Delete a single notification owned by the user."""
+    notification = session.get(Notification, notification_id)
+    if not notification or notification.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    session.delete(notification)
+    session.commit()
+    return {"deleted": True, "notification_id": str(notification_id)}
+
+
+def delete_read_notifications(session: Session, user: UserProfile) -> dict:
+    """Delete all notifications that have been marked as read."""
+    stmt = select(Notification).where(
+        Notification.user_id == user.id,
+        col(Notification.read_at).isnot(None),
+    )
+    rows = list(session.exec(stmt).all())
+    for n in rows:
+        session.delete(n)
+    session.commit()
+    return {"deleted": len(rows)}

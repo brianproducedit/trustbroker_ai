@@ -44,3 +44,22 @@ def mark_all_read(
 ):
     updated = notification_service.mark_all_read(session, current_user)
     return {"updated": updated}
+
+
+@router.delete("/{notification_id}", status_code=204, summary="Delete a single notification")
+def delete_notification(
+    notification_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Delete a notification owned by the signed-in user."""
+    notification_service.delete_notification(session, current_user, notification_id)
+
+
+@router.delete("", status_code=200, summary="Delete all read notifications")
+def delete_read_notifications(
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Delete all notifications that have been marked as read. Useful for inbox cleanup."""
+    return notification_service.delete_read_notifications(session, current_user)

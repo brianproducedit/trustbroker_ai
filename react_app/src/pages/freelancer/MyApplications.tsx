@@ -19,7 +19,9 @@ import {
   ChevronDown,
   ChevronUp,
   Briefcase,
+  LogOut,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   submitted: { label: 'Under Review', color: 'bg-blue-950 text-blue-400 border-blue-800' },
@@ -36,6 +38,20 @@ export const MyApplications: React.FC = () => {
   const [filter, setFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null)
+
+  const handleWithdraw = async (id: string) => {
+    setWithdrawingId(id)
+    try {
+      await api.applications.withdraw(id)
+      setApps((prev) => prev.filter((a) => a.id !== id))
+      toast.success('Application withdrawn successfully')
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to withdraw application')
+    } finally {
+      setWithdrawingId(null)
+    }
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -316,6 +332,18 @@ export const MyApplications: React.FC = () => {
                         </span>
 
                         <div className="flex items-center gap-2">
+                          {(app.status === 'submitted' || app.status === 'pending') && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-rose-400 hover:text-rose-300 hover:bg-rose-900/20 text-xs gap-1.5"
+                              disabled={withdrawingId === app.id}
+                              onClick={() => handleWithdraw(app.id)}
+                            >
+                              <LogOut className="w-3.5 h-3.5" />
+                              {withdrawingId === app.id ? 'Withdrawing…' : 'Withdraw'}
+                            </Button>
+                          )}
                           {app.status === 'awarded' && (
                             <Button
                               asChild

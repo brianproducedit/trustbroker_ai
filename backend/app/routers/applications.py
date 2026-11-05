@@ -49,3 +49,19 @@ def shortlist_application(
     session: Session = Depends(get_session),
 ):
     return marketplace_service.shortlist_application(session, application_id, current_user)
+
+
+@router.delete(
+    "/{application_id}",
+    status_code=204,
+    summary="Freelancer withdraws a pending application",
+)
+def withdraw_application(
+    application_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Freelancer withdraws their own PENDING application.
+    Applications that have been shortlisted, awarded, or rejected cannot be withdrawn.
+    """
+    marketplace_service.withdraw_application(session, application_id, current_user)

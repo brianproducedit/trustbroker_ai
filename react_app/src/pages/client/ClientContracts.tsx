@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { ROUTES } from '@/constants'
 import { formatCurrency } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { AgGridReact } from 'ag-grid-react'
 import {
   ModuleRegistry,
@@ -15,7 +16,9 @@ import type { ColDef, ICellRendererParams } from 'ag-grid-community'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ContractOverviewDialog } from '@/components/dialogs/ContractOverviewDialog'
-import { FileText, PlusCircle, ListFilter } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { FileText, PlusCircle, ListFilter, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 // Register AG Grid modules once
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -75,6 +78,23 @@ export const ClientContracts: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
   const [selectedContract, setSelectedContract] = useState<any>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleDeleteContract = async () => {
+    if (!deleteConfirmId) return
+    setDeletingId(deleteConfirmId)
+    try {
+      await api.contracts.deleteContract(deleteConfirmId)
+      await fetchContracts()
+      toast.success('Draft contract deleted')
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to delete contract')
+    } finally {
+      setDeletingId(null)
+      setDeleteConfirmId(null)
+    }
+  }
 
   useEffect(() => {
     fetchContracts()
@@ -159,21 +179,36 @@ export const ClientContracts: React.FC = () => {
     },
     {
       headerName: 'Actions',
-      width: 110,
+      width: 160,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 px-2 gap-1 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation()
-            if (params.data?.id) navigate(ROUTES.CONTRACT_DETAIL(params.data.id))
-          }}
-        >
-          Open →
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 px-2 gap-1 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation()
+              if (params.data?.id) navigate(ROUTES.CONTRACT_DETAIL(params.data.id))
+            }}
+          >
+            Open →
+          </Button>
+          {params.data?.status === 'draft' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-900/20 px-2 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation()
+                setDeleteConfirmId(params.data.id)
+              }}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
       ),
     },
   ], [navigate])
@@ -272,6 +307,40 @@ export const ClientContracts: React.FC = () => {
           open={dialogOpen}
           onOpenChange={setDialogOpen}
         />
+
+        {/* Delete Confirm Dialog */}
+        <Dialog open={!!deleteConfirmId} onOpenChange={(o) => { if (!o) setDeleteConfirmId(null) }}>
+          <DialogContent className="bg-[#0E1528] border-[#222A3D] text-white max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                Delete Draft Contract
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-sm">
+                This will permanently delete this draft contract and all its milestones. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-[#222A3D] text-slate-300 hover:bg-slate-800"
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={!!deletingId}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+                onClick={handleDeleteContract}
+                disabled={!!deletingId}
+              >
+                {deletingId ? 'Deleting…' : 'Delete Contract'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   )

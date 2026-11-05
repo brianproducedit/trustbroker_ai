@@ -27,6 +27,22 @@ class AcceptanceCriterionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MilestoneUpdateRequest(BaseModel):
+    """Partial update for a single milestone on a draft contract."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    amount: Optional[Decimal] = None
+    deadline: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+class CriterionUpdateRequest(BaseModel):
+    """Partial update for a single acceptance criterion on a draft contract milestone."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    evidence_type: Optional[str] = None  # text, file, url, screenshot
+
+
 class MilestoneCreate(BaseModel):
     title: str
     description: str = ""
@@ -53,3 +69,19 @@ class MilestoneRead(BaseModel):
     acceptance_criteria: List[AcceptanceCriterionRead] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MilestoneUpdateRequest(BaseModel):
+    """Partial update for a single milestone on a draft contract."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    amount: Optional[Decimal] = None
+    deadline: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+class CriterionUpdateRequest(BaseModel):
+    """Partial update for a single acceptance criterion on a draft contract milestone."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    evidence_type: Optional[str] = None  # text, file, url, screenshot

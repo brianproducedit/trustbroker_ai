@@ -80,3 +80,4 @@ def run_auto_migrations(engine) -> None:
         logger.info("[MIGRATION] Schema reconciliation completed successfully.")
     except Exception as exc:
         logger.error(f"[MIGRATION] Error during startup schema reconciliation: {exc}", exc_info=True)
+
