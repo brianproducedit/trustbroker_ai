@@ -4,6 +4,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import settings
+from app.database import engine
+from app.migrations import run_auto_migrations
 
 logger = logging.getLogger("trustbroker.api")
 
@@ -23,7 +25,11 @@ from app.routers import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup validation or connection checks
+    # Startup validation, database schema reconciliation, and table creation
+    try:
+        run_auto_migrations(engine)
+    except Exception as exc:
+        logger.error("Error during auto-migration on startup: %s", exc)
     yield
     # Shutdown cleanups
 
