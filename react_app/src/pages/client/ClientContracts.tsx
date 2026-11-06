@@ -109,6 +109,20 @@ export const ClientContracts: React.FC = () => {
   }, [contracts, activeFilter])
 
   const onRowClicked = (event: any) => {
+    // Prevent opening contract overview if click occurred in actions column, button, or link
+    const target = event.event?.target as HTMLElement | null
+    const colId = event.column?.getColId()
+    const headerName = event.column?.getColDef()?.headerName
+    if (
+      colId === 'actions' ||
+      headerName === 'Actions' ||
+      target?.closest('button') ||
+      target?.closest('a') ||
+      target?.closest('[role="button"]')
+    ) {
+      return
+    }
+
     setSelectedContract(event.data)
     setDialogOpen(true)
   }
@@ -186,18 +200,26 @@ export const ClientContracts: React.FC = () => {
       ),
     },
     {
+      colId: 'actions',
       headerName: 'Actions',
       width: 160,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams) => (
-        <div className="flex items-center gap-1">
+        <div
+          className="flex items-center gap-1"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.nativeEvent?.stopImmediatePropagation?.()
+          }}
+        >
           <Button
             size="sm"
             variant="ghost"
             className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 px-2 gap-1 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation()
+              e.nativeEvent?.stopImmediatePropagation?.()
               if (params.data?.id) navigate(ROUTES.CONTRACT_DETAIL(params.data.id))
             }}
           >
@@ -210,6 +232,8 @@ export const ClientContracts: React.FC = () => {
               className="h-7 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-900/20 px-2 cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation()
+                e.nativeEvent?.stopImmediatePropagation?.()
+                setDialogOpen(false)
                 setDeleteConfirmId(params.data.id)
               }}
             >
