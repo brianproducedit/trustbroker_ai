@@ -652,7 +652,7 @@ export const CreateProject: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(ROUTES.DASHBOARD)}
+                onClick={() => navigate(ROUTES.CLIENT_CONTRACTS)}
                 className="border-[#2D3449] text-slate-400 hover:text-white text-xs"
               >
                 Cancel

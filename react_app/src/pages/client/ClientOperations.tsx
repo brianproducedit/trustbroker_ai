@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import { formatCurrency } from '@/lib/utils'
+import { ROUTES } from '@/constants'
 import { AgGridReact } from 'ag-grid-react'
 import {
   ModuleRegistry,
@@ -120,7 +121,7 @@ export const ClientOperations: React.FC = () => {
           </span>
         ),
         onCellClicked: (params) => {
-          if (params.data?.id) navigate(`/app/client/contracts/${params.data.id}`)
+          if (params.data?.id) navigate(ROUTES.CONTRACT_DETAIL(params.data.id))
         },
       },
       {
@@ -199,7 +200,7 @@ export const ClientOperations: React.FC = () => {
             variant="ghost"
             className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 px-2 gap-1"
             onClick={() => {
-              if (params.data?.id) navigate(`/app/client/contracts/${params.data.id}`)
+              if (params.data?.id) navigate(ROUTES.CONTRACT_DETAIL(params.data.id))
             }}
           >
             <span>Open</span>
@@ -247,7 +248,7 @@ export const ClientOperations: React.FC = () => {
                 asChild
                 className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 gap-1.5 font-medium shadow-sm"
               >
-                <Link to="/app/client/contracts/new">
+                <Link to={ROUTES.NEW_PROJECT}>
                   <Briefcase className="w-3.5 h-3.5" />
                   <span>Draft New Contract</span>
                 </Link>

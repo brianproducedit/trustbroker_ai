@@ -84,7 +84,7 @@ export const SignUp: React.FC = () => {
         navigate(`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(email)}`)
       } else {
         toast.success('Account created and signed in successfully!')
-        navigate(ROUTES.DASHBOARD)
+        navigate(role === 'freelancer' ? ROUTES.FREELANCER_HOME : ROUTES.CLIENT_HOME)
       }
     } else {
       setError(result.error || 'Failed to create account. Please check your details.')

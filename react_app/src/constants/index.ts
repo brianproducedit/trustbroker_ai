@@ -22,6 +22,7 @@ export const ROUTES = {
   CLIENT_CONTRACTS: '/app/client/contracts',
   CLIENT_APPLICATIONS: '/app/client/applications',
   CLIENT_PROFILE: '/app/client/profile',
+  CLIENT_PROFILE_PUBLIC: (clientId: string = ':clientId') => `/app/client/profile/${clientId}`,
   NEW_PROJECT: '/app/client/contracts/new',
   CONTRACTS: '/app/client/contracts',
   CONTRACT_DETAIL: (id: string = ':id') => `/app/client/contracts/${id}`,
@@ -46,8 +47,11 @@ export const ROUTES = {
   FREELANCER_OPERATIONS: '/app/freelancer/operations',
   FREELANCER_STUDIO: '/app/freelancer/studio',
 
-  // Common & Legacy Routes
-  ACTIVITY_HISTORY: (id: string = ':id') => `/dashboard/activity/${id}`,
+  // Common Routes
+  ACTIVITY_HISTORY: (id: string = ':id') => `/app/activity/${id}`,
+
+  // Notifications
+  NOTIFICATIONS: '/app/notifications',
 }
 
 export const STATUS_COLORS = {

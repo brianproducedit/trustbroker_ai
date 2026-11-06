@@ -132,7 +132,7 @@ export const DeliveryVerification: React.FC = () => {
         <div className="text-center py-20">
           <h2 className="text-xl font-bold text-white">Milestone not found</h2>
           <Button asChild variant="outline" className="mt-4 border-slate-700 text-slate-300">
-            <Link to={ROUTES.DASHBOARD}>Return to Dashboard</Link>
+            <Link to={activeRole === 'client' ? ROUTES.CLIENT_CONTRACTS : ROUTES.FREELANCER_WORK}>Return to {activeRole === 'client' ? 'Contracts' : 'Active Work'}</Link>
           </Button>
         </div>
       </DashboardLayout>
@@ -254,7 +254,7 @@ export const DeliveryVerification: React.FC = () => {
         title: 'Payment Released',
         description: `${formatCurrency(selectedMilestone.amount)} USD transferred for verified milestone.`,
         type: 'payment',
-        link: activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id),
+        link: ROUTES.CONTRACT_DETAIL(contract.id),
       })
     } catch (err: any) {
       toast.error(err?.detail || err?.message || 'Failed to disburse PayPal payout.')
@@ -301,7 +301,7 @@ export const DeliveryVerification: React.FC = () => {
       title: 'Human Review Override',
       description: `Client manually approved milestone "${selectedMilestone.title}". Reason: ${overrideReason}`,
       type: 'verification',
-      link: activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id),
+      link: ROUTES.CONTRACT_DETAIL(contract.id),
     })
   }
 
@@ -336,7 +336,7 @@ export const DeliveryVerification: React.FC = () => {
         title: 'Escrow Funds Reclaimed',
         description: `Client reclaimed staged escrow for "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount)}). Reason: ${reclaimReason}`,
         type: 'payment',
-        link: activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id),
+        link: ROUTES.CONTRACT_DETAIL(contract.id),
       })
     } catch (err: any) {
       toast.error(err?.detail || err?.message || 'Failed to reclaim escrow funds.')
@@ -420,7 +420,7 @@ export const DeliveryVerification: React.FC = () => {
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center justify-between">
           <Link
-            to={activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id)}
+            to={ROUTES.CONTRACT_DETAIL(contract.id)}
             className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-mono transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -550,7 +550,7 @@ export const DeliveryVerification: React.FC = () => {
                         asChild
                         className="h-7 text-xs bg-[#0070BA] hover:bg-[#003087] text-white mt-1 gap-1"
                       >
-                        <Link to={`/app/client/contracts/${contract.id}`}>
+                        <Link to={ROUTES.CONTRACT_DETAIL(contract.id)}>
                           <DollarSign className="w-3 h-3" />
                           Fund Milestone via PayPal
                         </Link>
@@ -1164,39 +1164,41 @@ export const DeliveryVerification: React.FC = () => {
                               </p>
                             </div>
 
-                            <div className="pt-1 flex flex-col sm:flex-row gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setReclaimDialogOpen(true)}
-                                className="flex-1 border-rose-500/40 text-rose-400 hover:text-white hover:bg-rose-950/40 text-xs gap-1.5 h-9"
-                              >
-                                <Undo2 className="w-3.5 h-3.5" />
-                                Reclaim Staged Escrow
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => setDisputeDialogOpen(true)}
-                                className="border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-9"
-                              >
-                                <Scale className="w-3.5 h-3.5" />
-                                AI Dispute Mediation
-                              </Button>
+                            <div className="pt-2 flex flex-col gap-2">
                               <Button
                                 onClick={() => setOverrideDialogOpen(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
                               >
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 Override &amp; Approve
                               </Button>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setReclaimDialogOpen(true)}
+                                  className="w-full border-rose-500/40 text-rose-400 hover:text-white hover:bg-rose-950/40 text-xs gap-1.5 h-9 font-medium"
+                                >
+                                  <Undo2 className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate">Reclaim Escrow</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setDisputeDialogOpen(true)}
+                                  className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-9 font-medium"
+                                >
+                                  <Scale className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate">AI Dispute</span>
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ) : (
-                          <div className="flex flex-col sm:flex-row gap-2.5">
+                          <div className="flex flex-col gap-2 pt-2">
                             {isVerified ? (
                               <Button
                                 onClick={handleAuthorizeRelease}
                                 disabled={isReleasing}
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
                               >
                                 <DollarSign className="w-3.5 h-3.5" />
                                 {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
@@ -1204,21 +1206,31 @@ export const DeliveryVerification: React.FC = () => {
                             ) : (
                               <Button
                                 onClick={() => setOverrideDialogOpen(true)}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
                               >
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 Client Override &amp; Approve (${selectedMilestone.amount})
                               </Button>
                             )}
 
-                            <Button
-                              variant="outline"
-                              onClick={() => setRevisionDialogOpen(true)}
-                              className="border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-9"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              Request Revision
-                            </Button>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => setRevisionDialogOpen(true)}
+                                className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8.5 font-medium"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                                <span>Request Revision</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setDisputeDialogOpen(true)}
+                                className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium"
+                              >
+                                <Scale className="w-3.5 h-3.5 shrink-0" />
+                                <span>AI Dispute</span>
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1261,14 +1273,14 @@ export const DeliveryVerification: React.FC = () => {
                               </p>
                             </div>
 
-                            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                            <div className="pt-2 flex flex-col gap-2">
                               <Button
                                 onClick={() => {
                                   window.scrollTo({ top: 300, behavior: 'smooth' })
                                   const notesEl = document.getElementById('delivery-notes')
                                   if (notesEl) notesEl.focus()
                                 }}
-                                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                                className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md cursor-pointer"
                               >
                                 <UploadCloud className="w-3.5 h-3.5" />
                                 Submit Revised Deliverables
@@ -1276,7 +1288,7 @@ export const DeliveryVerification: React.FC = () => {
                               <Button
                                 variant="outline"
                                 onClick={() => setDisputeDialogOpen(true)}
-                                className="border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-9"
+                                className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
                               >
                                 <Scale className="w-3.5 h-3.5" />
                                 Request AI Dispute Mediation
@@ -1310,11 +1322,11 @@ export const DeliveryVerification: React.FC = () => {
                               </p>
                             </div>
 
-                            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                            <div className="pt-2 flex flex-col gap-2">
                               <Button
                                 onClick={handleNudgeClient}
                                 disabled={isNudged}
-                                className={`flex-1 text-xs gap-1.5 h-9 font-semibold transition-all ${
+                                className={`w-full text-xs gap-1.5 h-9 font-semibold transition-all cursor-pointer ${
                                   isNudged
                                     ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
                                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
@@ -1335,7 +1347,7 @@ export const DeliveryVerification: React.FC = () => {
 
                               <Link
                                 to={ROUTES.FREELANCER_PAYOUTS}
-                                className="inline-flex items-center justify-center px-3.5 py-2 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-xs font-medium text-slate-300 border border-[#222A3D] transition-colors"
+                                className="w-full inline-flex items-center justify-center px-3.5 py-2 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-xs font-medium text-slate-300 border border-[#222A3D] transition-colors"
                               >
                                 View Earnings Ledger →
                               </Link>
@@ -1482,19 +1494,29 @@ export const DeliveryVerification: React.FC = () => {
                         <div className="space-y-2">
                           <Button
                             onClick={() => setManualApproveOpen(true)}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-9 font-semibold"
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-9 font-semibold cursor-pointer"
                           >
                             <UserCheck className="w-3.5 h-3.5" />
                             Approve Manually
                           </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setRevisionDialogOpen(true)}
-                            className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-9"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            Request Revision
-                          </Button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setRevisionDialogOpen(true)}
+                              className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                              <span>Request Revision</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => setDisputeDialogOpen(true)}
+                              className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                            >
+                              <Scale className="w-3.5 h-3.5 shrink-0" />
+                              <span>AI Dispute</span>
+                            </Button>
+                          </div>
                         </div>
                       )}
 
@@ -1507,14 +1529,34 @@ export const DeliveryVerification: React.FC = () => {
                             </span>
                           </div>
                           {!isSettled && (
-                            <Button
-                              onClick={handleAuthorizeRelease}
-                              disabled={isReleasing}
-                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
-                            >
-                              <DollarSign className="w-3.5 h-3.5" />
-                              {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
-                            </Button>
+                            <div className="space-y-2">
+                              <Button
+                                onClick={handleAuthorizeRelease}
+                                disabled={isReleasing}
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md cursor-pointer"
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
+                              </Button>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setRevisionDialogOpen(true)}
+                                  className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Request Revision</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setDisputeDialogOpen(true)}
+                                  className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                                >
+                                  <Scale className="w-3.5 h-3.5 shrink-0" />
+                                  <span>AI Dispute</span>
+                                </Button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}

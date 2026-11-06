@@ -68,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
     { label: 'Operations', icon: BarChart3, path: ROUTES.CLIENT_OPERATIONS },
     { label: 'Analytics Studio', icon: Sparkles, path: ROUTES.CLIENT_STUDIO },
     { label: 'Payouts', icon: Wallet, path: ROUTES.CLIENT_PAYOUTS },
-    { label: 'Notifications', icon: Bell, path: '/app/notifications' },
+    { label: 'Notifications', icon: Bell, path: ROUTES.NOTIFICATIONS },
     { label: 'Profile', icon: UserCircle2, path: ROUTES.CLIENT_PROFILE },
   ]
 
@@ -79,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
     { label: 'Active Work', icon: Briefcase, path: ROUTES.FREELANCER_WORK },
     { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
     { label: 'Analytics Studio', icon: Sparkles, path: ROUTES.FREELANCER_STUDIO },
-    { label: 'Notifications', icon: Bell, path: '/app/notifications' },
+    { label: 'Notifications', icon: Bell, path: ROUTES.NOTIFICATIONS },
     { label: 'Profile', icon: UserCircle2, path: ROUTES.FREELANCER_PROFILE },
     { label: 'Earnings', icon: Wallet, path: ROUTES.FREELANCER_PAYOUTS },
   ]

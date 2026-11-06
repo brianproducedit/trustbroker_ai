@@ -103,7 +103,7 @@ export const ListingDetail: React.FC = () => {
               size="sm"
               className="border-[#222A3D] text-blue-400 hover:text-white hover:bg-blue-950/50 text-xs shrink-0 self-start sm:self-center"
             >
-              <Link to={`/app/client/profile/${listing.client_id || 'client-1'}`}>
+              <Link to={ROUTES.CLIENT_PROFILE_PUBLIC(listing.client_id || 'client-1')}>
                 View Client Profile <ExternalLink className="w-3 h-3 ml-1.5" />
               </Link>
             </Button>

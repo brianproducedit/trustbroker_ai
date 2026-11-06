@@ -34,7 +34,8 @@ import {
   ExternalLink,
   UploadCloud,
   Briefcase,
-  Inbox
+  Inbox,
+  ShieldCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { FreelancerHome } from '@/pages/freelancer/FreelancerHome'
@@ -548,6 +549,15 @@ export const Dashboard: React.FC = () => {
               <div className="flex flex-col gap-2 pt-2 border-t border-[#222A3D]">
                 {activeRole === 'client' ? (
                   <>
+                    {activeMilestone && (activeMilestone.status === 'submitted' || activeMilestone.status === 'verifying') && (
+                      <Button
+                        onClick={() => navigate(ROUTES.CLIENT_REVIEW(selectedContract?.id || 'contract-1'))}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Review Freelancer Delivery</span>
+                      </Button>
+                    )}
                     {activeMilestone && activeMilestone.status === 'verified' && activeMilestone.paymentStatus !== 'released' && (
                       <Button
                         onClick={() => {

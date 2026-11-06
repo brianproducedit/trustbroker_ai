@@ -65,56 +65,93 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   // Generate breadcrumb text from location
   const getBreadcrumbs = () => {
     const path = location.pathname
+    const isClient = activeRole === 'client'
+    const homeRoute = isClient ? ROUTES.CLIENT_HOME : ROUTES.FREELANCER_HOME
+    const homeLabel = isClient ? 'Dashboard' : 'Home'
+
     if (path.includes('/dashboard/create-project') || path.includes('/app/client/contracts/new')) {
-      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'New contract' }]
+      return [{ label: homeLabel, to: homeRoute }, { label: 'New contract' }]
     }
     if (path.includes('/dashboard/contracts')) {
-      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: `Contract ${activeContract?.code || ''}` }]
+      return [{ label: homeLabel, to: homeRoute }, { label: `Contract ${activeContract?.code || ''}` }]
     }
     if (path.includes('/review')) {
       return [
-        { label: 'My Contracts', to: '/app/client/contracts' },
+        { label: 'My Contracts', to: ROUTES.CLIENT_CONTRACTS },
         ...(activeContract?.code ? [{ label: activeContract.code, to: ROUTES.CONTRACT_DETAIL(activeContract.id) }] : []),
         { label: 'Review Delivery' },
       ]
     }
     if (path.includes('/deliver')) {
       return [
-        { label: 'Dashboard', to: ROUTES.DASHBOARD },
+        { label: 'Active Work', to: ROUTES.FREELANCER_WORK },
         { label: 'Submit Delivery' },
       ]
     }
     if (path.includes('/dashboard/deliveries')) {
       return [
-        { label: activeRole === 'client' ? 'My Contracts' : 'Dashboard', to: activeRole === 'client' ? '/app/client/contracts' : ROUTES.DASHBOARD },
-        { label: activeRole === 'client' ? 'Review Delivery' : 'Submit Delivery' },
+        { label: isClient ? 'My Contracts' : 'Active Work', to: isClient ? ROUTES.CLIENT_CONTRACTS : ROUTES.FREELANCER_WORK },
+        { label: isClient ? 'Review Delivery' : 'Submit Delivery' },
       ]
     }
     if (path.includes('/app/client/contracts/')) {
-      return [{ label: 'My Contracts', to: '/app/client/contracts' }, { label: `Contract ${activeContract?.code || ''}` }]
+      return [{ label: 'My Contracts', to: ROUTES.CLIENT_CONTRACTS }, { label: `Contract ${activeContract?.code || ''}` }]
     }
     if (path.includes('/app/client/contracts')) {
-      return [{ label: 'Dashboard', to: '/app/client' }, { label: 'My Contracts' }]
+      return [{ label: 'Dashboard', to: ROUTES.CLIENT_HOME }, { label: 'My Contracts' }]
     }
-    if (path.includes('/dashboard/payouts')) {
-      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'Earnings & Payouts' }]
+    if (path.includes('/app/client/payouts')) {
+      return [{ label: 'Dashboard', to: ROUTES.CLIENT_HOME }, { label: 'Payouts' }]
     }
-    if (path.includes('/dashboard/activity')) {
-      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'Activity Audit Log' }]
+    if (path.includes('/app/client/operations')) {
+      return [{ label: 'Dashboard', to: ROUTES.CLIENT_HOME }, { label: 'Operations' }]
+    }
+    if (path.includes('/app/client/studio')) {
+      return [{ label: 'Dashboard', to: ROUTES.CLIENT_HOME }, { label: 'Analytics Studio' }]
+    }
+    if (path.includes('/app/client/applications')) {
+      return [{ label: 'Dashboard', to: ROUTES.CLIENT_HOME }, { label: 'Applications' }]
+    }
+    if (path.includes('/app/client/profile')) {
+      return [{ label: 'Dashboard', to: ROUTES.CLIENT_HOME }, { label: 'Profile' }]
+    }
+    if (path.includes('/dashboard/payouts') || path.includes('/app/freelancer/earnings')) {
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Earnings & Payouts' }]
+    }
+    if (path.includes('/dashboard/activity') || path.includes('/app/activity')) {
+      return [{ label: homeLabel, to: homeRoute }, { label: 'Activity Audit Log' }]
     }
     if (path.includes('/app/freelancer/profile')) {
-      return [{ label: 'Home', to: ROUTES.DASHBOARD }, { label: 'Profile' }]
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Profile' }]
     }
     if (path.includes('/app/freelancer/applications')) {
-      return [{ label: 'Home', to: ROUTES.DASHBOARD }, { label: 'Applications' }]
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Applications' }]
     }
     if (path.includes('/app/freelancer/contracts/')) {
       return [{ label: 'Marketplace', to: ROUTES.MARKETPLACE }, { label: 'Listing' }]
     }
     if (path.includes('/app/freelancer/contracts')) {
-      return [{ label: 'Home', to: ROUTES.DASHBOARD }, { label: 'Marketplace' }]
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Marketplace' }]
     }
-    return [{ label: 'Dashboard' }]
+    if (path.includes('/app/freelancer/work')) {
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Active Work' }]
+    }
+    if (path.includes('/app/freelancer/operations')) {
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Operations' }]
+    }
+    if (path.includes('/app/freelancer/studio')) {
+      return [{ label: 'Home', to: ROUTES.FREELANCER_HOME }, { label: 'Analytics Studio' }]
+    }
+    if (path.includes('/app/notifications')) {
+      return [{ label: homeLabel, to: homeRoute }, { label: 'Notifications' }]
+    }
+    if (path === ROUTES.CLIENT_HOME || path === '/app/client') {
+      return [{ label: 'Dashboard' }]
+    }
+    if (path === ROUTES.FREELANCER_HOME || path === '/app/freelancer') {
+      return [{ label: 'Home' }]
+    }
+    return [{ label: homeLabel }]
   }
 
   const breadcrumbs = getBreadcrumbs()
@@ -292,7 +329,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
                   <div className="pt-2 border-t border-[#222A3D] flex items-center justify-between text-xs">
                     <Link
-                      to="/app/notifications"
+                      to={ROUTES.NOTIFICATIONS}
                       onClick={() => setNotifsOpen(false)}
                       className="text-blue-400 hover:text-blue-300 font-semibold inline-flex items-center gap-1"
                     >

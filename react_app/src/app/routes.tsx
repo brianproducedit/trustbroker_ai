@@ -25,7 +25,6 @@ import { ClientOperations } from '@/pages/client/ClientOperations'
 import { FreelancerOperations } from '@/pages/freelancer/FreelancerOperations'
 import { ClientHome } from '@/pages/client/ClientHome'
 import { ClientContracts } from '@/pages/client/ClientContracts'
-import { ClientContractPage } from '@/pages/client/ClientContractPage'
 import { ClientApplications } from '@/pages/client/ClientApplications'
 import { ClientProfile } from '@/pages/client/ClientProfile'
 import { ClientProfilePublic } from '@/pages/client/ClientProfilePublic'
@@ -62,7 +61,7 @@ export const AppRoutes: React.FC = () => {
 
       {/* Authenticated Client Workspace Routes */}
       <Route
-        path="/app/client"
+        path={ROUTES.CLIENT_HOME}
         element={
           <ProtectedRoute>
             <ClientHome />
@@ -70,7 +69,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/contracts"
+        path={ROUTES.CLIENT_CONTRACTS}
         element={
           <ProtectedRoute>
             <ClientContracts />
@@ -78,7 +77,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/contracts/new"
+        path={ROUTES.CLIENT_NEW_CONTRACT}
         element={
           <ProtectedRoute>
             <CreateProject />
@@ -86,23 +85,23 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/contracts/:id"
+        path={ROUTES.CONTRACT_DETAIL(':id')}
         element={
           <ProtectedRoute>
-            <ClientContractPage />
+            <ContractDetail />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/app/client/contracts/:id/applicants"
+        path={ROUTES.CONTRACT_APPLICANTS(':id')}
         element={
           <ProtectedRoute>
-            <ClientContractPage />
+            <ContractDetail />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/app/client/contracts/:id/review"
+        path={ROUTES.CLIENT_REVIEW(':id')}
         element={
           <ProtectedRoute>
             <DeliveryVerification />
@@ -118,7 +117,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/applications"
+        path={ROUTES.CLIENT_APPLICATIONS}
         element={
           <ProtectedRoute>
             <ClientApplications />
@@ -126,7 +125,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/profile"
+        path={ROUTES.CLIENT_PROFILE}
         element={
           <ProtectedRoute>
             <ClientProfile />
@@ -134,7 +133,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/profile/:clientId"
+        path={ROUTES.CLIENT_PROFILE_PUBLIC(':clientId')}
         element={
           <ProtectedRoute>
             <ClientProfilePublic />
@@ -142,7 +141,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/operations"
+        path={ROUTES.CLIENT_OPERATIONS}
         element={
           <ProtectedRoute>
             <ClientOperations />
@@ -150,7 +149,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/studio"
+        path={ROUTES.CLIENT_STUDIO}
         element={
           <ProtectedRoute>
             <React.Suspense fallback={<StudioFallback />}>
@@ -160,7 +159,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/client/payouts"
+        path={ROUTES.CLIENT_PAYOUTS}
         element={
           <ProtectedRoute>
             <ClientPayoutsPage />
@@ -170,7 +169,7 @@ export const AppRoutes: React.FC = () => {
 
       {/* Authenticated Freelancer Workspace Routes */}
       <Route
-        path="/app/freelancer"
+        path={ROUTES.FREELANCER_HOME}
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -178,7 +177,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/contracts"
+        path={ROUTES.MARKETPLACE}
         element={
           <ProtectedRoute>
             <Marketplace />
@@ -186,7 +185,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/contracts/:id"
+        path={ROUTES.LISTING_DETAIL(':id')}
         element={
           <ProtectedRoute>
             <ListingDetail />
@@ -194,7 +193,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/applications"
+        path={ROUTES.FREELANCER_APPLICATIONS}
         element={
           <ProtectedRoute>
             <MyApplications />
@@ -202,7 +201,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/work"
+        path={ROUTES.FREELANCER_WORK}
         element={
           <ProtectedRoute>
             <FreelancerWork />
@@ -210,7 +209,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/work/:id/deliver"
+        path={ROUTES.FREELANCER_DELIVER(':id')}
         element={
           <ProtectedRoute>
             <DeliveryVerification />
@@ -218,7 +217,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/earnings"
+        path={ROUTES.FREELANCER_PAYOUTS}
         element={
           <ProtectedRoute>
             <FreelancerPayouts />
@@ -226,7 +225,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/profile"
+        path={ROUTES.FREELANCER_PROFILE}
         element={
           <ProtectedRoute>
             <FreelancerProfile />
@@ -234,7 +233,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/operations"
+        path={ROUTES.FREELANCER_OPERATIONS}
         element={
           <ProtectedRoute>
             <FreelancerOperations />
@@ -242,7 +241,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/app/freelancer/studio"
+        path={ROUTES.FREELANCER_STUDIO}
         element={
           <ProtectedRoute>
             <React.Suspense fallback={<StudioFallback />}>
@@ -261,48 +260,15 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      {/* Legacy dashboard paths — redirect to canonical portals */}
+      <Route path="/dashboard/create-project" element={<Navigate to="/app/client/contracts/new" replace />} />
+      <Route path="/dashboard/contracts" element={<Navigate to="/app/client/contracts" replace />} />
+      <Route path="/dashboard/contracts/:id" element={<Navigate to="/app/client/contracts/:id" replace />} />
+      <Route path="/dashboard/deliveries/:id" element={<Navigate to="/app/freelancer/work/:id/deliver" replace />} />
+      <Route path="/dashboard/payouts" element={<Navigate to="/app/freelancer/earnings" replace />} />
+      <Route path="/dashboard/operations" element={<Navigate to="/app/client/operations" replace />} />
       <Route
-        path="/dashboard/create-project"
-        element={
-          <ProtectedRoute>
-            <CreateProject />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/contracts"
-        element={<Navigate to="/app/client/contracts" replace />}
-      />
-      <Route
-        path="/dashboard/contracts/:id"
-        element={
-          <ProtectedRoute>
-            <ContractDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/deliveries/:id"
-        element={
-          <ProtectedRoute>
-            <DeliveryVerification />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/payouts"
-        element={
-          <ProtectedRoute>
-            <FreelancerPayouts />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/operations"
-        element={<Navigate to="/app/client/operations" replace />}
-      />
-      <Route
-        path="/app/notifications"
+        path={ROUTES.NOTIFICATIONS}
         element={
           <ProtectedRoute>
             <NotificationsPage />
@@ -311,7 +277,7 @@ export const AppRoutes: React.FC = () => {
       />
       <Route
         path="/dashboard/notifications"
-        element={<Navigate to="/app/notifications" replace />}
+        element={<Navigate to={ROUTES.NOTIFICATIONS} replace />}
       />
       <Route
         path={ROUTES.ACTIVITY_HISTORY(':id')}
@@ -321,6 +287,8 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      {/* Legacy activity path redirect */}
+      <Route path="/dashboard/activity/:id" element={<Navigate to="/app/activity/:id" replace />} />
 
       {/* Backwards Compatibility / Legacy URL Redirects */}
       <Route path="/create-project" element={<Navigate to="/app/client/contracts/new" replace />} />

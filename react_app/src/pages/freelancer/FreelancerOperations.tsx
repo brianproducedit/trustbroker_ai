@@ -5,6 +5,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { useAuthStore } from '@/hooks/useAuthStore'
 import { formatCurrency } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { ROUTES } from '@/constants'
 import { AgGridReact } from 'ag-grid-react'
 import {
   ModuleRegistry,
@@ -157,7 +158,7 @@ export const FreelancerOperations: React.FC = () => {
         ),
         onCellClicked: (params) => {
           if (params.data?.contractId) {
-            navigate(`/app/freelancer/work/${params.data.contractId}/deliver`)
+            navigate(ROUTES.FREELANCER_DELIVER(params.data.contractId))
           }
         },
       },
@@ -227,7 +228,7 @@ export const FreelancerOperations: React.FC = () => {
             className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40 px-2 gap-1"
             onClick={() => {
               if (params.data?.contractId) {
-                navigate(`/app/freelancer/work/${params.data.contractId}/deliver`)
+                navigate(ROUTES.FREELANCER_DELIVER(params.data.contractId))
               }
             }}
           >
@@ -276,7 +277,7 @@ export const FreelancerOperations: React.FC = () => {
                 asChild
                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 gap-1.5 font-medium shadow-sm"
               >
-                <Link to="/app/freelancer/contracts">
+                <Link to={ROUTES.MARKETPLACE}>
                   <Briefcase className="w-3.5 h-3.5" />
                   <span>Browse Open Marketplace</span>
                 </Link>

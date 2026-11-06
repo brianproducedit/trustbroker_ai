@@ -98,7 +98,7 @@ export const ContractDetail: React.FC = () => {
             </p>
           </div>
           <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9">
-            <Link to={ROUTES.DASHBOARD}>Return to Dashboard</Link>
+            <Link to={ROUTES.CLIENT_CONTRACTS}>Return to Contracts</Link>
           </Button>
         </div>
       </DashboardLayout>
@@ -184,7 +184,7 @@ export const ContractDetail: React.FC = () => {
         <div className="text-center py-20 space-y-4">
           <h2 className="text-xl font-bold text-white">Contract not found</h2>
           <Button asChild variant="outline" className="border-slate-700 text-slate-300">
-            <Link to={ROUTES.DASHBOARD}>Return to Dashboard</Link>
+            <Link to={ROUTES.CLIENT_CONTRACTS}>Return to Contracts</Link>
           </Button>
         </div>
       </DashboardLayout>
@@ -347,7 +347,7 @@ export const ContractDetail: React.FC = () => {
       title: 'Contract Terms Accepted',
       description: `${roleName} digitally confirmed the contract specifications.`,
       type: 'contract',
-      link: `/dashboard/contracts/${contract.id}`,
+      link: ROUTES.CONTRACT_DETAIL(contract.id),
     })
   }
 
@@ -363,7 +363,7 @@ export const ContractDetail: React.FC = () => {
       title: 'Milestone funded via PayPal',
       description: `${formatCurrency(fundedAmount)} USD captured for ${contract.code}. Order ${details?.id || details?.paypal_order_id || ''}.`,
       type: 'payment',
-      link: `/dashboard/contracts/${contract.id}`,
+      link: ROUTES.CONTRACT_DETAIL(contract.id),
     })
   }
 
@@ -393,7 +393,7 @@ export const ContractDetail: React.FC = () => {
         title: 'PayPal payout sent',
         description: `${formatCurrency(selectedMilestone.amount)} USD · batch ${result?.paypal_batch_id || 'processed'}.`,
         type: 'payment',
-        link: `/dashboard/contracts/${contract.id}`,
+        link: ROUTES.CONTRACT_DETAIL(contract.id),
       })
     } catch (err: any) {
       toast.error(err?.detail || 'PayPal payout failed. No duplicate send was assumed.')
@@ -417,7 +417,7 @@ export const ContractDetail: React.FC = () => {
       title: 'Revision Requested',
       description: `Client requested adjustments for milestone "${selectedMilestone.title}".`,
       type: 'revision',
-      link: `/dashboard/contracts/${contract.id}`,
+      link: ROUTES.CONTRACT_DETAIL(contract.id),
     })
   }
 
@@ -484,7 +484,7 @@ export const ContractDetail: React.FC = () => {
       title: 'Milestone Added',
       description: `New milestone "${milestoneObj.title}" ($${milestoneObj.amount}) added to contract.`,
       type: 'contract',
-      link: `/dashboard/contracts/${contract.id}`,
+      link: ROUTES.CONTRACT_DETAIL(contract.id),
     })
 
     // Reset Form
@@ -555,11 +555,11 @@ export const ContractDetail: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[#222A3D]">
           <div className="flex items-center gap-2 text-xs">
             <Link
-              to={ROUTES.DASHBOARD}
+              to={isClient ? ROUTES.CLIENT_CONTRACTS : ROUTES.FREELANCER_WORK}
               className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Contracts</span>
+              <span>{isClient ? 'My Contracts' : 'Active Work'}</span>
             </Link>
             <span className="text-slate-600">/</span>
             <span className="text-blue-400 font-mono font-medium">{contract.code}</span>

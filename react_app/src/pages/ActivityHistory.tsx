@@ -16,7 +16,7 @@ import {
 
 export const ActivityHistory: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const { contracts } = useContractStore()
+  const { contracts, activeRole } = useContractStore()
 
   const contract = id 
     ? contracts.find((c) => c.id === id || c.code === id)
@@ -40,10 +40,10 @@ export const ActivityHistory: React.FC = () => {
             </p>
           </div>
           <Link
-            to={ROUTES.DASHBOARD}
+            to={activeRole === 'client' ? ROUTES.CLIENT_CONTRACTS : ROUTES.FREELANCER_WORK}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-colors"
           >
-            Return to Dashboard
+            Return to {activeRole === 'client' ? 'Contracts' : 'Active Work'}
           </Link>
         </div>
       </DashboardLayout>

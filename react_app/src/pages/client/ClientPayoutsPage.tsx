@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { ROUTES } from '@/constants'
 
 interface PayoutRecord {
   id: string
@@ -327,7 +328,7 @@ export const ClientPayoutsPage: React.FC = () => {
                       </span>
 
                       <Link
-                        to={`/dashboard/deliveries/${contract.id}`}
+                        to={ROUTES.CLIENT_REVIEW(contract.id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#131B2E] border border-[#222A3D] hover:border-slate-500 text-xs text-slate-300 hover:text-white transition-colors"
                       >
                         Review

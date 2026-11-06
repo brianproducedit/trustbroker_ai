@@ -834,3 +834,36 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 ### 13.4 Verification
 - **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 11.61s).
 - **Frontend Build:** TypeScript compilation & Vite build passed (`npm --prefix react_app run build` in 7.80s, 2183 modules transformed, 0 errors).
+
+---
+
+## 14. Phase 15: Comprehensive Portal Route Audit & Delivery Review Button Ergonomics
+
+### 14.1 Route & Breadcrumb Audit
+- **Legacy Route Modernization:**
+  - Audited all `<Link>`, `navigate()`, and string literals across client and freelancer portals.
+  - Replaced legacy `/dashboard/...` hardcoded targets with canonical role-aware routes (`/app/client/...` and `/app/freelancer/...`).
+  - Converted legacy routes (`/dashboard/create-project`, `/dashboard/contracts`, `/dashboard/contracts/:id`, `/dashboard/deliveries/:id`, `/dashboard/payouts`, `/dashboard/operations`, `/dashboard/activity/:id`) in `routes.tsx` into explicit, backwards-compatible `<Navigate replace />` redirects.
+  - Migrated `ROUTES.ACTIVITY_HISTORY` from `/dashboard/activity/:id` to `/app/activity/:id` with legacy redirection.
+  - Added `ROUTES.NOTIFICATIONS` (`/app/notifications`) and `ROUTES.CLIENT_PROFILE_PUBLIC` (`/app/client/profile/:clientId`) constants.
+  - Replaced literal paths across `routes.tsx`, `Sidebar.tsx`, `ListingDetail.tsx`, `ClientOperations.tsx`, and `FreelancerOperations.tsx` with canonical `ROUTES.*` constants.
+  - Mounted `<ContractDetail />` at both `ROUTES.CONTRACT_DETAIL(':id')` and `ROUTES.CONTRACT_APPLICANTS(':id')` ensuring full escrow, milestone, and PayPal payment functionality is active.
+- **Breadcrumb Alignment (`DashboardLayout.tsx`):**
+  - Updated breadcrumb builder to be completely role-aware (`Dashboard` for client, `Home` for freelancer).
+  - Fixed `/deliver` and `/review` paths so clients see `My Contracts / Review Delivery` and freelancers see `Active Work / Submit Delivery`.
+  - Added dedicated breadcrumb handlers for all client and freelancer tabs including profile, applications, operations, studio, and notifications.
+
+### 14.2 Delivery Verification Button Ergonomics (`DeliveryVerification.tsx`)
+- **Resolved Button Squashing & Text Truncation:**
+  - Removed `sm:flex-row` side-by-side button placement inside Column 2 ("AI Verification Assessment") which was compressing the secondary action button into truncated text (e.g. `Requ...`).
+  - Switched action layouts to stacked vertical orientation (`flex flex-col gap-2`), giving `Authorize PayPal Payout ($X)` 100% width on top.
+  - Replaced cramped secondary button bars with balanced 2-column grids (`grid grid-cols-2 gap-2`) for `Request Revision` and `AI Dispute Mediation`, guaranteeing ample room for text and icons without clipping on any screen resolution.
+- **Client Manual Review Panel Action Parity:**
+  - In Column 3 ("Client Manual Review"), added secondary actions (`Request Revision` and `AI Dispute`) directly alongside `Authorize PayPal Payout` when `selectedMilestone.status === 'verified'`, allowing clients to request changes even after automated AI verification passes.
+  - Maintained identical ergonomic grid layout when milestone status is pending approval (`Approve Manually`, `Request Revision`, `AI Dispute`).
+- **Freelancer Action Button Improvements:**
+  - Stacked `Submit Revised Deliverables` and `Request AI Dispute Mediation` vertically to prevent squeezing on narrow viewports.
+
+### 14.3 Verification
+- **Frontend Build:** `npm --prefix react_app run build` compiled cleanly in 5.16s with 0 TypeScript/Vite errors.
+- **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 7.04s).
