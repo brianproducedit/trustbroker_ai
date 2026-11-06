@@ -768,11 +768,16 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 ## 12. Phase 13: Contract Deletion FK Cascade & Action Event Propagation Isolation
 
 ### 12.1 Backend: PostgreSQL Foreign Key Cascade on Draft Deletion
-- **Issue:** Calling `DELETE /api/v1/contracts/{id}` failed on Render's remote PostgreSQL with `ForeignKeyViolation: update or delete on table "contracts" violates foreign key constraint "contract_versions_contract_id_fkey"`.
-- **Root Cause:** SQLAlchemy's ORM Unit of Work batched and reordered `session.delete()` calls such that `DELETE FROM contracts` was issued before child `contract_versions` were deleted.
-- **Fix:** Switched to direct SQL `sql_delete()` statements in strict FK dependency order:
-  `criterion_results` → `verification_reports` → `delivery_files` → `deliveries` → `acceptance_criteria` → `milestones` → `contract_versions` → `contract_acceptances` → `vetting_reports` → `applications` → `audit_events` → `payouts` → `contracts`.
-- **Verification:** All 35 backend tests passed (`pytest -q` in 14.30s). Pushed in commit `d986e98`.
+- **Issue:** Calling `DELETE /api/v1/contracts/{id}` failed on Render's remote PostgreSQL with `ForeignKeyViolation: update or delete on table "contracts" violates foreign key constraint "contract_versions_contract_id_fkey"`. Subsequently encountered `AttributeError: 'UUID' object has no attribute 'id'` on query results that returned raw scalar IDs.
+- **Root Cause:**
+  1. SQLAlchemy's ORM Unit of Work batched and reordered `session.delete()` calls such that `DELETE FROM contracts` was issued before child `contract_versions` were deleted.
+  2. In SQLModel, `session.exec(select(Model.id)...).all()` returns a list of raw `uuid.UUID` values directly, not Model instances. List comprehensions using `item.id` attempted to access `.id` on UUID objects.
+- **Fix:**
+  - Switched to direct SQL `sql_delete()` statements in strict FK dependency order:
+    `criterion_results` → `verification_reports` → `delivery_files` → `deliveries` → `acceptance_criteria` → `milestones` → `contract_versions` → `contract_acceptances` → `vetting_reports` → `applications` → `audit_events` → `payouts` → `contracts`.
+  - Replaced list comprehensions with `list(session.exec(select(Model.id)...).all())` to consume the raw UUIDs directly.
+  - Added a dedicated test case `test_delete_draft_contract_cascades_safely` in `test_e2e_lifecycle.py` verifying draft contracts and all child models are deleted cleanly.
+- **Verification:** All 36 backend tests passed (`pytest -q` in 12.28s). Pushed in commits `d986e98` and `34944e6`.
 
 ### 12.2 Frontend: AG Grid Row Click & Action Cell Event Isolation
 - **Issue:** Clicking the Trash icon (or Action buttons) in the Contracts Ledger table opened both the "Delete Draft Contract" confirmation modal and the "Contract Overview" detail dialog simultaneously.
