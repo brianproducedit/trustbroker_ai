@@ -33,7 +33,7 @@ from app.models.marketplace import Application, ApplicationStatus, Payout, Payou
 from app.models.payment import PaymentAttempt
 from app.models.user import UserProfile
 from app.services.policy_engine import PolicyEngine
-from app.services.contract_service import compute_contract_hash, accept_contract
+from app.services.contract_service import compute_contract_hash, accept_contract, delete_contract
 from app.services.vetting_service import _deterministic_vet
 from app.services import payment_service
 from app.services.verification.safety import validate_evidence_file
@@ -393,6 +393,72 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         safe, reason = validate_evidence_file("exploit.exe", 1024, "application/octet-stream")
         self.assertFalse(safe)
         self.assertIn("prohibited", reason.lower())
+
+    # 11. test_delete_draft_contract_cascades_safely
+    def test_delete_draft_contract_cascades_safely(self):
+        """Rule: Deleting a draft contract deletes all child records (milestones, versions, criteria) without FK violation."""
+        from app.models.milestone import AcceptanceCriterion
+
+        contract = Contract(
+            id=uuid.uuid4(),
+            code="TB-2026-DEL",
+            client_id=self.client.id,
+            title="Deletable Draft Contract",
+            description="Testing cascade deletion",
+            total_amount=Decimal("500.00"),
+            currency="USD",
+            status=ContractStatus.DRAFT,
+            visibility=ContractVisibility.PRIVATE_DRAFT,
+        )
+        self.session.add(contract)
+        self.session.commit()
+
+        milestone = Milestone(
+            id=uuid.uuid4(),
+            contract_id=contract.id,
+            title="Setup Milestone",
+            description="Init repo",
+            amount=Decimal("500.00"),
+            currency="USD",
+            status=MilestoneStatus.PENDING,
+            payment_status=PaymentStatus.NOT_STARTED,
+            order_index=0,
+        )
+        self.session.add(milestone)
+        self.session.commit()
+
+        crit = AcceptanceCriterion(
+            id=uuid.uuid4(),
+            milestone_id=milestone.id,
+            title="Criterion 1",
+            description="Repo initialized",
+            weight=100,
+        )
+        self.session.add(crit)
+
+        version = ContractVersion(
+            id=uuid.uuid4(),
+            contract_id=contract.id,
+            version_number=1,
+            title="Contract v1",
+            content_hash="mock-hash-12345",
+            changes_summary="Initial draft",
+        )
+        self.session.add(version)
+        self.session.commit()
+
+        contract_id = contract.id
+        milestone_id = milestone.id
+        version_id = version.id
+
+        # Execute delete_contract
+        res = delete_contract(self.session, contract.id, self.client)
+        self.assertTrue(res["deleted"])
+
+        # Verify contract and children are cleanly deleted
+        self.assertIsNone(self.session.get(Contract, contract_id))
+        self.assertIsNone(self.session.get(Milestone, milestone_id))
+        self.assertIsNone(self.session.get(ContractVersion, version_id))
 
 
 if __name__ == "__main__":

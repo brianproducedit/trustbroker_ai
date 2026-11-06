@@ -754,16 +754,12 @@ def delete_contract(
         )
 
     # Collect milestone IDs for child FK deletes
-    milestone_ids = [
-        m.id for m in session.exec(select(Milestone.id).where(Milestone.contract_id == contract_id)).all()
-    ]
+    milestone_ids = list(session.exec(select(Milestone.id).where(Milestone.contract_id == contract_id)).all())
 
     # 1. CriterionResults → VerificationReports (FK on verification_reports.id and acceptance_criteria.id)
-    report_ids = [
-        r.id for r in session.exec(
-            select(VerificationReport.id).where(VerificationReport.contract_id == contract_id)
-        ).all()
-    ]
+    report_ids = list(session.exec(
+        select(VerificationReport.id).where(VerificationReport.contract_id == contract_id)
+    ).all())
     if report_ids:
         session.exec(sql_delete(CriterionResult).where(CriterionResult.report_id.in_(report_ids)))
 
@@ -771,11 +767,9 @@ def delete_contract(
     session.exec(sql_delete(VerificationReport).where(VerificationReport.contract_id == contract_id))
 
     # 3. DeliveryFiles → Deliveries (FK on deliveries.id)
-    delivery_ids = [
-        d.id for d in session.exec(
-            select(Delivery.id).where(Delivery.contract_id == contract_id)
-        ).all()
-    ]
+    delivery_ids = list(session.exec(
+        select(Delivery.id).where(Delivery.contract_id == contract_id)
+    ).all())
     if delivery_ids:
         session.exec(sql_delete(DeliveryFile).where(DeliveryFile.delivery_id.in_(delivery_ids)))
 
@@ -796,11 +790,9 @@ def delete_contract(
     session.exec(sql_delete(ContractAcceptance).where(ContractAcceptance.contract_id == contract_id))
 
     # 9. VettingReports → Applications (FK on applications.id via vetting_reports.application_id)
-    app_ids = [
-        a.id for a in session.exec(
-            select(Application.id).where(Application.contract_id == contract_id)
-        ).all()
-    ]
+    app_ids = list(session.exec(
+        select(Application.id).where(Application.contract_id == contract_id)
+    ).all())
     if app_ids:
         session.exec(sql_delete(VettingReport).where(VettingReport.application_id.in_(app_ids)))
 
