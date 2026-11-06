@@ -500,3 +500,4 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 6. **Record in a private window** — prevents autocomplete or saved passwords showing personal data.
 7. **Have the PayPal popup pre-authenticated** — log into PayPal Sandbox in a separate tab first so the popup auto-fills credentials.
 8. **Target 10 minutes** — judges review many submissions; tight is better than thorough.
+
