@@ -416,7 +416,7 @@ export const DeliveryVerification: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6 pb-28">
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center justify-between">
           <Link
@@ -517,7 +517,7 @@ export const DeliveryVerification: React.FC = () => {
         {/* Main Grid: 3-column when Client, 2-column when Freelancer */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Column 1: Submission Form */}
-          <div className={`${activeRole === 'client' ? 'lg:col-span-5' : 'lg:col-span-6'} space-y-4`}>
+          <div className={`${activeRole === 'client' ? 'lg:col-span-4' : 'lg:col-span-6'} space-y-4`}>
             <Card className="border-[#222A3D] bg-[#131B2E] text-white">
               <CardHeader className="pb-3 border-b border-[#222A3D]">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
@@ -1127,7 +1127,7 @@ export const DeliveryVerification: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Action Buttons & Status for Client */}
+                    {/* Status & Verification Guidance for Client in Column 2 */}
                     {activeRole === 'client' && !isSettled && (
                       <div className="pt-2">
                         {isRevisionRequested ? (
@@ -1143,7 +1143,7 @@ export const DeliveryVerification: React.FC = () => {
                             </div>
 
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              You have requested revisions on this milestone deliverable. The 7-day auto-disbursal clock is strictly suspended. The freelancer ({contract.freelancer?.name || 'Freelancer'}) must submit an updated delivery addressing your feedback before release can proceed.
+                              You have requested adjustments on this milestone deliverable. The 7-day auto-disbursal clock is strictly suspended. The freelancer ({contract.freelancer?.name || 'Freelancer'}) has been notified to address your feedback.
                             </p>
 
                             {selectedMilestone.revisionNotes && (
@@ -1157,80 +1157,37 @@ export const DeliveryVerification: React.FC = () => {
                             <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
                               <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>Buyer Protection: 7-Day Inactivity Reclamation Guarantee</span>
+                                <span>Buyer Protection: 7-Day Inactivity Guarantee</span>
                               </div>
                               <p className="text-slate-400 text-[10px] leading-relaxed">
-                                Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded. If the freelancer ignores this revision or fails to submit updated deliverables within 7 days, you can reclaim your staged escrow funds back to your account without penalty.
+                                Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded in PayPal Sandbox escrow. Manage settlement or reclamation in the <strong>Client Manual Review</strong> panel on the right.
                               </p>
                             </div>
-
-                            <div className="pt-2 flex flex-col gap-2">
-                              <Button
-                                onClick={() => setOverrideDialogOpen(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Override &amp; Approve
-                              </Button>
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setReclaimDialogOpen(true)}
-                                  className="w-full border-rose-500/40 text-rose-400 hover:text-white hover:bg-rose-950/40 text-xs gap-1.5 h-9 font-medium"
-                                >
-                                  <Undo2 className="w-3.5 h-3.5 shrink-0" />
-                                  <span className="truncate">Reclaim Escrow</span>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setDisputeDialogOpen(true)}
-                                  className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-9 font-medium"
-                                >
-                                  <Scale className="w-3.5 h-3.5 shrink-0" />
-                                  <span className="truncate">AI Dispute</span>
-                                </Button>
+                          </div>
+                        ) : isVerified ? (
+                          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <span>AI Multimodal Inspection Passed</span>
                               </div>
+                              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-mono">
+                                Score: {assessment.overallScore}/100
+                              </Badge>
                             </div>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              All agreed milestone criteria have passed automated inspection. Proceed to the <strong>Client Manual Review</strong> panel on the right to review the live deliverable outside the system and authorize payment disbursement.
+                            </p>
                           </div>
                         ) : (
-                          <div className="flex flex-col gap-2 pt-2">
-                            {isVerified ? (
-                              <Button
-                                onClick={handleAuthorizeRelease}
-                                disabled={isReleasing}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
-                              >
-                                <DollarSign className="w-3.5 h-3.5" />
-                                {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => setOverrideDialogOpen(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9 font-semibold"
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Client Override &amp; Approve (${selectedMilestone.amount})
-                              </Button>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => setRevisionDialogOpen(true)}
-                                className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8.5 font-medium"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                                <span>Request Revision</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => setDisputeDialogOpen(true)}
-                                className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium"
-                              >
-                                <Scale className="w-3.5 h-3.5 shrink-0" />
-                                <span>AI Dispute</span>
-                              </Button>
+                          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-2.5">
+                            <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+                              <AlertCircle className="w-4 h-4 text-amber-400" />
+                              <span>Criteria Review or Flagged Items</span>
                             </div>
+                            <p className="text-slate-300 text-[11px] leading-relaxed">
+                              Some criteria require subjective or visual confirmation. You can manually inspect the deliverables and override approval or request changes in the <strong>Client Manual Review</strong> panel on the right.
+                            </p>
                           </div>
                         )}
                       </div>
@@ -1388,7 +1345,7 @@ export const DeliveryVerification: React.FC = () => {
 
           {/* Column 3: Client Manual Review (Visible to Clients) */}
           {activeRole === 'client' && (
-            <div className="lg:col-span-3 space-y-4">
+            <div className="lg:col-span-4 space-y-4">
               <Card className="border-[#222A3D] bg-[#131B2E] text-white">
                 <CardHeader className="pb-3 border-b border-[#222A3D]">
                   <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
@@ -1489,70 +1446,102 @@ export const DeliveryVerification: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Action Buttons */}
-                      {!isSettled && selectedMilestone.status !== 'verified' && (
-                        <div className="space-y-2">
+                      {/* Action Buttons for Client Manual Review */}
+                      {isRevisionRequested ? (
+                        <div className="space-y-2.5">
+                          <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/40 text-xs text-amber-300 flex items-center gap-2">
+                            <RotateCcw className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>Revision requested — auto-release paused.</span>
+                          </div>
                           <Button
-                            onClick={() => setManualApproveOpen(true)}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-9 font-semibold cursor-pointer"
+                            onClick={() => setOverrideDialogOpen(true)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-10 font-bold shadow-md cursor-pointer"
                           >
-                            <UserCheck className="w-3.5 h-3.5" />
-                            Approve Manually
+                            <ShieldCheck className="w-4 h-4" />
+                            Override &amp; Approve (${selectedMilestone.amount})
                           </Button>
                           <div className="grid grid-cols-2 gap-2">
                             <Button
                               variant="outline"
-                              onClick={() => setRevisionDialogOpen(true)}
-                              className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                              onClick={() => setReclaimDialogOpen(true)}
+                              className="w-full border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
                             >
-                              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                              <span>Request Revision</span>
+                              <Undo2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>Reclaim Escrow</span>
                             </Button>
                             <Button
                               variant="outline"
                               onClick={() => setDisputeDialogOpen(true)}
-                              className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                              className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
                             >
                               <Scale className="w-3.5 h-3.5 shrink-0" />
                               <span>AI Dispute</span>
                             </Button>
                           </div>
                         </div>
-                      )}
+                      ) : !isSettled && selectedMilestone.status !== 'verified' ? (
+                        <div className="space-y-2.5">
+                          <Button
+                            onClick={() => setManualApproveOpen(true)}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-10 font-bold shadow-md cursor-pointer"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            Approve Deliverables Manually
+                          </Button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setRevisionDialogOpen(true)}
+                              className="w-full border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span>Request Revision</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => setDisputeDialogOpen(true)}
+                              className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
+                            >
+                              <Scale className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                              <span>AI Dispute</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
 
-                      {(isSettled || selectedMilestone.status === 'verified') && (
-                        <div className="space-y-2">
+                      {(isSettled || selectedMilestone.status === 'verified') && !isRevisionRequested && (
+                        <div className="space-y-2.5">
                           <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300 flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
                             <span>
-                              {isSettled ? 'Payment disbursed.' : 'Milestone verified — ready to disburse.'}
+                              {isSettled ? 'Payment disbursed via PayPal.' : 'Milestone verified — ready to disburse.'}
                             </span>
                           </div>
                           {!isSettled && (
-                            <div className="space-y-2">
+                            <div className="space-y-2.5">
                               <Button
                                 onClick={handleAuthorizeRelease}
                                 disabled={isReleasing}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md cursor-pointer"
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-2 h-10 font-bold shadow-lg shadow-emerald-950/40 cursor-pointer transition-all"
                               >
-                                <DollarSign className="w-3.5 h-3.5" />
+                                <DollarSign className="w-4 h-4" />
                                 {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
                               </Button>
                               <div className="grid grid-cols-2 gap-2">
                                 <Button
                                   variant="outline"
                                   onClick={() => setRevisionDialogOpen(true)}
-                                  className="w-full border-[#2D3449] text-amber-400 hover:text-white hover:bg-amber-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                                  className="w-full border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer transition-all"
                                 >
-                                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                                  <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                   <span>Request Revision</span>
                                 </Button>
                                 <Button
                                   variant="outline"
                                   onClick={() => setDisputeDialogOpen(true)}
-                                  className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                                  className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer transition-all"
                                 >
-                                  <Scale className="w-3.5 h-3.5 shrink-0" />
+                                  <Scale className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                                   <span>AI Dispute</span>
                                 </Button>
                               </div>

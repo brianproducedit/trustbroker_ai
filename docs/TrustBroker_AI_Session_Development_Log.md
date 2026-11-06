@@ -854,16 +854,23 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
   - Added dedicated breadcrumb handlers for all client and freelancer tabs including profile, applications, operations, studio, and notifications.
 
 ### 14.2 Delivery Verification Button Ergonomics (`DeliveryVerification.tsx`)
-- **Resolved Button Squashing & Text Truncation:**
-  - Removed `sm:flex-row` side-by-side button placement inside Column 2 ("AI Verification Assessment") which was compressing the secondary action button into truncated text (e.g. `Requ...`).
-  - Switched action layouts to stacked vertical orientation (`flex flex-col gap-2`), giving `Authorize PayPal Payout ($X)` 100% width on top.
-  - Replaced cramped secondary button bars with balanced 2-column grids (`grid grid-cols-2 gap-2`) for `Request Revision` and `AI Dispute Mediation`, guaranteeing ample room for text and icons without clipping on any screen resolution.
+- **Eliminated Button Duplication Across Columns:**
+  - Removed duplicated action buttons (`Authorize PayPal Payout`, `Request Revision`, `AI Dispute`) from Column 2 ("AI Verification Assessment") for client view.
+  - Column 2 now functions strictly as an automated AI evaluation report with clear informational status cards directing clients to review and settle in Column 3.
+  - All client manual verification and disbursement actions reside exclusively in **Column 3 ("Client Manual Review")**.
+- **Resolved Button Squashing, Text Truncation & Layout Balance:**
+  - Expanded container maximum width from `max-w-5xl` (1024px) to `max-w-7xl` (1280px) and balanced grid column widths to an equal `lg:col-span-4` (4 / 4 / 4) split, increasing Column 3 width by 33%.
+  - Added `pb-28` bottom padding to the view container, ensuring floating widgets (such as the `Ask AI` FAB in the lower-right corner) never obscure action buttons.
+  - Styled secondary action buttons with subtle fintech color tints (`border-amber-500/40 bg-amber-500/10 text-amber-300` for Request Revision, `border-blue-500/40 bg-blue-500/10 text-blue-300` for AI Dispute, and `border-rose-500/40 bg-rose-500/10 text-rose-300` for Escrow Reclamation).
 - **Client Manual Review Panel Action Parity:**
-  - In Column 3 ("Client Manual Review"), added secondary actions (`Request Revision` and `AI Dispute`) directly alongside `Authorize PayPal Payout` when `selectedMilestone.status === 'verified'`, allowing clients to request changes even after automated AI verification passes.
-  - Maintained identical ergonomic grid layout when milestone status is pending approval (`Approve Manually`, `Request Revision`, `AI Dispute`).
+  - Handled all lifecycle review states distinctly in Column 3:
+    1. **Verified (`isVerified`):** Primary `Authorize PayPal Payout ($X)` (`h-10`, bold, shadow) + 2-col secondary grid (`Request Revision` and `AI Dispute`).
+    2. **Revision Requested (`isRevisionRequested`):** Clock pause notice + primary `Override & Approve ($X)` + 2-col secondary grid (`Reclaim Escrow` and `AI Dispute`).
+    3. **Pending Verification (`!isVerified`):** Primary `Approve Deliverables Manually` + 2-col secondary grid (`Request Revision` and `AI Dispute`).
+    4. **Settled (`isSettled`):** Disbursement confirmation banner.
 - **Freelancer Action Button Improvements:**
   - Stacked `Submit Revised Deliverables` and `Request AI Dispute Mediation` vertically to prevent squeezing on narrow viewports.
 
 ### 14.3 Verification
-- **Frontend Build:** `npm --prefix react_app run build` compiled cleanly in 5.16s with 0 TypeScript/Vite errors.
-- **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 7.04s).
+- **Frontend Build:** `npm --prefix react_app run build` compiled cleanly in 4.94s with 0 TypeScript/Vite errors.
+- **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 8.53s).
