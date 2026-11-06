@@ -1,5 +1,5 @@
 # TrustBroker AI — Devpost Hackathon Submission Guide
-## Complete Copy-Paste Reference for PayPal AI Hackathon 2026
+## Complete Copy-Paste Reference for PayPal AI Hackathon 2026 (Solo Developer Edition)
 
 > **Hackathon:** [PayPal AI Hackathon 2026 on Devpost](https://paypalaihackathon.devpost.com/)  
 > **Submission URL:** `https://devpost.com/submit-to/31302-paypal-ai-hackathon/manage/submissions`  
@@ -51,7 +51,7 @@ Copy and paste the markdown below into the **"About the project"** editor on Dev
 ## 💡 Inspiration
 Every year, freelancers lose billions in unpaid invoices, while clients risk capital on unfinished or sub-standard work. Traditional escrow platforms charge punitive 10–20% fees, introduce weeks of manual dispute arbitration, and rely on subjective "he-said-she-said" reviews.
 
-We built **TrustBroker AI** to establish a trustless, transparent intermediary for the freelance economy. By combining **PayPal Orders v2 milestone captures** and **PayPal Payouts API single-click disbursements** with **autonomous multimodal AI verification** and a deterministic **PolicyEngine**, TrustBroker coordinates verifiable work delivery directly with guaranteed payouts.
+I built **TrustBroker AI** as an independent developer to establish a trustless, transparent intermediary for the freelance economy. By combining **PayPal Orders v2 milestone captures** and **PayPal Payouts API single-click disbursements** with **autonomous multimodal AI verification** and a deterministic **PolicyEngine**, TrustBroker coordinates verifiable work delivery directly with guaranteed payouts.
 
 ---
 
@@ -63,7 +63,7 @@ TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 2. **Impartial Applicant Vetting**: Evaluates candidate portfolios, code quality, and communication signals without penalizing newcomers for zero-contract histories, eliminating reputation bias.
 3. **Mutual Agreement & SHA-256 Hash**: Both parties cryptographically sign the exact agreed SOW hash before any money moves.
 4. **Milestone Escrow via PayPal Orders v2**: Clients fund milestone deliverables using PayPal Smart Buttons. Funds are captured and held staged in sandbox with real PayPal Order and Capture IDs.
-5. **Multimodal Delivery Inspection**: When freelancers deliver, our agentic verification engine inspects evidence across 4 parallel adapters:
+5. **Multimodal Delivery Inspection**: When freelancers deliver, an agentic verification engine inspects evidence across 4 parallel adapters:
    - **HTTP Probe Adapter**: Validates live URL response codes, HTTPS/TLS certificates, and latency.
    - **Vision Heuristic Adapter**: Analyzes UI screenshots against UX requirements.
    - **Document Adapter**: Scans delivery attestations and documentation.
@@ -74,9 +74,11 @@ TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 
 ---
 
-## 🛠️ How We Built It
+## 🛠️ How I Built It
 
-- **FinTech Payment Layer**: PayPal REST APIs using Python SDK / direct HTTP endpoints — PayPal Orders v2 (`/v2/checkout/orders` with `CAPTURE` intent), PayPal Payouts API (`/v1/payments/payouts`), and asynchronous PayPal Webhook event listeners.
+As a solo developer, I architected and built the entire full-stack application from scratch:
+
+- **FinTech Payment Layer**: PayPal REST APIs using Python SDK and direct HTTP endpoints — PayPal Orders v2 (`/v2/checkout/orders` with `CAPTURE` intent), PayPal Payouts API (`/v1/payments/payouts`), and asynchronous PayPal Webhook event listeners.
 - **Agentic AI & LLM Inference**: Powered by Groq LPU running Llama 3.3 70B Versatile (sub-400ms SOW drafting and vetting) and Llama 3.2 11B Vision for multimodal screenshot heuristic inspection, with OpenRouter fallback.
 - **Deterministic PolicyEngine**: Python FastAPI service that enforces 4 non-negotiable security invariant checks before any financial transaction can execute.
 - **Frontend & Operations**: React 18, TypeScript, Tailwind CSS, Lucide icons, and **AG Grid Enterprise** for the financial ledgers.
@@ -87,7 +89,7 @@ TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 
 ## 🔒 The Three Ironclad Rules: Why AI Never Moves Money
 
-A core innovation in TrustBroker AI is our safety boundary:
+A core innovation in TrustBroker AI is the strict safety boundary:
 - **AI Recommends**: The verification engine generates objective criteria evaluations (scores, pass/fail badges, citations).
 - **PolicyEngine Validates**: Strict state-machine rules enforce prerequisites.
 - **Human Authorizes**: The client explicitly clicks to disburse funds.
@@ -114,22 +116,22 @@ A core innovation in TrustBroker AI is our safety boundary:
 
 ---
 
-## 🧗 Challenges We Ran Into
-- **Strict Role Boundaries**: Ensuring clean role switching so clients cannot access freelancer delivery routes and freelancers cannot trigger client payout authorizations. We solved this with canonical `/app/client` and `/app/freelancer` route separation and database-level RLS.
-- **Sub-Second Multimodal Latency**: Running vision, repository, and live URL probes concurrently without blocking the UI. We solved this using parallel async adapter dispatching through Groq's high-throughput LPU.
-- **Idempotency in Payouts**: Preventing accidental double-clicks or network retries from sending duplicate payouts. Solved by binding `PayPal-Request-Id: payout:{milestone_id}` to each transaction.
+## 🧗 Challenges I Ran Into
+- **Strict Role Boundaries**: Ensuring clean role switching so clients cannot access freelancer delivery routes and freelancers cannot trigger client payout authorizations. I solved this with canonical `/app/client` and `/app/freelancer` route separation and database-level RLS.
+- **Sub-Second Multimodal Latency**: Running vision, repository, and live URL probes concurrently without blocking the UI. I solved this using parallel async adapter dispatching through Groq's high-throughput LPU.
+- **Idempotency in Payouts**: Preventing accidental double-clicks or network retries from sending duplicate payouts. I solved this by binding `PayPal-Request-Id: payout:{milestone_id}` to each transaction.
 
 ---
 
-## 🌟 Accomplishments That We're Proud Of
-- A complete, closed-loop financial lifecycle that actually works end-to-end in PayPal Sandbox.
-- Transparent cryptographic audit trail with SHA-256 hashing for all SOW versions and delivery artifacts.
+## 🌟 Accomplishments That I'm Proud Of
+- Architecting and shipping a complete, closed-loop financial lifecycle that actually works end-to-end in PayPal Sandbox as a solo developer.
+- Implementing a transparent cryptographic audit trail with SHA-256 hashing for all SOW versions and delivery artifacts.
 - Leveling the playing field for freelance newcomers through objective, code-quality-based AI vetting.
 
 ---
 
-## 📚 What We Learned
-Financial applications require strict boundaries between AI probabilistic reasoning and deterministic transaction execution. AI is exceptional at inspecting evidence and synthesizing unstructured information, but financial state transitions must be strictly enforced by code and authorized by humans.
+## 📚 What I Learned
+Building this platform end-to-end taught me that financial applications require strict boundaries between AI probabilistic reasoning and deterministic transaction execution. AI is exceptional at inspecting evidence and synthesizing unstructured information, but financial state transitions must be strictly enforced by code and authorized by humans.
 
 ---
 
