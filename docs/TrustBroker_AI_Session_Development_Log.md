@@ -761,3 +761,25 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 | Freelancer revision-state panel (submit + dispute deadline) | — | `DeliveryVerification.tsx` | `a0418dc` |
 | AI Dispute Mediation dialog (4-step protocol) | — | `DeliveryVerification.tsx` | `a0418dc` |
 | `revisionNotes`, `revisionRequestedAt` on `Milestone` type | — | `contract.ts` | `a0418dc` |
+
+
+---
+
+## 12. Phase 13: Contract Deletion FK Cascade & Action Event Propagation Isolation
+
+### 12.1 Backend: PostgreSQL Foreign Key Cascade on Draft Deletion
+- **Issue:** Calling `DELETE /api/v1/contracts/{id}` failed on Render's remote PostgreSQL with `ForeignKeyViolation: update or delete on table "contracts" violates foreign key constraint "contract_versions_contract_id_fkey"`.
+- **Root Cause:** SQLAlchemy's ORM Unit of Work batched and reordered `session.delete()` calls such that `DELETE FROM contracts` was issued before child `contract_versions` were deleted.
+- **Fix:** Switched to direct SQL `sql_delete()` statements in strict FK dependency order:
+  `criterion_results` → `verification_reports` → `delivery_files` → `deliveries` → `acceptance_criteria` → `milestones` → `contract_versions` → `contract_acceptances` → `vetting_reports` → `applications` → `audit_events` → `payouts` → `contracts`.
+- **Verification:** All 35 backend tests passed (`pytest -q` in 14.30s). Pushed in commit `d986e98`.
+
+### 12.2 Frontend: AG Grid Row Click & Action Cell Event Isolation
+- **Issue:** Clicking the Trash icon (or Action buttons) in the Contracts Ledger table opened both the "Delete Draft Contract" confirmation modal and the "Contract Overview" detail dialog simultaneously.
+- **Root Cause:** In AG Grid, native DOM click events bubble through the grid container, triggering `onRowClicked` before React synthetic events can intercept them. `onRowClicked` was unconditionally opening `ContractOverviewDialog`.
+- **Fix (`ClientContracts.tsx`):**
+  - Updated `onRowClicked` to guard against clicks originating from the `actions` column (`colId === 'actions' || headerName === 'Actions'`) or interactive elements (`target?.closest('button')`, `target?.closest('a')`).
+  - Added `colId: 'actions'` to the column definition.
+  - Added `e.stopPropagation()` and `e.nativeEvent?.stopImmediatePropagation?.()` on the Actions cell container and individual action buttons.
+  - Added `setDialogOpen(false)` when triggering `setDeleteConfirmId(id)`.
+- **Verification:** Frontend build verified (`tsc -b && vite build` passed in 7.40s with zero errors). Pushed in commit `4549578`.
