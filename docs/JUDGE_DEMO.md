@@ -2,7 +2,8 @@
 
 > **Competition:** [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)  
 > **Target Audience:** Hackathon Judges, Evaluators and Technical Reviewers  
-> **Key Innovation:** Autonomous AI milestone verification paired with real PayPal Orders v2 milestone captures and PayPal Payouts API disbursements.
+> **Live App:** https://trustbroker-ai-frontend-bx9a.onrender.com  
+> **Key Innovation:** Autonomous AI milestone verification paired with real PayPal Orders v2 milestone captures and PayPal Payouts API disbursements — governed by a PolicyEngine that ensures AI never releases funds unilaterally.
 
 ---
 
@@ -16,14 +17,14 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
 | (Buyer / Employer)                 |
 +------------------------------------+
                   |
-                  | 1. PayPal Buttons Popup (Orders v2 Capture)
+                  | 1. PayPal Smart Buttons Popup (Orders v2 Capture)
                   v
 +------------------------------------+
 | Platform Business Sandbox Account  |
 | (TrustBroker Platform Account)     |
 +------------------------------------+
                   |
-                  | 2. Milestone AI Verified & Released
+                  | 2. Milestone AI Verified & Policy Cleared
                   | 3. PayPal Payouts API (/v1/payments/payouts)
                   v
 +------------------------------------+
@@ -40,7 +41,7 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
 | **Platform** | Sandbox Business (REST App) | Receives captured milestone funds in sandbox; backend credentials issue orders and payouts. |
 | **Freelancer (Receiver)** | Sandbox Personal Account | Target `paypal_payout_email` that receives the payout batch item. |
 
-> **Note for Judges:** You can use your own sandbox personal accounts created in your [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/accounts), or use the test credentials pre-populated in the project environment.
+> **Note for Judges:** You can use sandbox personal accounts created in your [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/accounts), or use the test credentials pre-populated in the project environment.
 
 ---
 
@@ -52,126 +53,311 @@ The app comes pre-seeded with clean test accounts representing both sides of the
 |---|---|---|---|
 | `client.demo@trustbroker.ai` | **Client** | `DemoPassword2026!` | Posts briefs, reviews proposals, funds milestones, releases payouts. |
 | `freelancer.demo@trustbroker.ai` | **Freelancer** | `DemoPassword2026!` | Applies to listings, submits deliverable evidence, receives payouts. |
-| `newcomer.demo@trustbroker.ai` | **Freelancer** | `DemoPassword2026!` | Empty past contract history, strong portfolio (demonstrates fair AI vetting). |
+| `newcomer.demo@trustbroker.ai` | **Freelancer** | `DemoPassword2026!` | Empty past contract history, strong portfolio (demonstrates fair AI vetting vs experienced freelancer). |
+
+**PayPal Sandbox:**
+- Buyer email: `sb-buyer@sandbox.paypal.com`
+- Payout recipient: `freelancer-payout@sandbox.paypal.com`
 
 ---
 
-## 3. Step-by-Step Judge Walkthrough (The Complete Money Loop)
+## 3. Canonical Route Reference
 
-Follow this 5-minute path to verify every stage of the contract and payment lifecycle.
+All routes use the `/app/` prefix. Legacy `/dashboard/...` paths auto-redirect.
 
-### Step 1: Sign in as Client
-1. Navigate to `/sign-in`.
-2. Sign in with `client.demo@trustbroker.ai` / `DemoPassword2026!`.
-3. You land in the **Client Workspace** (`/app/client`).
+| Screen | Canonical URL | Access Role |
+|---|---|---|
+| Landing Page | `/` | Public |
+| Sign In | `/sign-in` | Public |
+| Sign Up | `/sign-up` | Public |
+| Client Home / Dashboard | `/app/client` | Client |
+| Client Contracts List | `/app/client/contracts` | Client |
+| Contract Detail | `/app/client/contracts/:id` | Client |
+| **Review Delivery** | `/app/client/contracts/:id/review` | Client |
+| New Contract | `/app/client/new-contract` | Client |
+| Client Applications | `/app/client/applications` | Client |
+| Client Operations Studio | `/app/client/studio` | Client |
+| Freelancer Home | `/app/freelancer` | Freelancer |
+| **Marketplace** | `/app/freelancer/contracts` | Freelancer |
+| Listing Detail | `/app/freelancer/contracts/:id` | Freelancer |
+| **Submit Delivery** | `/app/freelancer/work/:id/deliver` | Freelancer |
+| Freelancer Operations Studio | `/app/freelancer/studio` | Freelancer |
+| Freelancer Earnings / Payouts | `/app/freelancer/earnings` | Freelancer |
+| Notifications | `/app/notifications` | Both |
+| Activity History | `/app/activity/:id` | Both |
+| Profile | `/app/profile` | Both |
 
-### Step 2: Review or Open a Contract
-1. From the Contracts list (`/app/client/contracts`), click into an active or awarded contract (e.g. `TB-2026-001`).
-2. Notice the navigation tabs:
-   - **Milestones**: Breakdown of deliverables, acceptance criteria and status badges.
-   - **Legal SOW**: Plain-language AI-drafted statement of work, content hash, and exclusions.
-   - **Payments**: The PayPal Funding & Disbursement Hub.
-   - **Audit Activity**: Immutable chronological event log with SHA-256 integrity proofs.
+---
 
-### Step 3: Fund Milestone 1 with PayPal
-1. Open the **Payments** tab.
-2. In the **Milestone Funding Allocation** card, locate the active unfunded milestone.
-3. Click the gold **PayPal** button.
+## 4. Step-by-Step Judge Walkthrough (The Complete Money Loop)
+
+Follow this path to verify every stage of the contract and payment lifecycle.
+
+---
+
+### Step 1: Sign In as Client
+
+1. Navigate to `https://trustbroker-ai-frontend-bx9a.onrender.com/sign-in`
+2. Sign in with `client.demo@trustbroker.ai` / `DemoPassword2026!`
+3. You land at `/app/client` — the **Client Workspace Dashboard**
+4. Confirm the **CLIENT MODE** badge shows in the sidebar and top navigation
+
+> [!NOTE]
+> The sidebar shows role-specific navigation: Home, My Contracts, Applications, New Contract, Operations, Analytics Studio, Payouts, Notifications, Profile.
+
+---
+
+### Step 2: Review a Contract or Create a New One
+
+#### Option A — Use a Pre-Seeded Contract
+1. Click **My Contracts** → `/app/client/contracts`
+2. Click into an active contract (e.g., `TB-2026-009`)
+3. The Contract Detail page has four tabs:
+   - **Milestones** — Deliverables, acceptance criteria, status badges
+   - **Legal SOW** — AI-drafted statement of work, SHA-256 content hash, exclusions
+   - **Payments** — PayPal Funding & Disbursement Hub
+   - **Audit Activity** — Immutable chronological event log with SHA-256 integrity proofs
+
+#### Option B — Create a New Contract with AI SOW Generator
+1. Click **New Contract** → `/app/client/new-contract`
+2. Fill in the project title and category
+3. Click **Generate SOW with AI** — Groq LPU drafts structured milestones, acceptance criteria, and exclusions in under a second
+4. Review the generated content, set a milestone value (e.g., $400), then **Publish to Marketplace**
+
+---
+
+### Step 3: Fund Milestone with PayPal
+
+1. Open the contract detail → click the **Payments** tab
+2. In the **Milestone Funding Allocation** card, locate the unfunded milestone
+3. Click the gold **PayPal** smart button
 4. The PayPal Sandbox modal launches:
-   - Server calls `POST /api/v1/payments/create-order` via PayPal Orders v2.
-   - Complete checkout in the PayPal popup using your sandbox personal account.
+   - Backend called `POST /api/v1/payments/create-order` via PayPal Orders v2
+   - Complete checkout in the popup using your sandbox personal buyer account
 5. Upon approval:
-   - Server executes `POST /api/v1/payments/capture-order` and validates status `COMPLETED`.
-   - Milestone status updates to `funded` (`staged_in_sandbox`).
-   - The **PayPal Orders & Captures** ledger immediately records the **PayPal Order ID**, **Capture ID**, amount and timestamp.
-   - Audit trail registers `payment_capture_completed`.
+   - Backend executes `POST /api/v1/payments/capture-order` and validates status `COMPLETED`
+   - Milestone status updates to `funded` (`staged_in_sandbox`)
+   - The **PayPal Orders & Captures** ledger records the **PayPal Order ID**, **Capture ID**, amount, and timestamp
+   - Audit trail registers `payment_capture_completed`
 
-### Step 4: Switch to Freelancer & Submit Work
-1. Click **Switch to Freelancer** in the sidebar or header to toggle into **Freelancer Mode** (or sign in as `freelancer.demo@trustbroker.ai`).
-2. Open the contract and navigate to **Deliver & Inspect** (`/app/freelancer/work/:id/deliver`).
-3. Notice that evidence submission is unlocked because Milestone 1 is staged in sandbox.
-4. Freelancer provides deliverable links (GitHub repo URL, live demo URL, screenshots).
-5. Click **Submit Deliverable Evidence**.
+> [!IMPORTANT]
+> The Order ID and Capture ID displayed in the UI are **real PayPal Sandbox API responses** — they can be verified at [developer.paypal.com](https://developer.paypal.com/dashboard/accounts).
 
-### Step 5: Run Automated AI Verification
-1. The AI Verification Engine evaluates the submitted deliverables against each acceptance criterion.
-2. The criterion assessment matrix shows:
-   - Score out of 100
-   - Individual Pass / Fail / Needs Review badges
-   - AI summary citations
-3. The milestone status transitions to `verified`.
+---
 
-### Step 6: Client Authorizes PayPal Payout Release
-1. Switch back to **Client Workspace**.
-2. On the verified milestone, the green button appears: **Authorize Payout ($XXX.XX USD)**.
-3. Clicking opens the **Authorize PayPal Payout Release** dialog:
-   - Shows recipient: freelancer's registered PayPal email (e.g. `freelancer-payout@sandbox.paypal.com`).
-   - Shows the idempotency key: `payout:{milestone_id}`.
-4. Click **Confirm & Disburse Payout**:
-   - Backend calls PayPal Payouts API (`POST /v1/payments/payouts`).
-   - Backend stores `paypal_batch_id` and `paypal_item_id`.
-   - Milestone transitions to `settled` and `released`.
+### Step 4: Switch to Freelancer & Submit Deliverable Evidence
 
-### Step 7: Freelancer Inspects Real Earnings Ledger
-1. Switch to **Freelancer Workspace**.
-2. Navigate to **Earnings & PayPal Payouts** (`/app/freelancer/earnings`).
-3. Observe:
-   - **Cleared Payouts**: Real aggregated sum of successful PayPal payouts.
-   - **PayPal Disbursement Ledger**: Real row displaying:
-     - Milestone & Contract reference
-     - Amount (`$XXX.XX USD`)
-     - Status: `PAID VIA PAYPAL`
-     - Copyable **PayPal Batch ID** and **Payout Item ID**
-     - Recipient PayPal email
-     - Timestamp
+1. Click **Switch to Freelancer** in the sidebar (bottom-left mode toggle) — workspace re-renders at `/app/freelancer`
+2. Navigate to **My Work** → find the awarded contract
+3. Click **Submit Delivery** → navigates to `/app/freelancer/work/:id/deliver`
+4. The submission form is **unlocked** because Milestone 1 is staged in sandbox
+5. Enter deliverable evidence:
+   - **Source Code Repository:** GitHub repo URL (e.g., `https://github.com/ishantmishra03/ecommerce-typescript`)
+   - **Live Staging Environment:** Vercel/live URL (e.g., `https://klyora.vercel.app`)
+   - **Delivery Notes & Attestation:** Written description of what was delivered
+   - **Attached Files:** Upload a screenshot (see `demo_assets/pass_evidence.txt` for test data reference)
+6. Click **Submit Deliverable Evidence**
 
-### Step 8: Test AG Studio Financial Operations & AI Copilot
-1. In either the **Client** or **Freelancer** workspace, click **Operations** or **Analytics Studio** in the sidebar (navigating to `/app/client/studio` or `/app/freelancer/studio`).
+---
+
+### Step 5: AI Verification Engine Runs
+
+After submission, the Groq-powered verification agent automatically evaluates the evidence against the contract's acceptance criteria using four parallel adapter types:
+
+| Adapter | What It Checks |
+|---|---|
+| **HTTP Probe** | Live URL response code, HTTPS, latency |
+| **Vision Heuristic** | Uploaded screenshot authenticity via vision model |
+| **Document Analysis** | Delivery notes and attestation completeness |
+| **Repository Inspection** | GitHub repo for required files (TypeScript, package.json, README, license) |
+
+The **criterion assessment matrix** shows:
+- Overall score out of 100
+- Individual Pass / Fail / Needs Review badges per criterion
+- AI summary citations with SHA-256 artifact hashes
+- Milestone status transitions to `verified` on successful completion
+
+> [!NOTE]
+> All AI inference runs on Groq's LPU — typical verification completes in under 400ms.
+
+---
+
+### Step 6: Client Reviews Delivery — 3-Column Settlement Interface
+
+1. Switch back to **Client Workspace** (click **Switch to Client** or sign in as `client.demo@trustbroker.ai`)
+2. The **Dashboard** (`/app/client`) shows a **"Review Delivery"** prompt card for the verified milestone
+3. Click **Review Delivery** → navigates to `/app/client/contracts/:id/review`
+
+#### The 3-Column Review Interface
+
+| Column | Content | Purpose |
+|---|---|---|
+| **Column 1 (Left)** | Freelancer Delivery Package — repo link, live URL, notes, attached screenshots, submission timestamp, version badge | Evidence review |
+| **Column 2 (Center)** | AI Verification Assessment — criterion pass/fail badges, AI citations, overall score, summary analysis | AI recommendation |
+| **Column 3 (Right)** | Client Settlement Panel — action buttons with lifecycle-aware state | Client decision & PayPal disbursement |
+
+#### Column 3 States
+
+**When milestone is `verified` (most common state):**
+- 🟢 **Authorize PayPal Payout ($XXX)** — primary action, tall green button
+- 🟡 **Request Revision** — secondary, side-by-side grid
+- 🔵 **AI Dispute** — secondary, side-by-side grid
+
+**When milestone is `revision_requested`:**
+- Override approve option available
+- 🔴 **Reclaim Escrow** and 🔵 **AI Dispute** in secondary grid
+
+**When milestone is `pending` (manual review):**
+- **Manual Approve** as primary
+- **Request Revision** and **AI Dispute** in secondary grid
+
+---
+
+### Step 7: Authorize PayPal Payout
+
+1. In Column 3, click the green **Authorize PayPal Payout ($XXX)** button
+2. A confirmation dialog appears showing:
+   - Recipient: freelancer's registered PayPal email (e.g., `freelancer-payout@sandbox.paypal.com`)
+   - Idempotency key: `payout:{milestone_id}` — prevents double-disbursement
+3. Click **Confirm & Disburse Payout**:
+   - Backend calls `POST /v1/payments/payouts` (PayPal Payouts API)
+   - Backend stores `paypal_batch_id` and `paypal_item_id`
+   - Milestone transitions to `settled` and `released`
+4. A **success toast** appears with the real **PayPal Batch Payout ID**
+
+> [!IMPORTANT]
+> The PolicyEngine enforces these non-negotiable rules before any payout can proceed:
+> 1. Caller must be the verified contract client
+> 2. Milestone must have passed AI verification (`status == verified`)
+> 3. Milestone must have a PayPal capture on record (`payment_status == staged_in_sandbox`)
+> 4. Freelancer must have a registered PayPal payout email
+>
+> If any condition fails, the transaction is **blocked**. AI never bypasses this.
+
+---
+
+### Step 8: Freelancer Inspects Earnings Ledger
+
+1. Switch to **Freelancer Workspace**
+2. Click **Payouts** in the sidebar → `/app/freelancer/earnings`
+3. Observe the **PayPal Disbursement Ledger** row:
+   - Milestone & Contract reference
+   - Amount (`$XXX.XX USD`)
+   - Status: `PAID VIA PAYPAL`
+   - Copyable **PayPal Batch ID** and **Payout Item ID**
+   - Recipient PayPal email
+   - Timestamp
+
+---
+
+### Step 9: AG Studio Financial Operations & AI Copilot
+
+#### Client Operations Studio (`/app/client/studio`)
+1. Click **Operations** in the Client sidebar
 2. Observe live KPI widgets:
-   - Total Committed, Staged in Sandbox, Cleared Payouts and Pending Verification.
-   - Interactive Lifecycle Funnel and Category breakdowns with cross-filtering.
-3. Test the **AG Studio Copilot Agent**:
-   - Click one of the prompt starters (e.g. *"Summarize total staged funds and pending milestone verifications"* or *"Which submissions have been waiting for verification the longest?"*).
-   - Notice the agent answers with real-time operational context queried directly from the ledger.
-4. Inspect the **AG Grid Financial Ledger**:
-   - Filter and sort across milestone amounts, counterparty names and lifecycle status pills.
+   - Total Committed
+   - Staged in Sandbox (PayPal captured, pending release)
+   - Cleared Payouts
+   - Pending Verification
+3. Inspect the **AG Grid Financial Ledger** — sort by amount, filter by status
+4. Test the **AG Studio AI Copilot**:
+   - Click **Ask AI** (floating button, bottom-right)
+   - Try: *"Summarize total staged funds and pending milestone verifications"*
+   - Try: *"Which submissions have been waiting for verification the longest?"*
+   - The agent answers with real-time operational context queried directly from the ledger
 
-### Step 9: Verify Impartial AI Vetting (Newcomers vs. Experienced)
-1. Sign in as Client (`client.demo@trustbroker.ai`).
-2. View applicants for listing `TB-2026-002` ("Cross-Border B2B FinTech Invoice Settlement Portal").
+#### Freelancer Operations Studio (`/app/freelancer/studio`)
+1. Switch to Freelancer mode → click **Operations**
+2. Same AG Grid architecture, scoped to earnings and submission history
+3. KPI cards: Pending Earnings, Cleared, Submission Queue
+
+---
+
+### Step 10: Verify Impartial AI Vetting
+
+1. Sign in as Client (`client.demo@trustbroker.ai`)
+2. Navigate to **Applications** for a listing with multiple applicants
 3. Compare the two seeded applicants:
-   - **Tariro Moyo (Experienced)**: Ranked `strong_fit` (92%) with matched skills and past high-throughput PayPal architecture.
-   - **Kuda Nyamuda (Newcomer)**: Ranked `new_talent` (78%) evaluated fairly based on portfolio code quality and component design, without arbitrary penalties for low platform contract counts.
+   - **Tariro Moyo (Experienced):** Ranked `strong_fit` (92%) with matched skills and past high-throughput PayPal architecture experience
+   - **Kuda Nyamuda (Newcomer):** Ranked `new_talent` (78%) — evaluated on portfolio code quality and component design, **not** penalized for low platform contract count
+
+> [!NOTE]
+> This demonstrates fairness: the AI vetting agent doesn't treat newcomers as low-value. Portfolio quality is weighted equally to past contract history.
 
 ---
 
-## 4. Test Evidence Assets (Pass vs. Fail)
+### Step 11: Audit Trail & Activity History
 
-When testing deliverable submission in Step 4, you can copy test data directly from the repo:
-- **Passing Evidence Spec**: [`demo_assets/pass_evidence.txt`](../demo_assets/pass_evidence.txt) (sub-second Next.js Lighthouse scores, 100% test suite pass, verified PayPal webhook handler).
-- **Failing Evidence Spec**: [`demo_assets/fail_evidence.txt`](../demo_assets/fail_evidence.txt) (unoptimized bundle size, missing server-side PayPal signatures, failing e2e tests).
-
----
-
-## 5. Verification on PayPal Developer Dashboard
-
-To independently confirm money movement in your own sandbox:
-
-1. Log into [developer.paypal.com](https://developer.paypal.com).
-2. Go to **Testing Tools** > **Sandbox Accounts**.
-3. Check the **Notifications** or log into the Sandbox Business / Personal accounts at [sandbox.paypal.com](https://www.sandbox.paypal.com):
-   - **Platform Business Account**: Shows the incoming Capture for the milestone and the outgoing Payout.
-   - **Freelancer Personal Account**: Shows payment received from TrustBroker AI with the note: *"TrustBroker payout for {contract_code} — {milestone_title}"*.
-4. Match the **Order ID**, **Capture ID** and **Payout Batch ID** displayed in TrustBroker's UI with the PayPal dashboard entries.
+1. Navigate to any contract → **Audit Activity** tab
+2. Or navigate directly to `/app/activity/:id`
+3. Each event entry shows:
+   - Event type (e.g., `payment_capture_completed`, `milestone_verified`, `payout_released`)
+   - Timestamp
+   - Actor (client / freelancer / system)
+   - SHA-256 integrity proof
+4. This log is immutable — events cannot be edited or deleted
 
 ---
 
-## 5. Technical Safeguards & Edge Cases Built In
+## 5. Test Evidence Assets (Pass vs. Fail)
 
-- **Idempotency Guarantee**: Every payout release request carries `PayPal-Request-Id: payout:{milestone_id}`. Re-submitting or re-clicking cannot double-disburse funds.
-- **Strict Server-Side Validation**: Milestone status only becomes `funded` when PayPal's API responds with `COMPLETED`. Cancelling or closing the popup leaves the milestone unfunded.
-- **PolicyEngine Integrity**: Releasing a payout is strictly forbidden by policy unless:
-  1. Caller is verified as the contract client.
-  2. The milestone has passed AI verification (`status == verified`).
-  3. The milestone has actually been funded via PayPal (`payment_status == staged_in_sandbox`).
-  4. The freelancer has a registered PayPal payout email.
+When testing deliverable submission in Step 4, copy test data from the repo:
+
+- **Passing Evidence:** [`demo_assets/pass_evidence.txt`](../demo_assets/pass_evidence.txt) — sub-second live URL response, 100% test suite pass, verified PayPal webhook handler
+- **Failing Evidence:** [`demo_assets/fail_evidence.txt`](../demo_assets/fail_evidence.txt) — unoptimized bundle, missing server-side PayPal signatures, failing e2e tests
+
+---
+
+## 6. Verification on PayPal Developer Dashboard
+
+To independently confirm money movement in your sandbox:
+
+1. Log into [developer.paypal.com](https://developer.paypal.com)
+2. Go to **Testing Tools** > **Sandbox Accounts**
+3. Log into the Sandbox Business / Personal accounts at [sandbox.paypal.com](https://www.sandbox.paypal.com):
+   - **Platform Business Account:** Shows incoming Capture for the milestone and outgoing Payout
+   - **Freelancer Personal Account:** Shows payment received with note: *"TrustBroker payout for {contract_code} — {milestone_title}"*
+4. Match the **Order ID**, **Capture ID**, and **Payout Batch ID** from TrustBroker's UI with the PayPal dashboard entries
+
+---
+
+## 7. Technical Safeguards & Edge Cases
+
+| Safeguard | Implementation |
+|---|---|
+| **Idempotency** | Every payout carries `PayPal-Request-Id: payout:{milestone_id}`. Re-clicking cannot double-disburse. |
+| **Strict Capture Validation** | Milestone only becomes `funded` when PayPal responds with `COMPLETED`. Cancelling the popup leaves it unfunded. |
+| **PolicyEngine Gating** | 4 non-negotiable conditions must pass before any payout executes (see Step 7 above). |
+| **Role Enforcement** | Client routes (`/app/client/...`) reject freelancer sessions; freelancer routes reject client sessions. |
+| **SHA-256 SOW Hashing** | Statement of Work content is hashed on mutual acceptance — tamper-proof contract record. |
+| **Audit Immutability** | Activity events are append-only — no delete or edit capability in the API. |
+
+---
+
+## 8. Prize Category Checklist
+
+| Prize | Evidence Location |
+|---|---|
+| **Best Use of PayPal** | Steps 3, 7 — Orders v2 (real Order ID + Capture ID), Payouts API (real Batch ID + Item ID), idempotency keys, Smart Buttons |
+| **Agentic AI** | Steps 2b, 10, 5 — AG Studio React agent, Groq LPU <400ms, multimodal verification (4 adapters), AI SOW generation, AI applicant vetting |
+| **AG Studio / AG Grid** | Step 9 — Client + Freelancer Operations Studio, enterprise AG Grid ledgers, real-time KPI cards, AI Copilot with live tool access |
+| **Best Dev Experience** | Codebase — TypeScript, `ROUTES.*` constants system, PolicyEngine, role-based routing architecture |
+| **Overall Grand Prize** | Full end-to-end flow demonstrating all categories in one coherent product |
+
+---
+
+## 9. Quick-Start: 5-Minute Minimal Demo Path
+
+For judges who want the fastest possible verification of the core loop:
+
+```
+1. /sign-in           → client.demo@trustbroker.ai / DemoPassword2026!
+2. /app/client/contracts/:id  → open TB-2026-009 → Payments tab
+3. Click PayPal button → complete sandbox checkout
+4. Switch to Freelancer → /app/freelancer/work/:id/deliver → submit evidence
+5. Switch to Client → /app/client/contracts/:id/review → Authorize PayPal Payout
+6. Switch to Freelancer → /app/freelancer/earnings → verify Batch ID in ledger
+7. /app/client/studio  → AG Grid + AI Copilot demo
+```
+
+Total time: approximately 5 minutes.
