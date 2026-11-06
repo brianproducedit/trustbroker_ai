@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict
 
 
@@ -45,6 +45,7 @@ class DeliveryRead(BaseModel):
     version: int
     submitted_at: datetime
     files: List[DeliveryFileRead] = []
+    verification_report: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

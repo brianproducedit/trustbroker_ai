@@ -102,6 +102,22 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/app/client/contracts/:id/review"
+        element={
+          <ProtectedRoute>
+            <DeliveryVerification />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/client/deliveries/:id"
+        element={
+          <ProtectedRoute>
+            <DeliveryVerification />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/app/client/applications"
         element={
           <ProtectedRoute>

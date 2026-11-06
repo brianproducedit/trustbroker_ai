@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -6,6 +6,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
 import { formatCurrency } from '@/lib/utils'
 import { ROUTES } from '@/constants'
+import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +42,7 @@ import {
   Scale,
   ShieldAlert,
   Undo2,
+  ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -77,6 +79,33 @@ export const DeliveryVerification: React.FC = () => {
   const [fileAttachments, setFileAttachments] = useState<Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>>([])
   const [newFileName, setNewFileName] = useState('')
   const [newFileUrl, setNewFileUrl] = useState('')
+
+  // Fetched backend deliveries for the milestone
+  const [fetchedDeliveries, setFetchedDeliveries] = useState<any[]>([])
+  const [isFetchingDeliveries, setIsFetchingDeliveries] = useState(false)
+
+  const loadMilestoneDeliveries = useCallback(async (msId: string) => {
+    if (!msId || !/^[0-9a-f-]{36}$/i.test(msId)) {
+      setFetchedDeliveries([])
+      return
+    }
+    setIsFetchingDeliveries(true)
+    try {
+      const data = await api.deliveries.listMilestoneDeliveries(msId)
+      setFetchedDeliveries(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.warn('Failed to fetch milestone deliveries from backend:', err)
+      setFetchedDeliveries([])
+    } finally {
+      setIsFetchingDeliveries(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedMilestone?.id) {
+      loadMilestoneDeliveries(selectedMilestone.id)
+    }
+  }, [selectedMilestone?.id, loadMilestoneDeliveries])
 
   // Drag-and-drop + file picker state
   const [isDragging, setIsDragging] = useState(false)
@@ -198,12 +227,14 @@ export const DeliveryVerification: React.FC = () => {
         fileAttachments,
       })
 
+      await loadMilestoneDeliveries(selectedMilestone.id)
+
       toast.success(`Verification complete! Score: ${assessment.overallScore}/100`)
       addNotification({
         title: 'Work Verified by AI',
         description: `Milestone "${selectedMilestone.title}" scored ${assessment.overallScore}/100 and passed criteria.`,
         type: 'verification',
-        link: `/dashboard/deliveries/${contract.id}`,
+        link: activeRole === 'client' ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id),
       })
     } finally {
       setIsEvaluating(false)
@@ -223,7 +254,7 @@ export const DeliveryVerification: React.FC = () => {
         title: 'Payment Released',
         description: `${formatCurrency(selectedMilestone.amount)} USD transferred for verified milestone.`,
         type: 'payment',
-        link: `/dashboard/contracts/${contract.id}`,
+        link: activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id),
       })
     } catch (err: any) {
       toast.error(err?.detail || err?.message || 'Failed to disburse PayPal payout.')
@@ -238,7 +269,7 @@ export const DeliveryVerification: React.FC = () => {
       title: 'Disbursal Requested by Freelancer',
       description: `Freelancer requested payout release for verified milestone "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount, contract.currency)}).`,
       type: 'payment',
-      link: `/dashboard/deliveries/${contract.id}`,
+      link: ROUTES.CLIENT_REVIEW(contract.id),
     })
     toast.success('Disbursal reminder sent to client!')
   }
@@ -253,7 +284,7 @@ export const DeliveryVerification: React.FC = () => {
         title: 'Revision Requested',
         description: `Client requested adjustments for milestone: "${revisionNotes.slice(0, 50)}..."`,
         type: 'revision',
-        link: `/dashboard/deliveries/${contract.id}`,
+        link: ROUTES.DELIVERY_VERIFICATION(contract.id),
       })
       setRevisionNotes('')
     } catch (err: any) {
@@ -270,7 +301,7 @@ export const DeliveryVerification: React.FC = () => {
       title: 'Human Review Override',
       description: `Client manually approved milestone "${selectedMilestone.title}". Reason: ${overrideReason}`,
       type: 'verification',
-      link: `/dashboard/contracts/${contract.id}`,
+      link: activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id),
     })
   }
 
@@ -285,7 +316,7 @@ export const DeliveryVerification: React.FC = () => {
         title: 'Manual Verification Approved',
         description: `Client manually approved milestone "${selectedMilestone.title}". Funds ready to disburse.`,
         type: 'verification',
-        link: `/dashboard/deliveries/${contract.id}`,
+        link: activeRole === 'client' ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id),
       })
       setManualRationale('')
     } catch (err: any) {
@@ -305,7 +336,7 @@ export const DeliveryVerification: React.FC = () => {
         title: 'Escrow Funds Reclaimed',
         description: `Client reclaimed staged escrow for "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount)}). Reason: ${reclaimReason}`,
         type: 'payment',
-        link: `/dashboard/contracts/${contract.id}`,
+        link: activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id),
       })
     } catch (err: any) {
       toast.error(err?.detail || err?.message || 'Failed to reclaim escrow funds.')
@@ -314,7 +345,61 @@ export const DeliveryVerification: React.FC = () => {
     }
   }
 
-  const assessment = selectedMilestone?.assessment
+  const latestDelivery = fetchedDeliveries.length > 0 ? fetchedDeliveries[0] : null
+
+  interface EffectiveEvidence {
+    repoUrl?: string
+    liveUrl?: string
+    description?: string
+    fileAttachments?: Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>
+    submittedAt?: string
+    version?: number
+  }
+
+  const effectiveEvidence: EffectiveEvidence | null = latestDelivery
+    ? {
+        repoUrl: latestDelivery.repo_url || '',
+        liveUrl: latestDelivery.live_url || '',
+        description: latestDelivery.description || '',
+        fileAttachments: (latestDelivery.files || []).map((f: any) => ({
+          name: f.file_name,
+          url: f.storage_path,
+          sizeBytes: f.size_bytes || 0,
+          mimeType: f.mime_type || 'application/octet-stream',
+        })),
+        submittedAt: latestDelivery.submitted_at,
+        version: latestDelivery.version || 1,
+      }
+    : (selectedMilestone.submittedEvidence
+        ? {
+            repoUrl: selectedMilestone.submittedEvidence.repoUrl,
+            liveUrl: selectedMilestone.submittedEvidence.liveUrl,
+            description: selectedMilestone.submittedEvidence.description,
+            fileAttachments: selectedMilestone.submittedEvidence.fileAttachments,
+            submittedAt: selectedMilestone.submittedEvidence.submittedAt,
+            version: (selectedMilestone.submittedEvidence as any).version || 1,
+          }
+        : null)
+
+  const backendReport = latestDelivery?.verification_report
+  const assessment = selectedMilestone?.assessment || (backendReport ? {
+    id: backendReport.report_id,
+    overallScore: backendReport.overall_score ?? 0,
+    passed: backendReport.passed ?? false,
+    criteriaResults: (backendReport.criterion_evaluations || []).map((ce: any) => ({
+      id: ce.criterion_id,
+      title: ce.title,
+      description: ce.explanation || ce.title,
+      status: ce.status,
+      aiConfidence: (ce.score ?? 0) / 100,
+      feedback: ce.explanation,
+    })),
+    summaryAnalysis: backendReport.summary_analysis,
+    assessedAt: backendReport.assessed_at,
+    modelUsed: backendReport.model_used,
+    requiresHumanReview: backendReport.requires_human_review,
+  } : null)
+
   const isSettled = selectedMilestone.status === 'settled'
   const isRevisionRequested = selectedMilestone.status === 'revision_requested'
   const isVerified =
@@ -335,7 +420,7 @@ export const DeliveryVerification: React.FC = () => {
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center justify-between">
           <Link
-            to={ROUTES.CONTRACT_DETAIL(contract.id)}
+            to={activeRole === 'client' ? `/app/client/contracts/${contract.id}` : ROUTES.CONTRACT_DETAIL(contract.id)}
             className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-mono transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -343,7 +428,9 @@ export const DeliveryVerification: React.FC = () => {
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs text-slate-400">Milestone Review</span>
+            <span className="font-mono text-xs text-slate-400">
+              {activeRole === 'client' ? 'Client Verification Review' : 'Milestone Review'}
+            </span>
             <StatusBadge status={selectedMilestone.status} />
           </div>
         </div>
@@ -435,10 +522,12 @@ export const DeliveryVerification: React.FC = () => {
               <CardHeader className="pb-3 border-b border-[#222A3D]">
                 <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
                   <UploadCloud className="w-4 h-4 text-blue-400" />
-                  Deliverable Artifacts & Evidence
+                  {activeRole === 'client' ? 'Submitted Deliverable Evidence' : 'Deliverable Artifacts & Evidence'}
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Provide evidence matching the agreed milestone acceptance criteria for AI inspection.
+                  {activeRole === 'client'
+                    ? "Inspect the freelancer's submitted repositories, live preview URL, and attached deliverables."
+                    : 'Provide evidence matching the agreed milestone acceptance criteria for AI inspection.'}
                 </CardDescription>
               </CardHeader>
 
@@ -514,221 +603,394 @@ export const DeliveryVerification: React.FC = () => {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmitEvidence} className="space-y-4">
-                  {/* GitHub Repo URL */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="repo" className="text-xs text-slate-300 flex items-center gap-1.5">
-                      <GitBranch className="w-3.5 h-3.5 text-slate-400" />
-                      Repository URL
-                    </Label>
-                    <Input
-                      id="repo"
-                      type="url"
-                      required
-                      value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
-                      placeholder="https://github.com/..."
-                      className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
-                    />
-                  </div>
-
-                  {/* Live Preview URL */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="live" className="text-xs text-slate-300 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-slate-400" />
-                      Live Staging URL <span className="text-slate-500 font-normal">(Tested via HTTP Probe)</span>
-                    </Label>
-                    <Input
-                      id="live"
-                      type="url"
-                      value={liveUrl}
-                      onChange={(e) => setLiveUrl(e.target.value)}
-                      placeholder="https://preview.vercel.app..."
-                      className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
-                    />
-                  </div>
-
-                  {/* Delivery Notes */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="notes" className="text-xs text-slate-300 flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-slate-400" />
-                      Delivery Notes & Attestation
-                    </Label>
-                    <Textarea
-                      id="notes"
-                      rows={3}
-                      required
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Explain what was accomplished and test steps..."
-                      className="bg-[#0B1326] border-[#2D3449] text-white text-xs leading-relaxed"
-                    />
-                  </div>
-
-                  {/* Attached Files & Screenshots (Vision / Document Adapters) */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-slate-300 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Camera className="w-3.5 h-3.5 text-slate-400" />
-                        Attached Evidence Files
-                        {fileAttachments.length > 0 && (
-                          <span className="ml-1 text-[10px] font-mono bg-blue-600/30 text-blue-300 border border-blue-600/40 px-1.5 py-0.5 rounded-full">
-                            {fileAttachments.length}
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-[10px] text-slate-500">Drag & drop or click to browse</span>
-                    </Label>
-
-                    {fileAttachments.length > 0 && (
-                      <div className="space-y-1.5">
-                        {fileAttachments.map((file, idx) => {
-                          const isImg = file.mimeType.startsWith('image/')
-                          const isPdf = file.mimeType === 'application/pdf'
-                          const isZip = file.mimeType === 'application/zip'
-                          const typeBadge = isImg ? 'IMAGE' : isPdf ? 'PDF' : isZip ? 'ZIP' : 'FILE'
-                          const badgeColor = isImg
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                            : isPdf
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                            : isZip
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                            : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
-                          return (
-                            <div
-                              key={idx}
-                              className="flex items-center justify-between p-2 rounded-lg bg-[#0B1326] border border-[#222A3D] text-xs group"
-                            >
-                              <div className="flex items-center gap-2 truncate flex-1 min-w-0">
-                                <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <span className="text-slate-200 font-mono text-[11px] truncate">{file.name}</span>
-                                <span className="text-[10px] text-slate-500 font-mono shrink-0">
-                                  ({Math.round(file.sizeBytes / 1024)} KB)
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${badgeColor}`}>
-                                  {typeBadge}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveAttachment(idx)}
-                                  className="text-slate-600 hover:text-rose-400 transition-colors p-0.5 rounded"
-                                  title="Remove attachment"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          )
-                        })}
+                {activeRole === 'client' ? (
+                  <div className="space-y-4 pt-1">
+                    {isFetchingDeliveries ? (
+                      <div className="p-8 rounded-xl bg-[#0B1326] border border-[#222A3D] text-center space-y-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-400 mx-auto" />
+                        <p className="text-xs text-slate-400">Loading submitted deliverables from storage...</p>
                       </div>
-                    )}
+                    ) : effectiveEvidence ? (
+                      <div className="space-y-3.5">
+                        <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#222A3D]">
+                            <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                              <FileCheck className="w-4 h-4 text-emerald-400" />
+                              Freelancer Delivery Package
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Badge className="bg-blue-500/15 text-blue-300 border-blue-500/30 text-[10px] font-mono">
+                                Version {effectiveEvidence.version || 1}
+                              </Badge>
+                              {effectiveEvidence.submittedAt && (
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {new Date(effectiveEvidence.submittedAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-                    {/* Drag-and-Drop Upload Zone */}
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${
-                        isDragging
-                          ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
-                          : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
-                      }`}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*,.pdf,.zip,.txt,.md"
-                        className="sr-only"
-                        onChange={handleFilePickerChange}
-                      />
-                      <div className="flex flex-col items-center justify-center gap-2 py-6 px-4 pointer-events-none select-none">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
-                          {isDragging ? (
-                            <FolderOpen className="w-5 h-5 text-blue-400" />
-                          ) : (
-                            <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                          {/* GitHub Repository */}
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                              <GitBranch className="w-3.5 h-3.5 text-blue-400" />
+                              Source Code Repository
+                            </span>
+                            {effectiveEvidence.repoUrl ? (
+                              <a
+                                href={effectiveEvidence.repoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-2 rounded-lg bg-[#131B2E] border border-[#222A3D] hover:border-blue-500/40 text-blue-400 hover:text-blue-300 text-xs font-mono transition-colors group"
+                              >
+                                <span className="truncate">{effectiveEvidence.repoUrl}</span>
+                                <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-2 text-slate-500 group-hover:text-blue-400" />
+                              </a>
+                            ) : (
+                              <p className="text-xs text-slate-500 italic p-2 rounded-lg bg-[#131B2E]">No repository URL provided</p>
+                            )}
+                          </div>
+
+                          {/* Live Preview Staging URL */}
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                              Live Staging Environment
+                            </span>
+                            {effectiveEvidence.liveUrl ? (
+                              <a
+                                href={effectiveEvidence.liveUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-2 rounded-lg bg-[#131B2E] border border-[#222A3D] hover:border-emerald-500/40 text-emerald-400 hover:text-emerald-300 text-xs font-mono transition-colors group"
+                              >
+                                <span className="truncate">{effectiveEvidence.liveUrl}</span>
+                                <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-2 text-slate-500 group-hover:text-emerald-400" />
+                              </a>
+                            ) : (
+                              <p className="text-xs text-slate-500 italic p-2 rounded-lg bg-[#131B2E]">No live staging URL provided</p>
+                            )}
+                          </div>
+
+                          {/* Delivery Notes & Attestation */}
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-slate-400" />
+                              Freelancer Delivery Notes &amp; Attestation
+                            </span>
+                            <div className="p-2.5 rounded-lg bg-[#131B2E] border border-[#222A3D] text-xs text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
+                              {effectiveEvidence.description || 'No notes provided by freelancer.'}
+                            </div>
+                          </div>
+
+                          {/* Attached Evidence Files */}
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <Camera className="w-3.5 h-3.5 text-purple-400" />
+                                Attached Evidence Files ({effectiveEvidence.fileAttachments?.length || 0})
+                              </span>
+                            </span>
+                            {effectiveEvidence.fileAttachments && effectiveEvidence.fileAttachments.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {effectiveEvidence.fileAttachments.map((f: any, idx: number) => {
+                                  const isImg = (f.mimeType || '').startsWith('image/')
+                                  const isPdf = f.mimeType === 'application/pdf'
+                                  const isZip = f.mimeType === 'application/zip'
+                                  const typeBadge = isImg ? 'IMAGE' : isPdf ? 'PDF' : isZip ? 'ZIP' : 'FILE'
+                                  const badgeColor = isImg
+                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                    : isPdf
+                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                    : isZip
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                    : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between p-2 rounded-lg bg-[#131B2E] border border-[#222A3D] text-xs"
+                                    >
+                                      <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                                        <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                        <span className="text-slate-200 font-mono text-[11px] truncate">{f.name}</span>
+                                        {f.sizeBytes > 0 && (
+                                          <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                            ({Math.round(f.sizeBytes / 1024)} KB)
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${badgeColor}`}>
+                                          {typeBadge}
+                                        </span>
+                                        {f.url && (
+                                          <a
+                                            href={f.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-400 hover:text-blue-300 text-[10px] font-medium hover:underline flex items-center gap-0.5"
+                                          >
+                                            <span>View</span>
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-500 italic p-2 rounded-lg bg-[#131B2E]">No file attachments uploaded</p>
+                            )}
+                          </div>
+
+                          {effectiveEvidence.submittedAt && (
+                            <div className="text-[10px] text-slate-500 font-mono border-t border-[#222A3D] pt-2">
+                              Submitted at: {new Date(effectiveEvidence.submittedAt).toLocaleString()}
+                            </div>
                           )}
                         </div>
-                        <div className="text-center">
-                          <p className={`text-xs font-semibold transition-colors ${isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
-                            {isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
-                          </p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">
-                            or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer
-                          </p>
-                          <p className="text-[10px] text-slate-600 mt-1">
-                            PNG, JPG, GIF, WebP, PDF, ZIP, TXT · Max 25 MB per file
+
+                        {/* Verification & Manual Review Prompt for Client */}
+                        <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 text-xs text-blue-300 space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold text-blue-200">
+                            <Eye className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Client Evaluation Guidance</span>
+                          </div>
+                          <p className="text-slate-300 text-[11px] leading-relaxed">
+                            Verify the repository and live deployment outside TrustBroker. Inspect the automated AI Verification Assessment in the center column, then use the Client Manual Review panel on the right to approve and disburse funds or request adjustments.
                           </p>
                         </div>
                       </div>
+                    ) : (
+                      <div className="p-8 rounded-xl bg-[#0B1326] border border-[#222A3D] text-center space-y-3">
+                        <Eye className="w-8 h-8 text-slate-500 mx-auto" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-slate-300">Awaiting Freelancer Submission</p>
+                          <p className="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">
+                            The freelancer has not submitted deliverables for this milestone yet. Once submitted, their repository URL, live preview link, and evidence files will appear here for review.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmitEvidence} className="space-y-4">
+                    {/* GitHub Repo URL */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="repo" className="text-xs text-slate-300 flex items-center gap-1.5">
+                        <GitBranch className="w-3.5 h-3.5 text-slate-400" />
+                        Repository URL
+                      </Label>
+                      <Input
+                        id="repo"
+                        type="url"
+                        required
+                        value={repoUrl}
+                        onChange={(e) => setRepoUrl(e.target.value)}
+                        placeholder="https://github.com/..."
+                        className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+                      />
                     </div>
 
-                    {/* Manual URL entry (still available as fallback) */}
-                    <details className="group">
-                      <summary className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer select-none list-none flex items-center gap-1 pt-1">
-                        <Plus className="w-3 h-3" />
-                        Add file by URL instead
-                      </summary>
-                      <div className="pt-2 space-y-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input
-                            placeholder="File name (e.g. proof.png)"
-                            value={newFileName}
-                            onChange={(e) => setNewFileName(e.target.value)}
-                            className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                          />
-                          <input
-                            placeholder="Evidence URL or storage link"
-                            value={newFileUrl}
-                            onChange={(e) => setNewFileUrl(e.target.value)}
-                            className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleAddAttachment}
-                          disabled={!newFileName.trim()}
-                          className="w-full bg-[#1A2338] hover:bg-[#222D47] text-slate-200 text-xs h-7 gap-1 font-medium border border-[#2D3449]"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add by URL</span>
-                        </Button>
-                      </div>
-                    </details>
-                  </div>
+                    {/* Live Preview URL */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="live" className="text-xs text-slate-300 flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-slate-400" />
+                        Live Staging URL <span className="text-slate-500 font-normal">(Tested via HTTP Probe)</span>
+                      </Label>
+                      <Input
+                        id="live"
+                        type="url"
+                        value={liveUrl}
+                        onChange={(e) => setLiveUrl(e.target.value)}
+                        placeholder="https://preview.vercel.app..."
+                        className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+                      />
+                    </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isEvaluating || isSettled || isLocked}
-                    className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${
-                      isLocked
-                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    {isLocked ? (
-                      <>
-                        <Lock className="w-3.5 h-3.5 text-slate-500" />
-                        Milestone Locked (Client PayPal Funding Required)
-                      </>
-                    ) : isEvaluating ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        AI is inspecting evidence across multimodal adapters...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Run AI Verification Check
-                      </>
-                    )}
-                  </Button>
-                </form>
+                    {/* Delivery Notes */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="notes" className="text-xs text-slate-300 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                        Delivery Notes & Attestation
+                      </Label>
+                      <Textarea
+                        id="notes"
+                        rows={3}
+                        required
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Explain what was accomplished and test steps..."
+                        className="bg-[#0B1326] border-[#2D3449] text-white text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Attached Files & Screenshots (Vision / Document Adapters) */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-slate-300 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Camera className="w-3.5 h-3.5 text-slate-400" />
+                          Attached Evidence Files
+                          {fileAttachments.length > 0 && (
+                            <span className="ml-1 text-[10px] font-mono bg-blue-600/30 text-blue-300 border border-blue-600/40 px-1.5 py-0.5 rounded-full">
+                              {fileAttachments.length}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[10px] text-slate-500">Drag & drop or click to browse</span>
+                      </Label>
+
+                      {fileAttachments.length > 0 && (
+                        <div className="space-y-1.5">
+                          {fileAttachments.map((file, idx) => {
+                            const isImg = file.mimeType.startsWith('image/')
+                            const isPdf = file.mimeType === 'application/pdf'
+                            const isZip = file.mimeType === 'application/zip'
+                            const typeBadge = isImg ? 'IMAGE' : isPdf ? 'PDF' : isZip ? 'ZIP' : 'FILE'
+                            const badgeColor = isImg
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                              : isPdf
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                              : isZip
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                              : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                            return (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between p-2 rounded-lg bg-[#0B1326] border border-[#222A3D] text-xs group"
+                              >
+                                <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                                  <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <span className="text-slate-200 font-mono text-[11px] truncate">{file.name}</span>
+                                  <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                    ({Math.round(file.sizeBytes / 1024)} KB)
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${badgeColor}`}>
+                                    {typeBadge}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveAttachment(idx)}
+                                    className="text-slate-600 hover:text-rose-400 transition-colors p-0.5 rounded"
+                                    title="Remove attachment"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Drag-and-Drop Upload Zone */}
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${
+                          isDragging
+                            ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
+                            : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
+                        }`}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.zip,.txt,.md"
+                          className="sr-only"
+                          onChange={handleFilePickerChange}
+                        />
+                        <div className="flex flex-col items-center justify-center gap-2 py-6 px-4 pointer-events-none select-none">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
+                            {isDragging ? (
+                              <FolderOpen className="w-5 h-5 text-blue-400" />
+                            ) : (
+                              <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <p className={`text-xs font-semibold transition-colors ${isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
+                              {isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
+                            </p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                              or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer
+                            </p>
+                            <p className="text-[10px] text-slate-600 mt-1">
+                              PNG, JPG, GIF, WebP, PDF, ZIP, TXT · Max 25 MB per file
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Manual URL entry (still available as fallback) */}
+                      <details className="group">
+                        <summary className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer select-none list-none flex items-center gap-1 pt-1">
+                          <Plus className="w-3 h-3" />
+                          Add file by URL instead
+                        </summary>
+                        <div className="pt-2 space-y-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              placeholder="File name (e.g. proof.png)"
+                              value={newFileName}
+                              onChange={(e) => setNewFileName(e.target.value)}
+                              className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                            />
+                            <input
+                              placeholder="Evidence URL or storage link"
+                              value={newFileUrl}
+                              onChange={(e) => setNewFileUrl(e.target.value)}
+                              className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleAddAttachment}
+                            disabled={!newFileName.trim()}
+                            className="w-full bg-[#1A2338] hover:bg-[#222D47] text-slate-200 text-xs h-7 gap-1 font-medium border border-[#2D3449]"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add by URL</span>
+                          </Button>
+                        </div>
+                      </details>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={isEvaluating || isSettled || isLocked}
+                      className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${
+                        isLocked
+                          ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {isLocked ? (
+                        <>
+                          <Lock className="w-3.5 h-3.5 text-slate-500" />
+                          Milestone Locked (Client PayPal Funding Required)
+                        </>
+                      ) : isEvaluating ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          AI is inspecting evidence across multimodal adapters...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Run AI Verification Check
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -821,7 +1083,7 @@ export const DeliveryVerification: React.FC = () => {
                       <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
                         Criterion-by-Criterion Results ({assessment.criteriaResults?.length || 0}):
                       </span>
-                      {(assessment.criteriaResults || []).map((c) => {
+                      {(assessment.criteriaResults || []).map((c: any) => {
                         const isPass = c.status === 'pass'
                         const isFail = c.status === 'fail'
 
@@ -1126,74 +1388,81 @@ export const DeliveryVerification: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
-                  {selectedMilestone.submittedEvidence ? (
+                  {effectiveEvidence ? (
                     <div className="space-y-3">
                       {/* Submitted Evidence Display */}
                       <div className="p-3 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2.5">
-                        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                          Freelancer Submission
-                        </span>
+                        <div className="flex items-center justify-between pb-1 border-b border-[#222A3D]">
+                          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                            Freelancer Submission
+                          </span>
+                          <Badge className="bg-blue-500/15 text-blue-300 border-blue-500/30 text-[9px] font-mono">
+                            v{effectiveEvidence.version || 1}
+                          </Badge>
+                        </div>
 
-                        {selectedMilestone.submittedEvidence.repoUrl && (
+                        {effectiveEvidence.repoUrl && (
                           <div className="flex items-start gap-2 text-xs">
                             <GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
                             <div className="min-w-0">
                               <span className="text-slate-400 block text-[10px]">Repository</span>
                               <a
-                                href={selectedMilestone.submittedEvidence.repoUrl}
+                                href={effectiveEvidence.repoUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-400 hover:text-blue-300 hover:underline truncate block font-mono text-[10px]"
                               >
-                                {selectedMilestone.submittedEvidence.repoUrl.replace('https://', '')}
+                                {effectiveEvidence.repoUrl.replace('https://', '')}
                               </a>
                             </div>
                           </div>
                         )}
 
-                        {selectedMilestone.submittedEvidence.liveUrl && (
+                        {effectiveEvidence.liveUrl && (
                           <div className="flex items-start gap-2 text-xs">
                             <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                             <div className="min-w-0">
                               <span className="text-slate-400 block text-[10px]">Live Preview</span>
                               <a
-                                href={selectedMilestone.submittedEvidence.liveUrl}
+                                href={effectiveEvidence.liveUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-emerald-400 hover:text-emerald-300 hover:underline truncate block font-mono text-[10px]"
                               >
-                                {selectedMilestone.submittedEvidence.liveUrl.replace('https://', '')}
+                                {effectiveEvidence.liveUrl.replace('https://', '')}
                               </a>
                             </div>
                           </div>
                         )}
 
-                        {selectedMilestone.submittedEvidence.description && (
+                        {effectiveEvidence.description && (
                           <div className="flex items-start gap-2 text-xs">
                             <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                             <div className="min-w-0">
                               <span className="text-slate-400 block text-[10px]">Delivery Notes</span>
                               <p className="text-slate-300 text-[11px] leading-relaxed mt-0.5 line-clamp-4">
-                                {selectedMilestone.submittedEvidence.description}
+                                {effectiveEvidence.description}
                               </p>
                             </div>
                           </div>
                         )}
 
-                        {(selectedMilestone.submittedEvidence.fileAttachments?.length ?? 0) > 0 && (
+                        {(effectiveEvidence.fileAttachments?.length ?? 0) > 0 && (
                           <div className="flex items-start gap-2 text-xs">
                             <FileCheck className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
                             <div className="min-w-0 w-full">
                               <span className="text-slate-400 block text-[10px]">
-                                Attached Files ({selectedMilestone.submittedEvidence.fileAttachments!.length})
+                                Attached Files ({effectiveEvidence.fileAttachments!.length})
                               </span>
                               <div className="mt-1 space-y-1">
-                                {selectedMilestone.submittedEvidence.fileAttachments!.map((f, i) => (
+                                {effectiveEvidence.fileAttachments!.map((f: any, i: number) => (
                                   <div key={i} className="flex items-center gap-1.5 p-1.5 rounded bg-[#131B2E] border border-[#222A3D]">
                                     <span className="text-[9px] font-mono text-slate-400 truncate">{f.name}</span>
-                                    <span className="text-[9px] text-slate-600 ml-auto shrink-0">
-                                      {Math.round(f.sizeBytes / 1024)}KB
-                                    </span>
+                                    {f.sizeBytes > 0 && (
+                                      <span className="text-[9px] text-slate-600 ml-auto shrink-0">
+                                        {Math.round(f.sizeBytes / 1024)}KB
+                                      </span>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -1201,9 +1470,11 @@ export const DeliveryVerification: React.FC = () => {
                           </div>
                         )}
 
-                        <div className="text-[10px] text-slate-500 font-mono border-t border-[#222A3D] pt-2 mt-1">
-                          Submitted: {new Date(selectedMilestone.submittedEvidence.submittedAt).toLocaleString()}
-                        </div>
+                        {effectiveEvidence.submittedAt && (
+                          <div className="text-[10px] text-slate-500 font-mono border-t border-[#222A3D] pt-2 mt-1">
+                            Submitted: {new Date(effectiveEvidence.submittedAt).toLocaleString()}
+                          </div>
+                        )}
                       </div>
 
                       {/* Action Buttons */}
@@ -1228,11 +1499,23 @@ export const DeliveryVerification: React.FC = () => {
                       )}
 
                       {(isSettled || selectedMilestone.status === 'verified') && (
-                        <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300 flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
-                          <span>
-                            {isSettled ? 'Payment disbursed.' : 'Milestone verified — ready to disburse.'}
-                          </span>
+                        <div className="space-y-2">
+                          <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
+                            <span>
+                              {isSettled ? 'Payment disbursed.' : 'Milestone verified — ready to disburse.'}
+                            </span>
+                          </div>
+                          {!isSettled && (
+                            <Button
+                              onClick={handleAuthorizeRelease}
+                              disabled={isReleasing}
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md"
+                            >
+                              <DollarSign className="w-3.5 h-3.5" />
+                              {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1540,7 +1823,7 @@ export const DeliveryVerification: React.FC = () => {
                     title: 'Dispute Mediation Initiated',
                     description: `AI dispute mediation requested for milestone "${selectedMilestone.title}". Evidence re-audit in progress.`,
                     type: 'verification',
-                    link: `/dashboard/deliveries/${contract.id}`,
+                    link: activeRole === 'client' ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id),
                   })
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5"

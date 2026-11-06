@@ -788,3 +788,49 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
   - Added `e.stopPropagation()` and `e.nativeEvent?.stopImmediatePropagation?.()` on the Actions cell container and individual action buttons.
   - Added `setDialogOpen(false)` when triggering `setDeleteConfirmId(id)`.
 - **Verification:** Frontend build verified (`tsc -b && vite build` passed in 7.40s with zero errors). Pushed in commit `4549578`.
+
+---
+
+## 13. Phase 14: Client Delivery Review Portal & Role-Aware Verification Experience
+
+### 13.1 Problem Statement & Requirements
+- **Issue 1:** When clients opened a delivery review link, they were routed to `/dashboard/deliveries/:id` or `/app/freelancer/work/:id/deliver` where the breadcrumbs displayed "Dashboard / Submit Delivery" as if they were a freelancer submitting work.
+- **Issue 2:** Column 1 ("Deliverable Artifacts & Evidence") displayed an empty upload form (repository URL, live preview input, notes, file dropzone) instead of the actual work previously submitted by the freelancer.
+- **Issue 3:** Column 2 ("AI Verification Assessment") and Column 3 ("Client Manual Review") relied solely on local in-memory Zustand store state (`selectedMilestone.submittedEvidence`), which was empty upon fresh page visits or browser refreshes across different sessions.
+- **Issue 4:** Clients needed clear access to review repository links, live staging deployments, notes, and attached artifacts, with direct manual approval, revision requests, dispute mediation, and escrow protection notices intact.
+
+### 13.2 Backend Enhancements
+- **`backend/app/schemas/delivery.py`:**
+  - Added `verification_report: Optional[Dict[str, Any]] = None` field to `DeliveryRead` schema.
+- **`backend/app/services/delivery_service.py`:**
+  - Updated `get_delivery_full()` to automatically query the latest `VerificationReport` along with its associated `CriterionResult` rows and embed them into the returned `DeliveryRead.verification_report`.
+  - Added full criterion evaluations (`criterion_id`, `title`, `status`, `passed`, `score`, `explanation`) and summary metrics (`report_id`, `overall_score`, `passed`, `summary_analysis`, `requires_human_review`, `model_used`, `assessed_at`).
+  - Ensures `list_milestone_deliveries` (`GET /api/v1/deliveries/milestone/{milestone_id}`) returns complete delivery packages with embedded verification data.
+
+### 13.3 Frontend Enhancements
+- **Role-Aware Routes & Breadcrumbs (`routes.tsx`, `DashboardLayout.tsx`, `constants/index.ts`):**
+  - Added `ROUTES.CLIENT_REVIEW: (id) => /app/client/contracts/${id}/review`.
+  - Added client routes: `/app/client/contracts/:id/review` and `/app/client/deliveries/:id`.
+  - Updated `DashboardLayout.tsx` breadcrumbs so clients see `My Contracts / [Contract Code] / Review Delivery` while freelancers see `Dashboard / Submit Delivery`.
+  - Updated links in `ContractDetail.tsx` (Milestones ledger and sidebar buttons) to route clients to `ROUTES.CLIENT_REVIEW(contract.id)`.
+- **Backend Delivery Fetching (`DeliveryVerification.tsx`):**
+  - Added `loadMilestoneDeliveries` with `useEffect` invoking `api.deliveries.listMilestoneDeliveries(selectedMilestone.id)`.
+  - Derived `effectiveEvidence` consolidating remote database delivery data with fallback to local session state.
+  - Hydrated `assessment` from `latestDelivery.verification_report` when opening the page fresh without previous local session cache.
+- **Read-Only Client Submission Column (`DeliveryVerification.tsx`):**
+  - Replaced the upload form for `activeRole === 'client'` with a dedicated, styled **Freelancer Delivery Package** view showing:
+    - Version badge & submission timestamp
+    - Clickable repository link with external link indicator
+    - Clickable live staging preview link
+    - Freelancer delivery notes and attestation
+    - Attached evidence files with badge classification (IMAGE, PDF, ZIP, FILE) and preview links
+    - Clear client evaluation guidance banner
+  - Freelancers retain the active evidence submission form with drag-and-drop file upload.
+- **Client Manual Review & Disbursal Actions (`DeliveryVerification.tsx`):**
+  - Rendered `effectiveEvidence` inside Column 3 ("Client Manual Review").
+  - Added "Disburse Funds via PayPal" action directly into the Manual Review panel once verified.
+  - Kept all revision, dispute mediation, and escrow reclaim workflows intact.
+
+### 13.4 Verification
+- **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 11.61s).
+- **Frontend Build:** TypeScript compilation & Vite build passed (`npm --prefix react_app run build` in 7.80s, 2183 modules transformed, 0 errors).

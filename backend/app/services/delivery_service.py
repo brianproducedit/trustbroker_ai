@@ -16,7 +16,10 @@ from app.utils.security import require_contract_party
 
 
 def get_delivery_full(session: Session, delivery_id: uuid.UUID) -> DeliveryRead:
-    """Load delivery with its attached files."""
+    """Load delivery with its attached files and latest verification assessment."""
+    from app.models.verification import VerificationReport, CriterionResult
+    from app.models.milestone import AcceptanceCriterion
+
     delivery = session.get(Delivery, delivery_id)
     if not delivery:
         raise HTTPException(status_code=404, detail="Delivery not found")
@@ -37,6 +40,45 @@ def get_delivery_full(session: Session, delivery_id: uuid.UUID) -> DeliveryRead:
         for f in files
     ]
 
+    # Query latest verification report if available
+    report = session.exec(
+        select(VerificationReport)
+        .where(VerificationReport.delivery_id == delivery.id)
+        .order_by(VerificationReport.assessed_at.desc())
+    ).first()
+
+    report_dict = None
+    if report:
+        criterion_rows = session.exec(
+            select(CriterionResult, AcceptanceCriterion.title)
+            .join(AcceptanceCriterion, AcceptanceCriterion.id == CriterionResult.criterion_id)
+            .where(CriterionResult.report_id == report.id)
+        ).all()
+
+        criterion_evaluations = [
+            {
+                "criterion_id": str(cr.criterion_id),
+                "title": title or "Verified criterion",
+                "status": "pass" if cr.passed else "fail",
+                "passed": cr.passed,
+                "score": cr.score,
+                "explanation": cr.explanation,
+                "evidence_match_snippet": "",
+            }
+            for cr, title in criterion_rows
+        ]
+
+        report_dict = {
+            "report_id": str(report.id),
+            "overall_score": report.overall_score,
+            "passed": report.passed,
+            "summary_analysis": report.summary_analysis,
+            "requires_human_review": report.requires_human_review,
+            "model_used": report.model_used,
+            "assessed_at": report.assessed_at.isoformat() if report.assessed_at else None,
+            "criterion_evaluations": criterion_evaluations,
+        }
+
     return DeliveryRead(
         id=delivery.id,
         contract_id=delivery.contract_id,
@@ -48,6 +90,7 @@ def get_delivery_full(session: Session, delivery_id: uuid.UUID) -> DeliveryRead:
         version=delivery.version,
         submitted_at=delivery.submitted_at,
         files=files_read,
+        verification_report=report_dict,
     )
 
 

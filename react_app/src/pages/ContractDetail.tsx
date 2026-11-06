@@ -1312,8 +1312,8 @@ export const ContractDetail: React.FC = () => {
                                 asChild
                                 className="border-[#2D3449] text-slate-300 hover:text-white hover:bg-[#171F33] text-xs h-8"
                               >
-                                <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
-                                  Delivery Details
+                                <Link to={isClient ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                                  {isClient ? 'Review Delivery' : 'Delivery Details'}
                                 </Link>
                               </Button>
                             </div>
@@ -1942,9 +1942,9 @@ export const ContractDetail: React.FC = () => {
                 size="sm"
                 className="w-full border-[#222A3D] bg-[#0B1326] text-slate-200 hover:text-white justify-start text-xs h-8 gap-2"
               >
-                <Link to={ROUTES.DELIVERY_VERIFICATION(contract.id)}>
+                <Link to={isClient ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id)}>
                   <FileCode className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Work Verification Center</span>
+                  <span>{isClient ? 'Review Deliverables' : 'Work Verification Center'}</span>
                 </Link>
               </Button>
 

@@ -71,8 +71,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     if (path.includes('/dashboard/contracts')) {
       return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: `Contract ${activeContract?.code || ''}` }]
     }
+    if (path.includes('/review')) {
+      return [
+        { label: 'My Contracts', to: '/app/client/contracts' },
+        ...(activeContract?.code ? [{ label: activeContract.code, to: ROUTES.CONTRACT_DETAIL(activeContract.id) }] : []),
+        { label: 'Review Delivery' },
+      ]
+    }
+    if (path.includes('/deliver')) {
+      return [
+        { label: 'Dashboard', to: ROUTES.DASHBOARD },
+        { label: 'Submit Delivery' },
+      ]
+    }
     if (path.includes('/dashboard/deliveries')) {
-      return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'Submit Delivery' }]
+      return [
+        { label: activeRole === 'client' ? 'My Contracts' : 'Dashboard', to: activeRole === 'client' ? '/app/client/contracts' : ROUTES.DASHBOARD },
+        { label: activeRole === 'client' ? 'Review Delivery' : 'Submit Delivery' },
+      ]
+    }
+    if (path.includes('/app/client/contracts/')) {
+      return [{ label: 'My Contracts', to: '/app/client/contracts' }, { label: `Contract ${activeContract?.code || ''}` }]
+    }
+    if (path.includes('/app/client/contracts')) {
+      return [{ label: 'Dashboard', to: '/app/client' }, { label: 'My Contracts' }]
     }
     if (path.includes('/dashboard/payouts')) {
       return [{ label: 'Dashboard', to: ROUTES.DASHBOARD }, { label: 'Earnings & Payouts' }]
