@@ -51,16 +51,26 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `GET /history/{contract_id}`: Contract-specific payment orders and capture attempts.
 - `POST /webhook`: Inbound PayPal webhook listener with signature verification.
 
-### Verification Engine (`/api/v1/deliveries`)
-- **HTTP Probe Adapter:** Verifies live staging URLs with resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
-- **Vision Adapter:** Inspects screenshots and UI designs against visual requirements using Groq vision inference.
-- **Document Adapter:** Extracts PDF and markdown content, automatically routing raster screenshots to vision.
-- **Repository Meta Adapter:** Inspects public GitHub repositories and directory trees via GitHub API.
-- **Scoring Engine:** Deterministically aggregates evidence scores and flags rate-limiting as `NEEDS_REVIEW` instead of false-positive hard failures.
+### Verification Engine & Deliveries (`/api/v1/deliveries`)
+- `POST /`: Submit freelancer deliverable package (repo URL, live staging preview, notes, file attachments).
+- `GET /milestone/{milestone_id}`: List all milestone deliveries with embedded `verification_report` and itemized `CriterionResult` evaluations.
+- `GET /{id}`: Retrieve detailed delivery submission package and assessment report.
+- `POST /{id}/verify`: Run automated multimodal AI verification checks against all milestone acceptance criteria.
+- `POST /{id}/manual-verify`: Client manual verification approval outside the AI system.
+- `POST /{id}/request-revision`: Client requests revisions, freezing the 7-day auto-disbursal clock and triggering escrow safeguards.
+- `POST /{id}/override`: Client human override approval with required audit trail rationale.
+- `POST /{id}/reclaim`: Client reclaims staged escrow funds if the freelancer fails to respond to revisions within 7 days.
+- **Multimodal Adapters:**
+  - **HTTP Probe Adapter:** Verifies live staging URLs with resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
+  - **Vision Adapter:** Inspects screenshots and UI designs against visual requirements using Groq vision inference.
+  - **Document Adapter:** Extracts PDF and markdown content, automatically routing raster screenshots to vision.
+  - **Repository Meta Adapter:** Inspects public GitHub repositories and directory trees via GitHub API.
+  - **Scoring Engine:** Deterministically aggregates evidence scores and flags rate-limiting as `NEEDS_REVIEW` instead of false-positive hard failures.
 
-### Immutability Safeguards
-- Contracts in `ACTIVE`, `IN_VERIFICATION`, or `COMPLETED` states are strictly protected from mutation or deletion.
-- Financial records (`payment_attempts`, `payouts`, `audit_events`, `deliveries`, `verification_reports`) are permanently immutable.
+### Immutability & Role Safeguards
+- **Client-Only Payout Disbursals:** Releases are strictly restricted to verified contract clients in `PolicyEngine.can_release_payout()`; non-clients are rejected with HTTP 403.
+- **Contract State Protection:** Contracts in `ACTIVE`, `IN_VERIFICATION`, or `COMPLETED` states are strictly protected from mutation or deletion.
+- **Financial Immutability:** Financial records (`payment_attempts`, `payouts`, `audit_events`, `deliveries`, `verification_reports`) are permanently immutable to guarantee legal non-repudiation.
 
 ---
 

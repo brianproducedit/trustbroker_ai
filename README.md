@@ -133,11 +133,12 @@ trustbroker_ai/
 │   │   ├── hooks/                   # State stores (contracts, auth, notifications)
 │   │   ├── lib/                     # Typed API client with PayPal and AG Studio adapters
 │   │   └── pages/
-│   │       ├── client/              # Client Dashboard & AG Studio Operations
-│   │       ├── freelancer/          # Marketplace, Applications, AG Studio Operations
-│   │       ├── ContractDetail.tsx   # Milestone lifecycle timeline & PayPal buttons
-│   │       ├── DeliveryVerification # Evidence submission & AI evaluation matrix
-│   │       └── Notifications.tsx    # Filterable in-app notification center
+│   │       ├── client/              # Client Dashboard, Contracts, Applications, Payouts, AG Studio
+│   │       ├── freelancer/          # Marketplace, Applications, Active Work, Earnings, AG Studio
+│   │       ├── ContractDetail.tsx   # SOW lifecycle timeline, cryptographic hashes, PayPal buttons & CRUD
+│   │       ├── DeliveryVerification # 3-column evidence inspection, multimodal AI evaluation, & settlement
+│   │       ├── ActivityHistory.tsx  # Immutable audit trail ledger
+│   │       └── Notifications.tsx    # Filterable notification center with single/bulk deletion
 ├── demo_assets/                     # Verification test files
 │   ├── pass_evidence.txt            # Compliant test suite logs & sub-second performance
 │   ├── fail_evidence.txt            # Deficient bundle size & missing webhook signatures
@@ -209,8 +210,15 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
 
 ## Recent Engineering Updates (November 2026)
 
+- **Role-Aware Canonical Routing & Complete Route Audit (Phase 15):** Completed an exhaustive audit of all routing and navigation across client and freelancer portals. Replaced all legacy `/dashboard/...` targets with canonical `/app/client/...` and `/app/freelancer/...` endpoints. Configured backwards-compatible `<Navigate replace />` redirects in `routes.tsx` for all historical dashboard paths, added canonical constants (`ROUTES.NOTIFICATIONS`, `ROUTES.CLIENT_PROFILE_PUBLIC`, `ROUTES.ACTIVITY_HISTORY`), and updated the breadcrumb system to be role-aware (`Dashboard` for clients, `Home` for freelancers).
+- **Delivery Review Ergonomics & Balanced 3-Column Layout:** Overhauled the delivery verification view into a balanced 3-column architecture (`4 / 4 / 4` column grid on a spacious `max-w-7xl` container):
+  - **Column 1 (Freelancer Delivery Package):** Read-only client view displaying live preview links, source code repositories, delivery notes, and classified evidence attachments.
+  - **Column 2 (AI Verification Assessment):** Automated multimodal inspection report showing per-criterion pass/fail badges, explanations, and overall AI score, with an informational status card guiding clients to Column 3.
+  - **Column 3 (Client Manual Review & Settlement):** Dedicated client action panel with primary `Authorize PayPal Payout ($X)` disbursement, plus fintech-tinted secondary action buttons (`Request Revision`, `AI Dispute Mediation`, and `Reclaim Escrow`) with ample spacing and bottom clearance above the floating AI copilot FAB.
+- **Backend Delivery Package & Verification Report Aggregation:** Enhanced `DeliveryRead` and `delivery_service.py` to automatically embed full verification reports and individual `CriterionResult` details (`criterion_id`, `score`, `passed`, `explanation`) in milestone delivery queries.
+- **Client-Only Payout Disbursal Role Isolation:** Strictly isolated payment release authorization to verified contract clients in both the backend `PolicyEngine` (`require_client()`) and frontend components. Freelancers receive a dedicated "Awaiting Client Release" status banner with a 1-click disbursal reminder action.
 - **Guarded CRUD Operations & Record Immutability:** Implemented fine-grained, secure CRUD operations across contracts, milestones, acceptance criteria, applications, notifications, and profiles. Draft contracts can be deleted with full cascade cleanup of uncommitted milestones and criteria; pending applications can be withdrawn; read notifications can be batch-cleared. Crucially, all active and completed contracts, payment attempts, payouts, audit events, deliveries, and legal signatures remain permanently immutable to guarantee financial and legal non-repudiation.
-- **Manual Client Verification Overrides & Staged Disbursals:** Empowered clients with direct deliverable verification capabilities alongside multimodal AI evaluation, giving human oversight for nuanced submissions and seamless staged disbursement of milestone funds.
+- **Escrow Safeguards & Buyer/Seller Protection:** Integrated a 7-day inactivity reclamation guarantee, automatic release clock pausing upon revision requests, and multimodal AI dispute mediation for transparent conflict resolution.
 - **Web Development Category:** Added **Web Development** to contract creation category dropdowns and one-click filter chips.
 - **Studio AI Copilot Ergonomics:** Upgraded the floating operations copilot with expanded vertical height (`700px` / `82vh`), unconstrained flex scrolling, and high-contrast typography for effortless reading of telemetry analyses and suggested queries.
 - **Client Payout Management & Ledger:** Dedicated portal at `/app/client/payouts` displaying aggregate balances, disbursed totals, active in-flight payouts, and interactive order/batch logs.
