@@ -1,18 +1,127 @@
+import os
 import uuid
 from typing import List
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models.user import UserProfile
 from app.models.contract import Contract
-from app.models.delivery import Delivery
+from app.models.delivery import Delivery, DeliveryFile
 from app.models.milestone import AcceptanceCriterion, Milestone, MilestoneStatus
 from app.models.verification import VerificationReport, CriterionResult
 from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, RevisionRequest, OverrideReviewRequest
 from app.services import delivery_service, verification_service
 from app.utils.security import get_current_user, require_contract_party
+from app.utils.supabase_client import get_supabase_admin, get_signed_download_url
 
 router = APIRouter(prefix="/deliveries", tags=["Deliveries"])
+
+# Directory for uploaded delivery evidence files (private, not publicly accessible)
+_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "evidence")
+os.makedirs(_UPLOAD_DIR, exist_ok=True)
+
+_ALLOWED_MIME_TYPES = {
+    "image/png", "image/jpeg", "image/gif", "image/webp",
+    "application/pdf", "application/zip",
+    "text/plain", "text/markdown",
+}
+_MAX_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
+
+
+@router.post("/upload-file", summary="Upload a delivery evidence file")
+async def upload_evidence_file(
+    file: UploadFile = File(...),
+    current_user: UserProfile = Depends(get_current_user),
+):
+    """Accept a multipart file upload for delivery evidence.
+
+    Returns a server-side storage_path that should be passed in the
+    ``files`` array when submitting delivery evidence (POST /deliveries).
+    This replaces client-side blob: URLs which are not accessible server-side.
+    """
+    if file.content_type not in _ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{file.content_type}' is not allowed. Permitted: {', '.join(sorted(_ALLOWED_MIME_TYPES))}",
+        )
+
+    contents = await file.read()
+    if len(contents) > _MAX_SIZE_BYTES:
+        raise HTTPException(status_code=413, detail="File exceeds the 25 MB limit.")
+
+    safe_name = "".join(c if c.isalnum() or c in "-_." else "_" for c in (file.filename or "file"))
+    file_id = uuid.uuid4()
+
+    # Attempt private Supabase Storage upload if configured
+    supabase_client = get_supabase_admin()
+    if supabase_client:
+        try:
+            bucket_name = "delivery-evidence"
+            sub_path = f"{str(current_user.id)}/{file_id}_{safe_name}"
+            res = supabase_client.storage.from_(bucket_name).upload(
+                sub_path,
+                contents,
+                file_options={"content-type": file.content_type or "application/octet-stream"},
+            )
+            return {
+                "file_name": file.filename,
+                "storage_path": f"supabase://{bucket_name}/{sub_path}",
+                "size_bytes": len(contents),
+                "mime_type": file.content_type or "application/octet-stream",
+            }
+        except Exception:
+            pass  # Fallback to local server disk storage
+
+    # Local disk fallback
+    relative_path = f"{str(current_user.id)}/{file_id}_{safe_name}"
+    dest_dir = os.path.join(_UPLOAD_DIR, str(current_user.id))
+    os.makedirs(dest_dir, exist_ok=True)
+    dest_path = os.path.join(dest_dir, f"{file_id}_{safe_name}")
+
+    with open(dest_path, "wb") as fh:
+        fh.write(contents)
+
+    return {
+        "file_name": file.filename,
+        "storage_path": f"uploads/evidence/{relative_path}",
+        "size_bytes": len(contents),
+        "mime_type": file.content_type or "application/octet-stream",
+    }
+
+
+@router.get("/files/{file_id}/download", summary="Download delivery evidence file")
+def download_evidence_file(
+    file_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Download delivery evidence file with party authorization check."""
+    d_file = session.get(DeliveryFile, file_id)
+    if not d_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    delivery = session.get(Delivery, d_file.delivery_id)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found")
+    contract = session.get(Contract, delivery.contract_id)
+    require_contract_party(current_user, contract)
+
+    # Supabase signed download
+    if d_file.storage_path.startswith("supabase://"):
+        parts = d_file.storage_path.replace("supabase://", "").split("/", 1)
+        if len(parts) == 2:
+            bucket, s_path = parts
+            url = get_signed_download_url(bucket, s_path)
+            if url:
+                return {"download_url": url}
+
+    # Local file download
+    local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), d_file.storage_path)
+    if os.path.exists(local_path):
+        return FileResponse(local_path, media_type=d_file.mime_type, filename=d_file.file_name)
+
+    raise HTTPException(status_code=404, detail="File content not found on server")
+
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, summary="Submit milestone deliverables")

@@ -273,6 +273,27 @@ export const api = {
 
   // Deliveries
   deliveries: {
+    uploadEvidenceFile: async (file: File) => {
+      const token = useAuthStore.getState().getAccessToken()
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`${API_BASE}/deliveries/upload-file`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      })
+      if (!res.ok) {
+        let errMsg = 'Failed to upload file'
+        try {
+          const err = await res.json()
+          errMsg = err.detail || errMsg
+        } catch (_) {}
+        throw new ApiError(res.status, errMsg)
+      }
+      return await res.json()
+    },
     submit: (data: {
       contract_id: string
       milestone_id: string

@@ -140,6 +140,11 @@ def submit_delivery(
     # Add attached files
     files_to_process = req.files or req.file_attachments or []
     for f_data in files_to_process:
+        if f_data.storage_path and f_data.storage_path.startswith("blob:"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Browser-local blob: URLs are not permitted for '{f_data.file_name}'. Deliverables must be uploaded to server storage.",
+            )
         is_safe, reason = validate_evidence_file(f_data.file_name, f_data.size_bytes, f_data.mime_type)
         if not is_safe:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"File rejection: {reason}")

@@ -109,6 +109,7 @@ export const DeliveryVerification: React.FC = () => {
 
   // Drag-and-drop + file picker state
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [isEvaluating, setIsEvaluating] = useState(false)
@@ -141,6 +142,10 @@ export const DeliveryVerification: React.FC = () => {
 
   const handleAddAttachment = () => {
     if (!newFileName.trim()) return
+    if (newFileUrl.trim().startsWith('blob:')) {
+      toast.error('Browser blob: URLs cannot be saved. Please use the drag-and-drop file uploader.')
+      return
+    }
     const isImage = newFileName.toLowerCase().endsWith('.png') || newFileName.toLowerCase().endsWith('.jpg') || newFileName.toLowerCase().endsWith('.jpeg')
     const isPdf = newFileName.toLowerCase().endsWith('.pdf')
     const isZip = newFileName.toLowerCase().endsWith('.zip')
@@ -164,22 +169,37 @@ export const DeliveryVerification: React.FC = () => {
   }
 
   // ── Drag-and-drop + file picker helpers ──────────────────────────────────
-  const processFiles = useCallback((files: FileList | File[]) => {
+  const processFiles = useCallback(async (files: FileList | File[]) => {
     const allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'application/zip', 'text/plain', 'text/markdown']
-    Array.from(files).forEach((file) => {
+    const fileList = Array.from(files)
+    for (const file of fileList) {
       if (file.size > 25 * 1024 * 1024) {
         toast.error(`${file.name} exceeds the 25 MB limit and was skipped.`)
-        return
+        continue
       }
       const mime = allowed.includes(file.type) ? file.type : 'application/octet-stream'
-      // Create an object URL so the AI engine can reference the local blob
-      const objectUrl = URL.createObjectURL(file)
-      setFileAttachments((prev) => [
-        ...prev,
-        { name: file.name, url: objectUrl, sizeBytes: file.size, mimeType: mime },
-      ])
-    })
-  }, [fileAttachments])
+      try {
+        setIsUploadingFile(true)
+        const toastId = toast.loading(`Uploading ${file.name} to secure storage...`)
+        const uploaded = await api.deliveries.uploadEvidenceFile(file)
+        toast.dismiss(toastId)
+        toast.success(`Uploaded ${file.name}`)
+        setFileAttachments((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            url: uploaded.storage_path,
+            sizeBytes: uploaded.size_bytes || file.size,
+            mimeType: mime,
+          },
+        ])
+      } catch (err: any) {
+        toast.error(`Upload failed for ${file.name}: ${err?.detail || err?.message || 'Server error'}`)
+      } finally {
+        setIsUploadingFile(false)
+      }
+    }
+  }, [])
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -907,19 +927,21 @@ export const DeliveryVerification: React.FC = () => {
                           onChange={handleFilePickerChange}
                         />
                         <div className="flex flex-col items-center justify-center gap-2 py-6 px-4 pointer-events-none select-none">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
-                            {isDragging ? (
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isUploadingFile ? 'bg-blue-500/20' : isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
+                            {isUploadingFile ? (
+                              <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                            ) : isDragging ? (
                               <FolderOpen className="w-5 h-5 text-blue-400" />
                             ) : (
                               <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
                             )}
                           </div>
                           <div className="text-center">
-                            <p className={`text-xs font-semibold transition-colors ${isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
-                              {isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
+                            <p className={`text-xs font-semibold transition-colors ${isUploadingFile || isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
+                              {isUploadingFile ? 'Uploading to secure server storage...' : isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
                             </p>
                             <p className="text-[10px] text-slate-500 mt-0.5">
-                              or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer
+                              {isUploadingFile ? 'Bytes are saved directly to server' : <>or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer</>}
                             </p>
                             <p className="text-[10px] text-slate-600 mt-1">
                               PNG, JPG, GIF, WebP, PDF, ZIP, TXT · Max 25 MB per file
@@ -965,7 +987,7 @@ export const DeliveryVerification: React.FC = () => {
 
                     <Button
                       type="submit"
-                      disabled={isEvaluating || isSettled || isLocked}
+                      disabled={isEvaluating || isUploadingFile || isSettled || isLocked}
                       className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${
                         isLocked
                           ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'

@@ -53,6 +53,54 @@ class TestPhase5Safety(unittest.TestCase):
         self.assertEqual(sanitize_filename("../../etc/passwd"), "passwd")
         self.assertEqual(sanitize_filename("clean_screenshot.png"), "clean_screenshot.png")
 
+    def test_blob_url_rejected_in_delivery(self):
+        from app.schemas.delivery import DeliveryCreateRequest, DeliveryFileCreate
+        from app.services.delivery_service import submit_delivery
+        from fastapi import HTTPException
+        engine = create_engine("sqlite:///:memory:")
+        SQLModel.metadata.create_all(engine)
+        with Session(engine) as session:
+            client = UserProfile(id=uuid.uuid4(), email="client@test.com", role="client")
+            freelancer = UserProfile(id=uuid.uuid4(), email="freelancer@test.com", role="freelancer")
+            contract = Contract(
+                id=uuid.uuid4(),
+                code="TB-BLOB-001",
+                title="Blob Test Contract",
+                client_id=client.id,
+                freelancer_id=freelancer.id,
+                status=ContractStatus.ACTIVE,
+                total_amount=Decimal("100.00"),
+            )
+            milestone = Milestone(
+                id=uuid.uuid4(),
+                contract_id=contract.id,
+                title="Milestone 1",
+                amount=Decimal("100.00"),
+                status=MilestoneStatus.IN_PROGRESS,
+                payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+            )
+            session.add_all([client, freelancer, contract, milestone])
+            session.commit()
+
+            req = DeliveryCreateRequest(
+                contract_id=contract.id,
+                milestone_id=milestone.id,
+                description="Delivery with blob URL",
+                files=[
+                    DeliveryFileCreate(
+                        file_name="screenshot.png",
+                        storage_path="blob:http://localhost:5173/abc-123",
+                        size_bytes=1024,
+                        mime_type="image/png",
+                    )
+                ],
+                auto_verify=False,
+            )
+            with self.assertRaises(HTTPException) as cm:
+                submit_delivery(session=session, freelancer=freelancer, req=req)
+            self.assertEqual(cm.exception.status_code, 400)
+            self.assertIn("blob:", cm.exception.detail)
+
 
 class TestPhase5Adapters(unittest.TestCase):
     def test_http_probe_reachable(self):
