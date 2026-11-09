@@ -74,9 +74,21 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
     
     Supports both legacy HS256 (shared secret) and modern ES256 (ECDSA via JWKS).
     """
-    # Fallback for 1-click dev test tokens (supports demo and hackathon reviews)
+    # Fallback for 1-click dev test tokens (strictly gated to local development with explicit flag)
     if token.startswith("dev-user-"):
-        user_role = token.replace("dev-user-", "")
+        if not settings.is_dev_auth_allowed:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Development authentication tokens are disabled in this environment.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user_role = token[len("dev-user-"):]
+        if user_role not in ("client", "freelancer"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid development token role '{user_role}'. Must be 'client' or 'freelancer'.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         is_client = user_role == "client"
         return {
             "sub": "1e0dacbd-8d91-46f2-b04e-02acad08ce0c" if is_client else "2203012f-e6ac-4efb-8d63-4dc4e1a4bbbc",
@@ -99,7 +111,7 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
             options={"verify_aud": False},
         )
         return payload
-    except JWTError as exc:
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid or expired credentials: {str(exc)}",
@@ -181,13 +193,14 @@ def get_optional_current_user(
     authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session),
 ) -> Optional[UserProfile]:
-    """Dependency that returns UserProfile if authenticated, or None if unauthenticated."""
+    """Dependency that returns UserProfile if authenticated, or None if unauthenticated.
+    
+    If an Authorization header is supplied, it MUST be valid. Invalid or expired
+    credentials raise 401 instead of being silently downgraded to anonymous access.
+    """
     if not authorization:
         return None
-    try:
-        return get_current_user(authorization=authorization, session=session)
-    except HTTPException:
-        return None
+    return get_current_user(authorization=authorization, session=session)
 
 
 # ==============================================================================

@@ -66,6 +66,11 @@ const DEV_FREELANCER_USER: UserProfile = {
   organization: 'DevStudio Zimbabwe',
 }
 
+/** Check if synthetic dev tokens are strictly permitted (disabled in hosted/production builds) */
+const isDevAuthPermitted = (): boolean => {
+  return import.meta.env.DEV && import.meta.env.VITE_ALLOW_DEV_AUTH === 'true'
+}
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   session: null,
@@ -139,19 +144,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
     }
 
-    // 2. Check for stored Dev Session if no active Supabase session
+    // 2. Check for stored Dev Session if no active Supabase session (gated to local dev)
     const storedDevToken = localStorage.getItem('tb_dev_token')
     if (storedDevToken) {
-      const devUser = storedRole === 'freelancer' ? DEV_FREELANCER_USER : DEV_CLIENT_USER
-      set({
-        user: devUser,
-        devToken: storedDevToken,
-        activeRole: storedRole,
-        isAuthenticated: true,
-        isLoading: false,
-        initialized: true,
-      })
-      return
+      if (isDevAuthPermitted()) {
+        const devUser = storedRole === 'freelancer' ? DEV_FREELANCER_USER : DEV_CLIENT_USER
+        set({
+          user: devUser,
+          devToken: storedDevToken,
+          activeRole: storedRole,
+          isAuthenticated: true,
+          isLoading: false,
+          initialized: true,
+        })
+        return
+      } else {
+        localStorage.removeItem('tb_dev_token')
+      }
     }
 
     set({
@@ -169,11 +178,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const DEMO_PASSWORD = 'DemoPassword2026!'
     const isClientDemo = (
       (email === 'client.demo@trustbroker.ai' || email === 'elena@acmeglobal.com') &&
-      (password === DEMO_PASSWORD || password === 'password123' || password === 'demo123')
+      password === DEMO_PASSWORD
     )
     const isFreelancerDemo = (
       (email === 'freelancer.demo@trustbroker.ai' || email === 'tariro@devstudio.co.zw') &&
-      (password === DEMO_PASSWORD || password === 'password123' || password === 'demo123')
+      password === DEMO_PASSWORD
     )
 
     // Role sensitivity check for demo credentials
@@ -230,18 +239,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
 
         if (error) {
-          // If Supabase returns error for demo accounts, fall back to dev role seamlessly (respecting expectedRole)
-          if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
-            console.info('Supabase sign-in fallback to client demo account:', error.message)
-            get().signInWithDevRole('client')
-            set({ isLoading: false })
-            return { success: true }
-          }
-          if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
-            console.info('Supabase sign-in fallback to freelancer demo account:', error.message)
-            get().signInWithDevRole('freelancer')
-            set({ isLoading: false })
-            return { success: true }
+          // If Supabase returns error for demo accounts, fall back to dev role ONLY in local dev if enabled
+          if (isDevAuthPermitted()) {
+            if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
+              console.info('Local dev sign-in fallback to client demo account:', error.message)
+              get().signInWithDevRole('client')
+              set({ isLoading: false })
+              return { success: true }
+            }
+            if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
+              console.info('Local dev sign-in fallback to freelancer demo account:', error.message)
+              get().signInWithDevRole('freelancer')
+              set({ isLoading: false })
+              return { success: true }
+            }
           }
 
           set({ isLoading: false })
@@ -252,31 +263,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           return { success: false, error: friendlyMessage }
         }
       } catch (err: any) {
-        if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
-          get().signInWithDevRole('client')
-          set({ isLoading: false })
-          return { success: true }
-        }
-        if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
-          get().signInWithDevRole('freelancer')
-          set({ isLoading: false })
-          return { success: true }
+        if (isDevAuthPermitted()) {
+          if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
+            get().signInWithDevRole('client')
+            set({ isLoading: false })
+            return { success: true }
+          }
+          if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
+            get().signInWithDevRole('freelancer')
+            set({ isLoading: false })
+            return { success: true }
+          }
         }
         set({ isLoading: false })
         return { success: false, error: err?.message || 'Authentication error occurred.' }
       }
     }
 
-    // 2. Local fallback if Supabase not configured
-    if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
-      get().signInWithDevRole('client')
-      set({ isLoading: false })
-      return { success: true }
-    }
-    if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
-      get().signInWithDevRole('freelancer')
-      set({ isLoading: false })
-      return { success: true }
+    // 2. Local fallback if Supabase not configured (local dev only)
+    if (isDevAuthPermitted()) {
+      if (isClientDemo && (!expectedRole || expectedRole === 'client')) {
+        get().signInWithDevRole('client')
+        set({ isLoading: false })
+        return { success: true }
+      }
+      if (isFreelancerDemo && (!expectedRole || expectedRole === 'freelancer')) {
+        get().signInWithDevRole('freelancer')
+        set({ isLoading: false })
+        return { success: true }
+      }
     }
 
     set({ isLoading: false })
@@ -339,6 +354,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   signInWithDevRole: (role: 'client' | 'freelancer') => {
+    if (!isDevAuthPermitted()) {
+      console.warn('[AUTH] signInWithDevRole is disabled in production or when VITE_ALLOW_DEV_AUTH is not true.')
+      return
+    }
     const devToken = `dev-user-${role}`
     const devUser = role === 'freelancer' ? DEV_FREELANCER_USER : DEV_CLIENT_USER
     localStorage.setItem('tb_dev_token', devToken)

@@ -71,10 +71,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   })
 
   if (response.status === 401) {
-    // If not a dev token, prompt sign out
-    if (token && !token.startsWith('dev-user-')) {
-      useAuthStore.getState().signOut()
-    }
+    useAuthStore.getState().signOut()
     throw new ApiError(401, 'Unauthorized or session expired')
   }
 

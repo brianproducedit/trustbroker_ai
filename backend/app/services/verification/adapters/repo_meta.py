@@ -38,17 +38,34 @@ def inspect_repository(repo_url: str, timeout: float = 6.0) -> Dict[str, Any]:
         return {
             "adapter": "repo_meta_generic",
             "is_github": False,
-            "exists": is_git,
-            "passed": is_git,
+            "exists": False,
+            "passed": False,
+            "needs_review": is_git,
             "owner": None,
             "repo": None,
             "files_found": [],
             "readme_snippet": None,
-            "citation": f"Generic Git repo: {clean_url[:40]}" if is_git else "Invalid repo URL",
-            "error": None if is_git else "Not a supported Git repository URL format.",
+            "citation": f"Non-GitHub Git repo: {clean_url[:40]} (needs manual review)" if is_git else "Invalid repo URL",
+            "error": "Non-GitHub repository format requires manual review." if is_git else "Not a supported Git repository URL format.",
         }
 
     owner, repo = coords
+    # Validate owner and repo strings against path traversal or injection
+    if not re.match(r"^[a-zA-Z0-9._-]+$", owner) or not re.match(r"^[a-zA-Z0-9._-]+$", repo):
+        return {
+            "adapter": "github_api",
+            "is_github": True,
+            "exists": False,
+            "passed": False,
+            "needs_review": False,
+            "owner": None,
+            "repo": None,
+            "files_found": [],
+            "readme_snippet": None,
+            "citation": "Invalid repository owner or name format.",
+            "error": "Repository path contains invalid characters.",
+        }
+
     cache_key = f"{owner}/{repo}".lower()
 
     now = time.time()
@@ -64,7 +81,7 @@ def inspect_repository(repo_url: str, timeout: float = 6.0) -> Dict[str, Any]:
 
     try:
         with httpx.Client(timeout=timeout, headers=headers) as client:
-            # 1. Fetch Repo info
+            # 1. Fetch Repo info from pinned GitHub API
             repo_resp = client.get(f"https://api.github.com/repos/{owner}/{repo}")
             if repo_resp.status_code == 404:
                 result = {
@@ -72,6 +89,7 @@ def inspect_repository(repo_url: str, timeout: float = 6.0) -> Dict[str, Any]:
                     "is_github": True,
                     "exists": False,
                     "passed": False,
+                    "needs_review": False,
                     "owner": owner,
                     "repo": repo,
                     "files_found": [],
@@ -82,18 +100,19 @@ def inspect_repository(repo_url: str, timeout: float = 6.0) -> Dict[str, Any]:
                 _REPO_CACHE[cache_key] = (now, result)
                 return result
 
-            if repo_resp.status_code == 403:  # Rate limit exceeded
+            if repo_resp.status_code == 403:  # Rate limit exceeded — do NOT invent synthetic pass
                 result = {
                     "adapter": "github_api_ratelimited",
                     "is_github": True,
-                    "exists": True,
-                    "passed": True,
+                    "exists": None,
+                    "passed": False,
+                    "needs_review": True,
                     "owner": owner,
                     "repo": repo,
-                    "files_found": ["src/", "package.json", "README.md"],
-                    "readme_snippet": f"Repository {owner}/{repo} verified (unauthenticated rate limit reached).",
-                    "citation": f"GitHub repo '{owner}/{repo}' verified",
-                    "error": None,
+                    "files_found": [],
+                    "readme_snippet": None,
+                    "citation": f"GitHub API rate limit for '{owner}/{repo}' (needs review)",
+                    "error": "GitHub API rate limit reached. Manual inspection required.",
                 }
                 return result
 

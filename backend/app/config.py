@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Server & Environment
     environment: str = "development"
+    allow_dev_auth_tokens: bool = False
     port: int = 8000
     frontend_url: str = "http://localhost:5173"
     allowed_origins: str = "http://localhost:5173,http://localhost:5174,https://trustbroker-ai-frontend.onrender.com,https://trustbroker-ai-frontend-bx9a.onrender.com"
@@ -39,6 +40,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    @property
+    def is_dev_auth_allowed(self) -> bool:
+        """Development auth bypass is strictly disabled in production even if flag is True."""
+        if self.environment.lower() == "production":
+            return False
+        return self.allow_dev_auth_tokens
 
     @property
     def cors_origins(self) -> List[str]:
