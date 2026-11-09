@@ -36,6 +36,7 @@ async def create_paypal_order(
     currency: str = "USD",
     reference_id: Optional[str] = None,
     description: str = "TrustBroker milestone funding",
+    request_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create an order with PayPal Orders v2 API with intent=CAPTURE."""
     token = await get_paypal_access_token()
@@ -45,6 +46,9 @@ async def create_paypal_order(
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
+    if request_id:
+        headers["PayPal-Request-Id"] = request_id
+
     payload = {
         "intent": "CAPTURE",
         "purchase_units": [
@@ -68,6 +72,23 @@ async def create_paypal_order(
         res = await client.post(f"{base_url}/v2/checkout/orders", headers=headers, json=payload)
         if res.status_code not in (200, 201):
             raise Exception(f"PayPal order creation failed: {res.text}")
+        return res.json()
+
+
+async def get_paypal_order(order_id: str) -> Dict[str, Any]:
+    """Fetch details for a PayPal order via GET /v2/checkout/orders/{order_id}."""
+    token = await get_paypal_access_token()
+    base_url = get_base_url()
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        res = await client.get(f"{base_url}/v2/checkout/orders/{order_id}", headers=headers)
+        if res.status_code != 200:
+            raise Exception(f"Failed to fetch PayPal order {order_id}: {res.text}")
         return res.json()
 
 
@@ -135,9 +156,11 @@ async def verify_webhook_signature(
     headers: Dict[str, str],
     webhook_payload: Dict[str, Any],
 ) -> bool:
-    """Verify PayPal webhook transmission signature. Permissive in sandbox without configured webhook ID."""
+    """Verify PayPal webhook transmission signature against PayPal API."""
     if not settings.paypal_webhook_id:
-        return True
+        if settings.environment.lower() == "production":
+            return False  # Strict fail-closed in production
+        return False  # Fail closed by default
 
     auth_algo = headers.get("paypal-auth-algo") or headers.get("PAYPAL-AUTH-ALGO")
     cert_url = headers.get("paypal-cert-url") or headers.get("PAYPAL-CERT-URL")

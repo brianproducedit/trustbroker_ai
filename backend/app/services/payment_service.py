@@ -142,13 +142,36 @@ async def create_milestone_escrow_order(
     if amount <= Decimal("0.00"):
         raise HTTPException(status_code=400, detail="Cannot fund a milestone with a zero or negative amount")
 
+    # Idempotency & Concurrency: Check if an active CHECKOUT_CREATED attempt already exists for this milestone
+    existing_attempt = session.exec(
+        select(PaymentAttempt)
+        .where(
+            PaymentAttempt.milestone_id == target_milestone.id,
+            PaymentAttempt.status == PaymentStatus.CHECKOUT_CREATED,
+        )
+        .order_by(PaymentAttempt.created_at.desc())
+    ).first()
+    if existing_attempt and existing_attempt.paypal_order_id:
+        # Return existing active checkout order instead of creating duplicate live orders
+        return {
+            "order_id": existing_attempt.paypal_order_id,
+            "paypal_order": {
+                "id": existing_attempt.paypal_order_id,
+                "status": existing_attempt.paypal_status or "CREATED",
+            },
+            "approve_url": None,
+            "payment_attempt_id": str(existing_attempt.id),
+        }
+
     description = f"Fund milestone: {target_milestone.title} ({contract.code})"
+    request_id = f"order:{target_milestone.id}:{uuid.uuid4().hex[:8]}"
     try:
         order_data = await paypal_client.create_paypal_order(
             amount=float(amount),
             currency=contract.currency,
             reference_id=str(milestone_id),
             description=description,
+            request_id=request_id,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"PayPal order creation failed: {exc}") from exc
@@ -225,34 +248,32 @@ async def capture_milestone_escrow_payment(
         capture_data = await paypal_client.capture_paypal_order(active_order_id)
     except Exception as exc:
         exc_str = str(exc)
-        # Sandbox mode resilience: Map all PayPal sandbox error conditions to a synthetic COMPLETED response.
-        # Common sandbox errors:
-        #   - ORDER_NOT_APPROVED: payer hasn't completed the PayPal popup flow
-        #   - UNPROCESSABLE_ENTITY (422): order state is incorrect for capture (e.g. already captured)
-        #   - INSTRUMENT_DECLINED: sandbox test card declined
-        #   - ORDER_ALREADY_CAPTURED: duplicate capture attempt
-        _sandbox_errors = (
-            "ORDER_NOT_APPROVED", "UNPROCESSABLE_ENTITY", "INSTRUMENT_DECLINED",
-            "ORDER_ALREADY_CAPTURED", "422", "semantically incorrect", "business validation",
-        )
-        if settings.paypal_mode.lower() == "sandbox" and any(e in exc_str for e in _sandbox_errors):
-            capture_data = {
-                "id": f"SANDBOX-CAP-{active_order_id[:16]}",
-                "status": "COMPLETED",
-                "payer": {"email_address": client.email or "sandbox-client@trustbroker.ai"},
-                "purchase_units": [
-                    {
-                        "payments": {
-                            "captures": [
-                                {
-                                    "id": f"SANDBOX-CAP-{active_order_id[:16]}",
-                                    "status": "COMPLETED",
-                                }
-                            ]
-                        }
+        # If order was already captured or state conflict, reconcile directly against PayPal Orders API
+        if "ORDER_ALREADY_CAPTURED" in exc_str or "422" in exc_str:
+            try:
+                order_details = await paypal_client.get_paypal_order(active_order_id)
+                p_units = order_details.get("purchase_units") or []
+                existing_captures = (p_units[0].get("payments") or {}).get("captures") if p_units else []
+                completed_cap = next((c for c in existing_captures if c.get("status") == "COMPLETED"), None)
+                if completed_cap:
+                    capture_data = {
+                        "id": completed_cap.get("id"),
+                        "status": "COMPLETED",
+                        "purchase_units": p_units,
+                        "payer": order_details.get("payer"),
                     }
-                ],
-            }
+                else:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"PayPal order {active_order_id} has not been completed: {exc}",
+                    )
+            except HTTPException:
+                raise
+            except Exception as reconcile_exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"PayPal capture reconciliation failed: {reconcile_exc}",
+                ) from reconcile_exc
         else:
             raise HTTPException(status_code=502, detail=f"PayPal capture failed: {exc}") from exc
 
@@ -265,7 +286,32 @@ async def capture_milestone_escrow_payment(
         if captures:
             capture_id = captures[0].get("id")
             capture_status = str(captures[0].get("status") or capture_status)
+            
+            # Amount & Currency Reconciliation: Provider truth must match milestone
+            cap_amount_obj = captures[0].get("amount") or {}
+            cap_val = cap_amount_obj.get("value")
+            cap_curr = cap_amount_obj.get("currency_code")
+            if cap_val and Decimal(str(cap_val)) != attempt.amount:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Provider capture amount {cap_val} does not match milestone amount {attempt.amount}.",
+                )
+            if cap_curr and cap_curr.upper() != attempt.currency.upper():
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Provider capture currency {cap_curr} does not match milestone currency {attempt.currency}.",
+                )
+
     payer_email = (capture_data.get("payer") or {}).get("email_address")
+
+    if not capture_id and capture_status.upper() == "COMPLETED":
+        capture_id = capture_data.get("id")
+
+    if not capture_id:
+        raise HTTPException(
+            status_code=409,
+            detail=f"PayPal response does not contain a provider-issued capture ID; milestone not funded.",
+        )
 
     attempt.paypal_status = capture_status
     attempt.paypal_capture_id = capture_id or attempt.paypal_capture_id
@@ -335,12 +381,10 @@ async def release_milestone_payout(
 
     receiver = (freelancer.paypal_payout_email or "").strip() if freelancer else ""
     if not receiver:
-        if settings.paypal_mode.lower() == "sandbox" and freelancer:
-            receiver = freelancer.email or "freelancer-payout@sandbox.paypal.com"
-            freelancer.paypal_payout_email = receiver
-            session.add(freelancer)
-        else:
-            raise HTTPException(status_code=400, detail="Freelancer PayPal payout email is required before release.")
+        raise HTTPException(
+            status_code=400,
+            detail="Freelancer has not configured a PayPal payout email. Payout cannot be released.",
+        )
 
     request_id = f"payout:{milestone.id}"
     existing = session.exec(select(Payout).where(Payout.idempotency_key == request_id)).first()
@@ -389,40 +433,20 @@ async def release_milestone_payout(
             note=f"TrustBroker payout for {contract.code} — {milestone.title}",
         )
     except Exception as exc:
-        exc_str = str(exc)
-        # Sandbox resilience: if PayPal sandbox account does not have batch payouts permission or returns restriction errors
-        if settings.paypal_mode.lower() == "sandbox" and any(k in exc_str for k in [
-            "USER_BUSINESS_ACCOUNT_RESTRICTED",
-            "PERMISSION_DENIED",
-            "AUTHORIZATION_ERROR",
-            "FEATURE_UNAVAILABLE",
-            "INSUFFICIENT_FUNDS",
-            "403",
-            "422",
-            "400",
-            "500",
-        ]):
-            sandbox_batch_id = f"SANDBOX-BATCH-{uuid.uuid4().hex[:12].upper()}"
-            sandbox_item_id = f"SANDBOX-ITEM-{uuid.uuid4().hex[:12].upper()}"
-            payout_data = {
-                "batch_header": {
-                    "payout_batch_id": sandbox_batch_id,
-                    "batch_status": "SUCCESS",
-                },
-                "items": [
-                    {
-                        "payout_item_id": sandbox_item_id,
-                        "transaction_status": "SUCCESS",
-                        "payout_item_fee": {"value": "0.00", "currency": contract.currency},
-                    }
-                ],
-            }
-        else:
-            payout.status = PayoutStatus.FAILED.value
-            payout.updated_at = datetime.now(timezone.utc)
-            session.add(payout)
-            session.commit()
-            raise HTTPException(status_code=502, detail=f"PayPal payout failed: {exc}") from exc
+        payout.status = PayoutStatus.FAILED.value
+        payout.updated_at = datetime.now(timezone.utc)
+        session.add(payout)
+        session.commit()
+        log_audit_event(
+            session=session,
+            action="payout_request_failed",
+            details=f"PayPal payout request failed for milestone {milestone.id}: {exc}",
+            contract_id=contract.id,
+            actor_id=client.id,
+            actor_name=client.full_name or client.email,
+            metadata={"milestone_id": str(milestone.id), "error": str(exc)},
+        )
+        raise HTTPException(status_code=502, detail=f"PayPal payout request failed: {exc}") from exc
 
     header = payout_data.get("batch_header") or {}
     payout.paypal_batch_id = header.get("payout_batch_id") or payout.paypal_batch_id
@@ -433,10 +457,7 @@ async def release_milestone_payout(
     else:
         item_status = header.get("batch_status") or "PENDING"
 
-    # In sandbox mode, ensure the payout completes and marks funds as cleared immediately
-    if settings.paypal_mode.lower() == "sandbox" and item_status in ("PENDING", "PROCESSING", "SUBMITTED"):
-        item_status = "SUCCESS"
-
+    # Client has authorized release; payment status transitions to RELEASE_AUTHORIZED
     milestone.payment_status = PaymentStatus.RELEASE_AUTHORIZED
     session.add(milestone)
     _apply_payout_status(session, payout, item_status)
@@ -662,26 +683,54 @@ async def process_paypal_webhook(
         session.rollback()
         return {"status": "already_processed", "event_id": event_id}
 
-    if event_type in ("PAYMENT.CAPTURE.COMPLETED", "CHECKOUT.ORDER.COMPLETED"):
+    if event_type == "PAYMENT.CAPTURE.COMPLETED":
         order_id = (
             (resource.get("supplementary_data") or {}).get("related_ids") or {}
-        ).get("order_id") or resource_id
+        ).get("order_id")
+        capture_id = resource.get("id")
+        amount_data = resource.get("amount") or {}
+        val_str = amount_data.get("value")
+        curr_str = amount_data.get("currency_code")
+
+        attempt = None
+        if capture_id:
+            attempt = session.exec(
+                select(PaymentAttempt).where(PaymentAttempt.paypal_capture_id == capture_id)
+            ).first()
+        if not attempt and order_id:
+            attempt = session.exec(
+                select(PaymentAttempt).where(PaymentAttempt.paypal_order_id == order_id)
+            ).first()
+
+        if attempt:
+            # Reconcile amount and currency before applying financial update
+            amount_matches = not val_str or Decimal(val_str) == attempt.amount
+            curr_matches = not curr_str or curr_str.upper() == attempt.currency.upper()
+            if amount_matches and curr_matches:
+                attempt.paypal_capture_id = capture_id or attempt.paypal_capture_id
+                attempt.paypal_status = "COMPLETED"
+                _mark_milestone_funded(session, attempt)
+                log_audit_event(
+                    session=session,
+                    action="payment_capture_completed",
+                    details=f"Webhook captured PayPal payment {capture_id or resource_id}.",
+                    contract_id=attempt.contract_id,
+                    metadata={"paypal_order_id": attempt.paypal_order_id, "paypal_capture_id": attempt.paypal_capture_id},
+                )
+    elif event_type == "CHECKOUT.ORDER.COMPLETED":
+        order_id = resource.get("id")
         attempt = session.exec(
-            select(PaymentAttempt).where(
-                (PaymentAttempt.paypal_capture_id == resource_id) | (PaymentAttempt.paypal_order_id == order_id)
-            )
+            select(PaymentAttempt).where(PaymentAttempt.paypal_order_id == order_id)
         ).first()
         if attempt:
-            attempt.paypal_capture_id = attempt.paypal_capture_id or resource_id
-            attempt.paypal_status = "COMPLETED"
-            _mark_milestone_funded(session, attempt)
-            log_audit_event(
-                session=session,
-                action="payment_capture_completed",
-                details=f"Webhook captured PayPal payment {resource_id}.",
-                contract_id=attempt.contract_id,
-                metadata={"paypal_order_id": attempt.paypal_order_id, "paypal_capture_id": attempt.paypal_capture_id},
-            )
+            # Extract real capture from purchase units if included
+            p_units = resource.get("purchase_units") or []
+            captures = (p_units[0].get("payments") or {}).get("captures") if p_units else []
+            completed_cap = next((c for c in captures if c.get("status") == "COMPLETED"), None)
+            if completed_cap:
+                attempt.paypal_capture_id = completed_cap.get("id") or attempt.paypal_capture_id
+                attempt.paypal_status = "COMPLETED"
+                _mark_milestone_funded(session, attempt)
     elif event_type in ("PAYMENT.CAPTURE.DENIED", "PAYMENT.CAPTURE.REFUNDED", "CHECKOUT.ORDER.VOIDED"):
         attempt = session.exec(
             select(PaymentAttempt).where(

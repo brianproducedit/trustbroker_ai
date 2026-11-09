@@ -250,23 +250,17 @@ def run_verification_orchestration(
             )
             session.add(cr_record)
 
-    # State transitions
+    # State transitions: AI verification updates work status (VERIFIED / SUBMITTED / REVISION_REQUESTED).
+    # Payment status remains STAGED_IN_SANDBOX until client explicitly authorizes disbursement.
     if passed:
         milestone.status = MilestoneStatus.VERIFIED
-        if milestone.payment_status in [PaymentStatus.STAGED_IN_SANDBOX, "staged_in_sandbox", "funded", "staged"]:
-            milestone.payment_status = PaymentStatus.RELEASE_AUTHORIZED
     elif requires_human_review:
         milestone.status = MilestoneStatus.SUBMITTED
     else:
         milestone.status = MilestoneStatus.REVISION_REQUESTED
 
-    # Check contract completion
-    all_milestones = list(
-        session.exec(select(Milestone).where(Milestone.contract_id == contract.id)).all()
-    )
-    if all(m.status in [MilestoneStatus.VERIFIED, MilestoneStatus.SETTLED] for m in all_milestones):
-        contract.status = ContractStatus.COMPLETED
-
+    # Contract completion is only reached after financial settlement of all milestones (in payment_service)
+    session.add(milestone)
     session.commit()
     session.refresh(report)
 

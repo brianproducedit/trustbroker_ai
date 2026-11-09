@@ -242,7 +242,11 @@ class PolicyEngine:
         """Client only; milestone verified; funds staged; freelancer payout email present."""
         if not cls.is_client(user, contract):
             return PolicyResult(False, "Only the client can authorize payout release.")
-        if milestone.status not in (MilestoneStatus.VERIFIED, MilestoneStatus.SUBMITTED) and milestone.payment_status != PaymentStatus.RELEASE_AUTHORIZED:
+        if milestone.status == MilestoneStatus.REVISION_REQUESTED:
+            return PolicyResult(False, "Cannot release payout while milestone has an open revision request.")
+        if milestone.status in (MilestoneStatus.SETTLED,) or milestone.payment_status == PaymentStatus.RELEASED:
+            return PolicyResult(False, "Milestone payout has already been released and settled.")
+        if milestone.status != MilestoneStatus.VERIFIED:
             return PolicyResult(
                 False,
                 f"Milestone must be verified before release (current: '{milestone.status.value}').",
