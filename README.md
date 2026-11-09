@@ -25,8 +25,8 @@ Clients describe milestones in plain English and AI drafts an objective Statemen
 
 Once awarded, clients stage milestone funds using **PayPal Checkout (Orders v2)**. When freelancers submit code, live URLs, or test suites, an automated AI evaluation engine verifies each criterion. Upon successful verification, the client authorizes a single-click disbursement executed directly via the **PayPal Payouts API** into the freelancer’s registered PayPal email.
 
-> **Zero Mock Fallbacks on Payouts:** Every staged transaction generates authentic PayPal sandbox Order and Capture IDs and payouts execute through real PayPal Payout Batch APIs.  
-> **Human Governance:** AI *never* unilaterally moves money. Funds release strictly according to an immutable **PolicyEngine** that validates cryptographic PayPal state, user authorization and milestone criteria verification.
+> **Provider Truthfulness on Payments:** Every staged transaction communicates with authentic PayPal sandbox Orders and Payouts APIs with strict error propagation and no synthetic IDs.  
+> **Human Governance:** AI *never* unilaterally moves money. Funds release strictly requires explicit authenticated client authorization via the **PolicyEngine** after multimodal criteria verification.
 
 ---
 
@@ -39,7 +39,7 @@ flowchart LR
     C --> D["4. Award & Accept"]
     D --> E["5. Fund via PayPal"]
     E --> F["6. AI Evidence Check"]
-    F --> G["7. Instant PayPal Payout"]
+    F --> G["7. PayPal Payout Disbursement"]
 ```
 
 1. **Brief & SOW Generation:** Client inputs a project description; the AI generates structured milestones, timelines and measurable acceptance criteria.
@@ -157,7 +157,7 @@ trustbroker_ai/
 ## Quick Start & Local Run
 
 ### Prerequisites
-- Node.js 18+ & npm
+- Node.js 20+ & npm
 - Python 3.12+
 - PostgreSQL database (or local Supabase instance)
 
@@ -218,7 +218,7 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
 - **Backend Delivery Package & Verification Report Aggregation:** Enhanced `DeliveryRead` and `delivery_service.py` to automatically embed full verification reports and individual `CriterionResult` details (`criterion_id`, `score`, `passed`, `explanation`) in milestone delivery queries.
 - **Client-Only Payout Disbursal Role Isolation:** Strictly isolated payment release authorization to verified contract clients in both the backend `PolicyEngine` (`require_client()`) and frontend components. Freelancers receive a dedicated "Awaiting Client Release" status banner with a 1-click disbursal reminder action.
 - **Guarded CRUD Operations & Record Immutability:** Implemented fine-grained, secure CRUD operations across contracts, milestones, acceptance criteria, applications, notifications, and profiles. Draft contracts can be deleted with full cascade cleanup of uncommitted milestones and criteria; pending applications can be withdrawn; read notifications can be batch-cleared. Crucially, all active and completed contracts, payment attempts, payouts, audit events, deliveries, and legal signatures remain permanently immutable to guarantee financial and legal non-repudiation.
-- **Escrow Safeguards & Buyer/Seller Protection:** Integrated a 7-day inactivity reclamation guarantee, automatic release clock pausing upon revision requests, and multimodal AI dispute mediation for transparent conflict resolution.
+- **Milestone Staging Safeguards & Buyer/Seller Protection:** Integrated buyer protection reset for inactivity or unaddressed revisions, automatic clock pausing upon revision requests, and multimodal AI dispute mediation for transparent conflict resolution.
 - **Web Development Category:** Added **Web Development** to contract creation category dropdowns and one-click filter chips.
 - **Studio AI Copilot Ergonomics:** Upgraded the floating operations copilot with expanded vertical height (`700px` / `82vh`), unconstrained flex scrolling, and high-contrast typography for effortless reading of telemetry analyses and suggested queries.
 - **Client Payout Management & Ledger:** Dedicated portal at `/app/client/payouts` displaying aggregate balances, disbursed totals, active in-flight payouts, and interactive order/batch logs.

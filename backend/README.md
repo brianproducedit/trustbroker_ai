@@ -52,14 +52,14 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `POST /webhook`: Inbound PayPal webhook listener with signature verification.
 
 ### Verification Engine & Deliveries (`/api/v1/deliveries`)
-- `POST /`: Submit freelancer deliverable package (repo URL, live staging preview, notes, file attachments).
+- `POST /upload-file`: Accept multipart evidence upload, validating file size, type and storing securely on server/Supabase.
+- `POST /`: Submit freelancer deliverable package (repo URL, live staging preview, notes, file attachments); queues background AI verification.
+- `GET /{delivery_id}/verification-status`: Poll background AI verification job status and results.
 - `GET /milestone/{milestone_id}`: List all milestone deliveries with embedded `verification_report` and itemized `CriterionResult` evaluations.
-- `GET /{id}`: Retrieve detailed delivery submission package and assessment report.
-- `POST /{id}/verify`: Run automated multimodal AI verification checks against all milestone acceptance criteria.
-- `POST /{id}/manual-verify`: Client manual verification approval outside the AI system.
-- `POST /{id}/request-revision`: Client requests revisions, freezing the 7-day auto-disbursal clock and triggering escrow safeguards.
-- `POST /{id}/override`: Client human override approval with required audit trail rationale.
-- `POST /{id}/reclaim`: Client reclaims staged escrow funds if the freelancer fails to respond to revisions within 7 days.
+- `GET /{delivery_id}`: Retrieve detailed delivery submission package and assessment report.
+- `GET /files/{file_id}/download`: Authenticated download URL or file stream for contract parties.
+- `POST /{contract_id}/{milestone_id}/request-revision`: Client requests revisions with notes.
+- `POST /{contract_id}/{milestone_id}/override-review`: Client human override approval with required audit trail rationale.
 - **Multimodal Adapters:**
   - **HTTP Probe Adapter:** Verifies live staging URLs with resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
   - **Vision Adapter:** Inspects screenshots and UI designs against visual requirements using Groq vision inference.

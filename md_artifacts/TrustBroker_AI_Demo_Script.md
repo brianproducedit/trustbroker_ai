@@ -85,7 +85,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 ### Step 3b — Create a New Contract with AI SOW Generator
 
 **📹 Do:**
-1. Click **New Contract** in the left sidebar → navigate to `/app/client/new-contract`
+1. Click **New Contract** in the left sidebar → navigate to `/app/client/contracts/new`
 2. Fill in the project title: *"AI-Powered Payment Dashboard"*
 3. Select a category (e.g., *FinTech / Payments*).
 4. Click the **✨ Generate SOW with AI** button (or similar AI Brief Generator button).
@@ -437,7 +437,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 | Client Dashboard | `/app/client` | Post-login client home |
 | Client Contracts | `/app/client/contracts` | List of all contracts |
 | Contract Detail | `/app/client/contracts/:id` | Tabs: Milestones, SOW, Payments, Audit |
-| New Contract | `/app/client/new-contract` | AI SOW Generator form |
+| New Contract | `/app/client/contracts/new` | AI SOW Generator form |
 | Review Delivery | `/app/client/contracts/:id/review` | 3-column settlement interface |
 | Client Operations | `/app/client/studio` | AG Studio + AG Grid |
 | Freelancer Home | `/app/freelancer` | Post-login freelancer home |

@@ -74,7 +74,7 @@ All routes use the `/app/` prefix. Legacy `/dashboard/...` paths auto-redirect.
 | Client Contracts List | `/app/client/contracts` | Client |
 | Contract Detail | `/app/client/contracts/:id` | Client |
 | **Review Delivery** | `/app/client/contracts/:id/review` | Client |
-| New Contract | `/app/client/new-contract` | Client |
+| New Contract | `/app/client/contracts/new` | Client |
 | Client Applications | `/app/client/applications` | Client |
 | Client Operations Studio | `/app/client/studio` | Client |
 | Freelancer Home | `/app/freelancer` | Freelancer |
@@ -119,7 +119,7 @@ Follow this path to verify every stage of the contract and payment lifecycle.
    - **Audit Activity** — Immutable chronological event log with SHA-256 integrity proofs
 
 #### Option B — Create a New Contract with AI SOW Generator
-1. Click **New Contract** → `/app/client/new-contract`
+1. Click **New Contract** → `/app/client/contracts/new`
 2. Fill in the project title and category
 3. Click **Generate SOW with AI** — Groq LPU drafts structured milestones, acceptance criteria, and exclusions in under a second
 4. Review the generated content, set a milestone value (e.g., $400), then **Publish to Marketplace**
