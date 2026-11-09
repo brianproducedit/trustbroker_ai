@@ -328,6 +328,10 @@ To independently confirm money movement in your sandbox:
 | **Idempotency** | Every payout carries `PayPal-Request-Id: payout:{milestone_id}`. Re-clicking cannot double-disburse. |
 | **Strict Capture Validation** | Milestone only becomes `funded` when PayPal responds with `COMPLETED`. Cancelling the popup leaves it unfunded. |
 | **PolicyEngine Gating** | 4 non-negotiable conditions must pass before any payout executes (see Step 7 above). |
+| **Provider Truthfulness** | Zero synthetic IDs (`SANDBOX-CAP-*`, `SANDBOX-BATCH-*`). All captures, payouts, and webhooks reflect authentic PayPal provider state. |
+| **SSRF & Boundary Safety** | `validate_url_for_ssrf` blocks loopback, private RFC1918 subnets, cloud metadata (`169.254.169.254`), non-standard ports, and embedded credentials before any HTTP probe runs. |
+| **Server-Side Evidence Storage** | Deliverables upload file bytes directly to private Supabase Storage (`delivery-evidence`) or server disk fallback. Client-side `blob:` URLs are strictly rejected. |
+| **AI Verification Truthfulness** | If AI inference is unavailable or rate-limited, verification returns `NEEDS_REVIEW` (score 50, human review required). No synthetic 88/100 pass. |
 | **Role Enforcement** | Client routes (`/app/client/...`) reject freelancer sessions; freelancer routes reject client sessions. |
 | **SHA-256 SOW Hashing** | Statement of Work content is hashed on mutual acceptance — tamper-proof contract record. |
 | **Audit Immutability** | Activity events are append-only — no delete or edit capability in the API. |
@@ -361,3 +365,33 @@ For judges who want the fastest possible verification of the core loop:
 ```
 
 Total time: approximately 5 minutes.
+
+---
+
+## 10. Deliverable Storage Architecture & Supabase Free-Tier Setup
+
+TrustBroker AI stores freelancer evidence files (screenshots, zip archives, design files, PDF documents) using a resilient dual-storage architecture:
+
+### Free Tier Limits & Boundaries
+- **Supabase Storage Free Tier:** Includes **1 GB of total storage** across all buckets with a maximum upload size of **50 MB per file**.
+- **TrustBroker AI Guardrail:** Both frontend and backend enforce an explicit **25 MB limit per file**, well within Supabase's 50 MB ceiling, preventing out-of-quota errors.
+- **Graceful Local Fallback:** If Supabase credentials are not yet configured, the system automatically falls back to private server disk storage (`uploads/evidence/`). Both modes generate authenticated, role-restricted downloads for contract parties.
+
+### Step-by-Step Supabase Storage Configuration
+To connect real cloud storage:
+
+1. Log into your [Supabase Dashboard](https://supabase.com/dashboard) and select your TrustBroker AI project.
+2. In the left navigation, click **Storage** (the bucket icon).
+3. Click **New bucket** (top right):
+   - **Name:** `delivery-evidence`
+   - **Public bucket:** Leave **OFF / Disabled** (ensures deliverables remain confidential and private).
+   - **File size limit:** Set to `50MB`.
+   - **Allowed MIME types:** Leave blank or set `image/*,application/pdf,application/zip,text/*`.
+   - Click **Save**.
+4. Configure your backend environment variables (in `.env` or your Render dashboard):
+   ```env
+   SUPABASE_URL=https://[YOUR-PROJECT-ID].supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=[YOUR-SERVICE-ROLE-KEY]
+   ```
+5. Deliverables will now upload directly to your private cloud storage bucket.
+

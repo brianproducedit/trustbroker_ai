@@ -195,6 +195,34 @@ Visit `http://localhost:5173` to explore the application locally.
 
 ---
 
+## Deliverable Storage & Supabase Free-Tier Setup
+
+TrustBroker AI features dual-tier storage for deliverable evidence (screenshots, zip archives, PDFs, design files):
+
+- **Supabase Storage (Production / Cloud):** When configured, files upload directly to a private Supabase Storage bucket (`delivery-evidence`). Access is secured via short-lived signed URLs.
+- **Local Disk Fallback (Zero-Downtime Resilience):** If Supabase storage credentials are not provided or the bucket is not yet initialized, files automatically save to private backend storage at `uploads/evidence/`.
+- **Free Tier Capacity & Limits:**
+  - Supabase's free tier provides **1 GB total storage** with a **50 MB per-file upload limit**.
+  - TrustBroker AI enforces a safe **25 MB per-file validation limit** in both frontend and backend, ensuring uploads never exceed Supabase free-tier thresholds.
+
+### How to Configure Supabase Storage (5-Minute Setup)
+
+1. Log into your [Supabase Dashboard](https://supabase.com/dashboard) and open your project.
+2. Navigate to **Storage** in the left sidebar menu (the bucket icon).
+3. Click **New bucket**:
+   - **Name:** `delivery-evidence`
+   - **Public bucket:** Keep **OFF / Disabled** (ensures deliverables remain confidential between contract parties).
+   - **File size limit:** Set to `50MB` (or leave default).
+   - Click **Save**.
+4. Set backend environment variables in `.env` or Render environment settings:
+   ```env
+   SUPABASE_URL=https://[YOUR-PROJECT-ID].supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=[YOUR-SERVICE-ROLE-KEY]
+   ```
+5. Deliverables submitted by freelancers will now securely persist in your Supabase bucket.
+
+---
+
 ## Judge Walkthrough & Demo Credentials
 
 To test the complete end-to-end flow with real PayPal sandbox money movement:
@@ -210,6 +238,15 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
 
 ## Recent Engineering Updates (November 2026)
 
+- **Comprehensive Security, Payment & Evidence Remediation (Phase 16):** Fully executed the 14-workstream remediation plan across authentication, payment state machines, AI verification truthfulness, and external security:
+  - **Zero Synthetic Fallbacks & Provider Truthfulness:** Eliminated all fabricated PayPal capture IDs (`SANDBOX-CAP-*`), batch IDs (`SANDBOX-BATCH-*`), and invented payout emails. Payment operations strictly report authentic PayPal Orders v2 and Payouts API responses. Captures gracefully reconcile real order states (`422 / ORDER_ALREADY_CAPTURED`).
+  - **Deterministic PolicyEngine Lifecycle:** AI verification passing updates work status to `VERIFIED` but never mutates payment status to `RELEASE_AUTHORIZED`. Contracts cannot reach `COMPLETED` until all milestones are fully settled financially via provider-confirmed payouts.
+  - **SSRF & Network Boundary Protection:** Reinforced `validate_url_for_ssrf()` blocking loopbacks (`127.0.0.1`, `localhost`), link-local/cloud metadata (`169.254.169.254`), private RFC1918 subnets, non-standard ports, and embedded credentials before any HTTP probe executes.
+  - **Real Server Storage Evidence Uploads:** Eliminated browser-local `blob:` URLs in delivery submissions. Deliverables upload directly through `POST /api/v1/deliveries/upload-file` to private storage, backed by Supabase Storage or server disk fallback.
+  - **AI Verification Truthfulness:** Removed deterministic pass fallbacks. When AI models are unavailable or unconfigured, the verification engine returns `NEEDS_REVIEW` (score 50, `requires_human_review: True`), safely pausing disbursement until manual review.
+  - **Production Seeding & Startup Safety:** Alembic migrations no longer blindly stamp `head` on failures. Database demo seeding is strictly guarded behind `SEED_DEMO_DATA=true` to prevent overwriting real user profiles in production.
+  - **Automated Backend CI Testing:** Added a dedicated Python 3.12 pytest job in `.github/workflows/ci.yml` running all 55 backend tests on pull requests and pushes before frontend build.
+  - **CORS Hardening:** Restricted allowed origins regex strictly to `^https:\/\/trustbroker-ai-frontend-[a-z0-9]+\.onrender\.com$`.
 - **Role-Aware Canonical Routing & Complete Route Audit (Phase 15):** Completed an exhaustive audit of all routing and navigation across client and freelancer portals. Replaced all legacy `/dashboard/...` targets with canonical `/app/client/...` and `/app/freelancer/...` endpoints. Configured backwards-compatible `<Navigate replace />` redirects in `routes.tsx` for all historical dashboard paths, added canonical constants (`ROUTES.NOTIFICATIONS`, `ROUTES.CLIENT_PROFILE_PUBLIC`, `ROUTES.ACTIVITY_HISTORY`), and updated the breadcrumb system to be role-aware (`Dashboard` for clients, `Home` for freelancers).
 - **Delivery Review Ergonomics & Balanced 3-Column Layout:** Overhauled the delivery verification view into a balanced 3-column architecture (`4 / 4 / 4` column grid on a spacious `max-w-7xl` container):
   - **Column 1 (Freelancer Delivery Package):** Read-only client view displaying live preview links, source code repositories, delivery notes, and classified evidence attachments.

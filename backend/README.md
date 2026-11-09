@@ -126,6 +126,37 @@ alembic downgrade -1
 
 ---
 
+## Automated Test Suite
+
+The backend includes a comprehensive 55-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, and vetting scoring:
+
+```bash
+# Run the full test suite
+python -m pytest tests/ -v
+
+# Run specific test suites
+python -m pytest tests/test_paypal_integrity.py -v
+python -m pytest tests/test_ssrf_safety.py -v
+python -m pytest tests/test_auth_security.py -v
+python -m pytest tests/test_phase5_verification.py -v
+```
+
+---
+
+## Deliverable Storage & Supabase Free-Tier Setup
+
+Deliverables (images, PDFs, ZIP archives, design files) upload via `POST /api/v1/deliveries/upload-file`:
+- **Supabase Storage:** If `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured, files upload to private bucket `delivery-evidence`.
+- **Local Fallback:** If Supabase Storage is unconfigured, files save to `uploads/evidence/` with party-authenticated download endpoints.
+- **Limits:** Supabase free tier includes **1 GB storage** and a **50 MB max file size**. TrustBroker AI enforces a conservative **25 MB limit** across frontend and backend.
+
+To set up the bucket in Supabase:
+1. Go to **Storage** -> Click **New bucket**.
+2. Name it `delivery-evidence` and ensure **Public bucket is OFF**.
+3. Set file size limit to `50MB`.
+
+---
+
 ## Deployment (Render)
 
 This backend is preconfigured for automatic deployment on Render using the root `render.yaml` blueprint or as an independent Web Service pointing to `backend/Dockerfile`. Startup execution includes auto-migration with Alembic and database seeding for demo showcase accounts.

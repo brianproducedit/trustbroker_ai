@@ -16,6 +16,9 @@ React 19 & TypeScript frontend for **TrustBroker AI**: AI-drafted SOWs, mileston
 
 ---
 
+## Prerequisites
+- Node.js 20+ & npm
+
 ## Run Locally
 
 ```bash

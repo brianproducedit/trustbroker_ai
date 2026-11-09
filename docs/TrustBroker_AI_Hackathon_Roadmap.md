@@ -883,21 +883,21 @@ When implementing, prefer these paths. Do not create parallel apps.
 
 The project is submission-ready when **all** of these are true:
 
-- [ ] Client can publish an open contract from a step-by-step AI wizard.
-- [ ] Freelancers can browse, apply and see status.
-- [ ] AI vetting ranks applicants and treats newcomers fairly.
-- [ ] Client awards one freelancer; others are notified of rejection.
-- [ ] Both parties accept the same version.
-- [ ] Client funds a milestone with PayPal; server and webhook agree it is funded.
-- [ ] Freelancer submits real evidence; AI returns per-criterion results using the actual files/URLs/screenshots.
-- [ ] Policy engine blocks payout until rules pass.
-- [ ] Payouts API creates a PayPal payout; UI shows the real id and status.
-- [ ] Client and freelancer workspaces are visually and functionally different.
-- [ ] Public site looks intentional on mobile and desktop.
-- [ ] AG Studio operations dashboard uses live data and an AI agent proxy.
-- [ ] Hosted demo + JUDGE_DEMO accounts work in a private window.
-- [ ] Video ≤ 3 minutes shows the loop plus one failure.
-- [ ] Repo is public, licensed, documented, $0 services listed.
+- [x] Client can publish an open contract from a step-by-step AI wizard.
+- [x] Freelancers can browse, apply and see status.
+- [x] AI vetting ranks applicants and treats newcomers fairly.
+- [x] Client awards one freelancer; others are notified of rejection.
+- [x] Both parties accept the same version.
+- [x] Client funds a milestone with PayPal; server and webhook agree it is funded.
+- [x] Freelancer submits real evidence; AI returns per-criterion results using the actual files/URLs/screenshots.
+- [x] Policy engine blocks payout until rules pass.
+- [x] Payouts API creates a PayPal payout; UI shows the real id and status.
+- [x] Client and freelancer workspaces are visually and functionally different.
+- [x] Public site looks intentional on mobile and desktop.
+- [x] AG Studio operations dashboard uses live data and an AI agent proxy.
+- [x] Hosted demo + JUDGE_DEMO accounts work in a private window.
+- [ ] Video ≤ 3 minutes shows the loop plus one failure (ready for recording with JUDGE_DEMO guide).
+- [x] Repo is public, licensed, documented, $0 services listed.
 
 ---
 

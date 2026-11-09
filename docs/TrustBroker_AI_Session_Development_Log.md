@@ -874,3 +874,44 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 ### 14.3 Verification
 - **Frontend Build:** `npm --prefix react_app run build` compiled cleanly in 4.94s with 0 TypeScript/Vite errors.
 - **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 8.53s).
+
+---
+
+## 15. Phase 16: Comprehensive Remediation & Verification Plan Execution (Workstreams A–N)
+
+**Execution Date:** 9 November 2026  
+**Reference Document:** `md_artifacts/TrustBroker_AI_Comprehensive_Remediation_Plan_v2.md`
+
+Fully resolved all 28 audit findings across 14 dedicated engineering workstreams:
+
+### 15.1 Authentication & Security Integrity (Workstreams A & M)
+- **Restricted Dev Tokens (Workstream A):** Gated synthetic developer tokens behind `is_dev_auth_allowed` (`False` in production). Invalid tokens raise standard HTTP 401 and trigger immediate client logout.
+- **SSRF Protection (Workstream M):** Implemented `validate_url_for_ssrf()` checking resolved IP addresses against loopback (`127.0.0.1`, `localhost`), link-local / cloud metadata (`169.254.169.254`, `fd00:ec2::254`), private RFC1918 networks, non-standard ports, and embedded credentials before any HTTP probe runs. Edge rate limits (429/403) flag `needs_review: True` instead of false passes.
+
+### 15.2 PayPal Orders v2 & Payouts Truthfulness (Workstreams B, C, D, L)
+- **Zero Fabricated Identifiers:** Completely removed synthetic fallback IDs (`SANDBOX-CAP-*`, `SANDBOX-BATCH-*`, `SANDBOX-ITEM-*`). Captures and payouts report authentic provider responses.
+- **Idempotent Order Creation:** `create_milestone_escrow_order()` checks for existing active `CHECKOUT_CREATED` attempts, preventing duplicate PayPal order creation.
+- **Reconciliation & Resilience:** `capture_milestone_escrow_payment()` recovers cleanly from `422 / ORDER_ALREADY_CAPTURED` by fetching real order details from PayPal.
+- **Fail-Closed Webhook Signatures:** Inbound PayPal webhook verification fails closed (`False`) if `PAYPAL_WEBHOOK_ID` is unconfigured. Webhook capture events verify currency and amount matches.
+- **Payout Recipient Requirements:** Payouts strictly require a valid freelancer PayPal payout email; missing emails raise HTTP 400 without synthetic fallback.
+- **Deterministic PolicyEngine Lifecycle:** AI verification passing sets work status `VERIFIED`, but does NOT automatically mutate payment status to `RELEASE_AUTHORIZED`. Contracts cannot be marked `COMPLETED` until all milestones are financially settled.
+
+### 15.3 AI Verification Truthfulness & Lifecycle Safety (Workstreams E & H)
+- **Impartial Fallback:** Replaced the deterministic pass fallback with `NEEDS_REVIEW` (score 50/100, `requires_human_review: True`, `passed: False`). Unconfigured or rate-limited AI models pause disbursement for manual review rather than falsely passing deliverables.
+- **Verification Job Resilience:** Orchestrator wraps verification runs in robust exception handling, safely setting milestone status to `SUBMITTED` (Needs Review) on errors instead of hanging in `VERIFYING`.
+
+### 15.4 Deliverable Evidence Uploads & Storage (Workstream F)
+- **Eliminated Browser Blob URLs:** Replaced `URL.createObjectURL(file)` with real file uploads via `POST /api/v1/deliveries/upload-file`.
+- **Private Cloud Storage with Graceful Fallback:** Deliverables upload directly to private Supabase Storage (`delivery-evidence`) or local server disk (`uploads/evidence/`). Both modes support authenticated downloads restricted to contract parties.
+- **Supabase Free Tier Optimization:** Client and server enforce a 25 MB file upload ceiling, safely within Supabase Free Tier's 50 MB per-file limit (1 GB total).
+
+### 15.5 Startup, Migrations & Infrastructure (Workstreams G, I, J, N)
+- **Refund / Reclaim Clarity (Workstream G):** Documented `refund_milestone_escrow` as `[SANDBOX DEMO]` state reset, tagging responses with `"mode": "sandbox_reset"`.
+- **Startup Seeding Guard (Workstream I):** Prevented Alembic migrations from blindly stamping `head` on failures. Seeding demo profiles on startup is strictly guarded behind `SEED_DEMO_DATA=true` or non-production environment.
+- **Automated Backend CI Testing (Workstream J):** Updated `.github/workflows/ci.yml` with a Python 3.12 pytest job running backend tests before frontend build and deployment.
+- **CORS Hardening (Workstream N):** Replaced wildcard `*.onrender.com` regex with `CORS_ALLOWED_ORIGIN_REGEX` defaulting to `^https:\/\/trustbroker-ai-frontend-[a-z0-9]+\.onrender\.com$`.
+
+### 15.6 Verification & Test Metrics
+- **Backend Test Suite:** **55 of 55 tests passed** (100% pass rate in 30.22s).
+- **Frontend Production Build:** TypeScript type-check and Vite production bundle passed in 7.62s with **0 errors**.
+- **Git Commits:** Pushed clean commits to `main` branch.
