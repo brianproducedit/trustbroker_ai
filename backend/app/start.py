@@ -139,7 +139,7 @@ def main():
 
         # Only seed demo data in non-production or when SEED_DEMO_DATA=true is explicitly set.
         # Never auto-seed in production as it would overwrite real user data.
-        if settings.environment != "production" or os.environ.get("SEED_DEMO_DATA", "false").lower() == "true":
+        if settings.environment != "production" or settings.seed_demo_data or os.environ.get("SEED_DEMO_DATA", "false").lower() == "true":
             from app.seed import seed_database
             seed_database()
             print("[STARTUP] [OK] Showcase database seeded successfully.")

@@ -31,6 +31,8 @@ services:
         sync: false
       - key: VITE_API_BASE_URL
         value: https://trustbroker-ai-api-bx9a.onrender.com/api/v1
+      - key: VITE_ALLOW_DEV_AUTH
+        value: "false"
 
   - type: web
     name: trustbroker-ai-api
@@ -43,6 +45,12 @@ services:
     envVars:
       - key: ENVIRONMENT
         value: production
+      - key: ALLOW_DEV_AUTH_TOKENS
+        value: "false"
+      - key: SEED_DEMO_DATA
+        value: "false"
+      - key: CORS_ALLOWED_ORIGIN_REGEX
+        value: ^https:\/\/trustbroker-ai-frontend-[a-z0-9]+\.onrender\.com$
       - key: DATABASE_URL
         sync: false
       - key: SUPABASE_URL

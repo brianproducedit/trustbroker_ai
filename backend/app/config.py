@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     # Server & Environment
     environment: str = "development"
     allow_dev_auth_tokens: bool = False
+    seed_demo_data: bool = Field(default=False, validation_alias="SEED_DEMO_DATA")
     port: int = 8000
     frontend_url: str = "http://localhost:5173"
     allowed_origins: str = "http://localhost:5173,http://localhost:5174,https://trustbroker-ai-frontend.onrender.com,https://trustbroker-ai-frontend-bx9a.onrender.com"
