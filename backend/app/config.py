@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 class Settings(BaseSettings):
     # Server & Environment
@@ -8,6 +9,7 @@ class Settings(BaseSettings):
     port: int = 8000
     frontend_url: str = "http://localhost:5173"
     allowed_origins: str = "http://localhost:5173,http://localhost:5174,https://trustbroker-ai-frontend.onrender.com,https://trustbroker-ai-frontend-bx9a.onrender.com"
+    cors_allowed_origin_regex: Optional[str] = Field(default=None, env="CORS_ALLOWED_ORIGIN_REGEX")
 
     # Database (PostgreSQL direct URI)
     database_url: str = "postgresql://postgres:postgres@localhost:5432/trustbroker_ai"

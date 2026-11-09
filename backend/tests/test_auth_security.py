@@ -92,3 +92,4 @@ def test_optional_current_user_no_downgrade(session):
     with pytest.raises(HTTPException) as exc_info:
         get_optional_current_user(authorization="Bearer invalid.token.here", session=session)
     assert exc_info.value.status_code == 401
+

@@ -102,3 +102,4 @@ class TestSSRFProtection(unittest.TestCase):
             self.assertTrue(res["needs_review"])
             self.assertEqual(res["files_found"], [])
             self.assertIsNone(res["readme_snippet"])
+

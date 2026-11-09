@@ -8,8 +8,40 @@ on:
   workflow_dispatch:
 
 jobs:
+  test-backend:
+    name: Backend Python Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run backend tests
+        run: python -m pytest tests/ -v --tb=short
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          ENVIRONMENT: test
+          SUPABASE_JWT_SECRET: test-secret-key-for-ci
+          PAYPAL_CLIENT_ID: test-client-id
+          PAYPAL_CLIENT_SECRET: test-client-secret
+          PAYPAL_WEBHOOK_ID: ""
+          ALLOW_DEV_AUTH_TOKENS: "true"
+          SEED_DEMO_DATA: "false"
+
   test-and-build:
     name: Test & Build Production Bundle
+    needs: test-backend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,7 +76,7 @@ jobs:
 
   deploy-render:
     name: Deploy to Render (Free Static Site)
-    needs: test-and-build
+    needs: [test-backend, test-and-build]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
