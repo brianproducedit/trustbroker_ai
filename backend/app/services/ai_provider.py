@@ -606,43 +606,36 @@ Evaluate the submission and respond with JSON matching this format:
         result["provider_used"] = provider_used
         return result
 
-    # Deterministic Intelligent Verification Fallback
-    logger.info("Using deterministic fallback verification evaluator.")
-    has_substantial_evidence = bool(
-        delivery_description and (len(delivery_description) > 30 or repo_url or live_url or file_names)
+    # AI unavailable fallback — triggers human review; no automatic pass awarded.
+    # When all configured AI providers fail, we cannot evaluate criteria objectively.
+    # Return NEEDS_REVIEW (score 50) for every criterion and require manual client
+    # review before any disbursement can be authorised.
+    logger.warning(
+        "All AI providers unavailable — returning NEEDS_REVIEW fallback. "
+        "Human review required before disbursement."
     )
 
     criterion_evals = []
-    total_score = 0
     for c in criteria:
-        c_passed = has_substantial_evidence
-        score = 88 if has_substantial_evidence else 45
-        total_score += score
-        snippet = repo_url or live_url or (delivery_description[:100] if delivery_description else "No snippet")
-        explanation = (
-            f"Verified evidence for criterion '{c['title']}'. Submitted deliverables satisfy criteria requirements."
-            if c_passed
-            else f"Insufficient evidence provided for criterion '{c['title']}'."
-        )
         criterion_evals.append({
             "criterion_id": c["id"],
-            "passed": c_passed,
-            "score": score,
-            "explanation": explanation,
-            "evidence_match_snippet": snippet,
+            "passed": False,
+            "score": 50,
+            "explanation": (
+                f"AI providers unavailable — criterion '{c['title']}' could not be evaluated automatically. "
+                "Manual client review is required."
+            ),
+            "evidence_match_snippet": "N/A — AI evaluation unavailable",
         })
 
-    avg_score = int(total_score / len(criteria)) if criteria else 85
-    overall_passed = avg_score >= 80
-
     return {
-        "overall_score": avg_score,
-        "passed": overall_passed,
+        "overall_score": 50,
+        "passed": False,
         "summary_analysis": (
-            f"Deterministic evaluation concluded with score {avg_score}/100. "
-            f"Deliverable submission {'satisfies' if overall_passed else 'requires revisions on'} defined milestone criteria."
+            "AI providers unavailable — submission requires manual client review "
+            "before disbursement can be authorized."
         ),
-        "requires_human_review": False,
-        "provider_used": "deterministic-fallback-engine",
+        "requires_human_review": True,
+        "provider_used": "fallback:none",
         "criterion_evaluations": criterion_evals,
     }
