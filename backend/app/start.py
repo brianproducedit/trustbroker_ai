@@ -81,12 +81,18 @@ def main():
             command.upgrade(cfg, "head")
             print("[STARTUP] [OK] Alembic migrations completed successfully.")
         except Exception as mig_err:
+            mig_err_str = str(mig_err).lower()
             print(f"[STARTUP] [NOTICE] Alembic upgrade encountered: {mig_err}")
-            # Self-healing: stamp database to head if tables exist or revision is out of sync
-            print("[STARTUP] Reconciling schema revision state (stamping to head)...")
-            cfg.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url.replace("%", "%%"))
-            command.stamp(cfg, "head")
-            print("[STARTUP] [OK] Alembic database successfully reconciled and stamped to head.")
+            # Only stamp to head when the revision table is simply out of sync with existing tables.
+            # Stamping on an actual failed migration would corrupt the schema state on next restart.
+            out_of_sync_patterns = ("can't locate revision", "already exists", "no such table: alembic_version", "relation \"alembic_version\" does not exist", "target database is not up to date")
+            if any(pattern in mig_err_str for pattern in out_of_sync_patterns):
+                print("[STARTUP] Detected revision-out-of-sync condition — stamping to head to reconcile...")
+                cfg.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url.replace("%", "%%"))
+                command.stamp(cfg, "head")
+                print("[STARTUP] [OK] Alembic database successfully reconciled and stamped to head.")
+            else:
+                print("[STARTUP] [WARNING] Migration error does not match known sync patterns — skipping stamp to avoid corrupting schema state. SQLModel.metadata.create_all() will handle schema creation below.")
     except Exception as e:
         print(f"[STARTUP] Notice: In-process Alembic runner deferred ({e}). Attempting CLI runner...")
         try:
@@ -131,9 +137,14 @@ def main():
         ensure_schema_columns(engine)
         print("[STARTUP] [OK] Schema columns verified & healed.")
 
-        from app.seed import seed_database
-        seed_database()
-        print("[STARTUP] [OK] Showcase database seeded successfully.")
+        # Only seed demo data in non-production or when SEED_DEMO_DATA=true is explicitly set.
+        # Never auto-seed in production as it would overwrite real user data.
+        if settings.environment != "production" or os.environ.get("SEED_DEMO_DATA", "false").lower() == "true":
+            from app.seed import seed_database
+            seed_database()
+            print("[STARTUP] [OK] Showcase database seeded successfully.")
+        else:
+            print("[STARTUP] [SKIP] Seeding skipped in production (set SEED_DEMO_DATA=true to override).")
     except Exception as dbe:
         print(f"[STARTUP] Notice: Table creation or seeding deferred ({dbe})")
 

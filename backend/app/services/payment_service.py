@@ -508,7 +508,8 @@ def refund_milestone_escrow(
     client: UserProfile,
     reason: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Client reclaims staged milestone escrow funds under Buyer Protection due to freelancer inactivity or unaddressed revisions."""
+    """[SANDBOX DEMO] Resets milestone escrow state in the database. In production, this would call the PayPal v2 Refunds API (POST /v2/payments/captures/{capture_id}/refund) with the capture_id before resetting local state."""
+    logger.info("[DEMO] refund_milestone_escrow: local state reset only. No PayPal Refunds API call made (sandbox scope).")
     contract = session.get(Contract, contract_id)
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found")
@@ -560,6 +561,7 @@ def refund_milestone_escrow(
     session.commit()
     return {
         "status": "refunded",
+        "mode": "sandbox_reset",
         "milestone_id": str(milestone.id),
         "amount_reclaimed": reclaimed,
         "contract_staged_amount": float(contract.staged_amount),
