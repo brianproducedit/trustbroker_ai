@@ -63,7 +63,7 @@ async def create_paypal_order(
         ],
         "application_context": {
             "brand_name": "TrustBroker AI",
-            "landing_page": "NO_PREFERENCE",
+            "landing_page": "LOGIN",
             "user_action": "PAY_NOW",
         },
     }

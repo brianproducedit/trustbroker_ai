@@ -31,6 +31,7 @@ async def create_order(
         contract_id=req.contract_id,
         milestone_id=req.milestone_id,
         client=current_user,
+        force_new=bool(req.force_new),
     )
 
 

@@ -335,7 +335,7 @@ export const api = {
 
   // Payments & Staged Funds
   payments: {
-    createOrder: (data: { contract_id: string; milestone_id: string }) =>
+    createOrder: (data: { contract_id: string; milestone_id: string; force_new?: boolean }) =>
       apiFetch<any>('/payments/create-order', {
         method: 'POST',
         body: JSON.stringify(data),

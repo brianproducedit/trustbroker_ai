@@ -28,6 +28,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   const [captureId, setCaptureId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [forceNewOrder, setForceNewOrder] = useState(false)
 
   if (paymentCompleted) {
     return (
@@ -102,7 +103,9 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
                 const res = await api.payments.createOrder({
                   contract_id: contractId,
                   milestone_id: milestoneId,
+                  force_new: forceNewOrder,
                 })
+                setForceNewOrder(false)
                 if (!res?.order_id) {
                   throw new Error(res?.detail || 'Server did not return a PayPal order id')
                 }
@@ -110,6 +113,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
               } catch (err: any) {
                 const msg = err?.detail || err?.message || 'Could not initiate PayPal checkout order'
                 setErrorMsg(msg)
+                setForceNewOrder(true)
                 throw err
               }
             }}
@@ -132,16 +136,19 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
               } catch (err: any) {
                 const message = err?.detail || err?.message || 'Capture failed. Milestone is not funded.'
                 setErrorMsg(message)
+                setForceNewOrder(true)
                 if (onPaymentError) onPaymentError(err)
               } finally {
                 setIsProcessing(false)
               }
             }}
             onCancel={() => {
-              setErrorMsg('Checkout cancelled. This milestone is not funded.')
+              setForceNewOrder(true)
+              setErrorMsg('Checkout was closed or cancelled. Click the PayPal button to try again.')
             }}
             onError={(err) => {
-              setErrorMsg('PayPal checkout could not complete. The milestone is not funded.')
+              setForceNewOrder(true)
+              setErrorMsg('PayPal checkout could not complete. The milestone is not funded. Click the PayPal button to try again.')
               if (onPaymentError) onPaymentError(err)
             }}
           />

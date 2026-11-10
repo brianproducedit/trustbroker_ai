@@ -118,6 +118,7 @@ async def create_milestone_funding_order(
     contract_id: uuid.UUID,
     milestone_id: Optional[uuid.UUID],
     client: UserProfile,
+    force_new: bool = False,
 ) -> Dict[str, Any]:
     """Create a PayPal checkout order so the client can fund the next milestone."""
     contract = session.get(Contract, contract_id)
@@ -147,28 +148,29 @@ async def create_milestone_funding_order(
     if amount <= Decimal("0.00"):
         raise HTTPException(status_code=400, detail="Cannot fund a milestone with a zero or negative amount")
 
-    # Idempotency & Concurrency: Check if an active CHECKOUT_CREATED attempt already exists for this milestone (within 15m)
-    recent_cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
-    existing_attempt = session.exec(
-        select(PaymentAttempt)
-        .where(
-            PaymentAttempt.milestone_id == target_milestone.id,
-            PaymentAttempt.status == PaymentStatus.CHECKOUT_CREATED,
-            PaymentAttempt.created_at >= recent_cutoff,
-        )
-        .order_by(PaymentAttempt.created_at.desc())
-    ).first()
-    if existing_attempt and existing_attempt.paypal_order_id:
-        # Return existing active checkout order instead of creating duplicate live orders
-        return {
-            "order_id": existing_attempt.paypal_order_id,
-            "paypal_order": {
-                "id": existing_attempt.paypal_order_id,
-                "status": existing_attempt.paypal_status or "CREATED",
-            },
-            "approve_url": None,
-            "payment_attempt_id": str(existing_attempt.id),
-        }
+    # Idempotency & Concurrency: Check if an active CHECKOUT_CREATED attempt already exists for this milestone (within 60s debounce window)
+    if not force_new:
+        recent_cutoff = datetime.now(timezone.utc) - timedelta(seconds=60)
+        existing_attempt = session.exec(
+            select(PaymentAttempt)
+            .where(
+                PaymentAttempt.milestone_id == target_milestone.id,
+                PaymentAttempt.status == PaymentStatus.CHECKOUT_CREATED,
+                PaymentAttempt.created_at >= recent_cutoff,
+            )
+            .order_by(PaymentAttempt.created_at.desc())
+        ).first()
+        if existing_attempt and existing_attempt.paypal_order_id:
+            # Return existing active checkout order instead of creating duplicate live orders within debounce window
+            return {
+                "order_id": existing_attempt.paypal_order_id,
+                "paypal_order": {
+                    "id": existing_attempt.paypal_order_id,
+                    "status": existing_attempt.paypal_status or "CREATED",
+                },
+                "approve_url": None,
+                "payment_attempt_id": str(existing_attempt.id),
+            }
 
     description = f"Fund milestone: {target_milestone.title} ({contract.code})"
     request_id = f"order:{target_milestone.id}:{uuid.uuid4().hex[:8]}"

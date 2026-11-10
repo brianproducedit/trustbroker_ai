@@ -9,6 +9,7 @@ from app.models.milestone import PaymentStatus
 class CreateOrderRequest(BaseModel):
     contract_id: uuid.UUID
     milestone_id: Optional[uuid.UUID] = None
+    force_new: Optional[bool] = False
 
 
 class CaptureOrderRequest(BaseModel):
