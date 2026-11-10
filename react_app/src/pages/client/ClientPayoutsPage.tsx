@@ -131,8 +131,14 @@ export const ClientPayoutsPage: React.FC = () => {
     const key = `${contractId}-${milestoneId}`
     setDisbursingId(key)
     try {
-      await releasePayment(contractId, milestoneId)
-      toast.success(`Payment of ${formatCurrency(amount)} disbursed to freelancer!`)
+      const result = await releasePayment(contractId, milestoneId)
+      if (['processing', 'pending', 'unclaimed'].includes((result.status || '').toLowerCase())) {
+        toast.info(`PayPal accepted the ${formatCurrency(amount)} payout request. It is still processing.`)
+      } else if ((result.status || '').toLowerCase() === 'success') {
+        toast.success(`Payment of ${formatCurrency(amount)} was confirmed by PayPal.`)
+      } else {
+        toast.warning(`PayPal payout status: ${result.status || 'reconciliation required'}.`)
+      }
       loadLedger()
     } catch (err: any) {
       toast.error(err?.detail || err?.message || 'Failed to disburse payment.')

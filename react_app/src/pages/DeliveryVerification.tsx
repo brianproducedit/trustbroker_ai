@@ -270,14 +270,20 @@ export const DeliveryVerification: React.FC = () => {
     }
     setIsReleasing(true)
     try {
-      await releasePayment(contract.id, selectedMilestone.id)
-      toast.success(`Payment released: ${formatCurrency(selectedMilestone.amount)} USD disbursed via PayPal!`)
-      addNotification({
-        title: 'Payment Released',
-        description: `${formatCurrency(selectedMilestone.amount)} USD transferred for verified milestone.`,
-        type: 'payment',
-        link: ROUTES.CONTRACT_DETAIL(contract.id),
-      })
+      const result = await releasePayment(contract.id, selectedMilestone.id)
+      if (['processing', 'pending', 'unclaimed'].includes((result.status || '').toLowerCase())) {
+        toast.info(`PayPal accepted the payout request. ${formatCurrency(selectedMilestone.amount)} USD is still processing.`)
+      } else if ((result.status || '').toLowerCase() === 'success') {
+        toast.success(`PayPal confirmed the ${formatCurrency(selectedMilestone.amount)} USD payout.`)
+        addNotification({
+          title: 'Payment Released',
+          description: `${formatCurrency(selectedMilestone.amount)} USD was confirmed as transferred.`,
+          type: 'payment',
+          link: ROUTES.CONTRACT_DETAIL(contract.id),
+        })
+      } else {
+        toast.warning(`PayPal payout status: ${result.status || 'reconciliation required'}.`)
+      }
     } catch (err: any) {
       toast.error(err?.detail || err?.message || 'Failed to disburse PayPal payout.')
     } finally {

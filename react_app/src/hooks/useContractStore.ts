@@ -80,7 +80,7 @@ interface ContractStore {
   requestRevision: (contractId: string, milestoneId: string, notes: string) => Promise<void>
   overrideReview: (contractId: string, milestoneId: string, reason: string) => Promise<void>
   resubmitDelivery: (contractId: string, milestoneId: string) => void
-  releasePayment: (contractId: string, milestoneId: string) => Promise<void>
+  releasePayment: (contractId: string, milestoneId: string) => Promise<{ status?: string }>
   reclaimMilestoneFunds: (contractId: string, milestoneId: string, reason?: string) => Promise<void>
   manualVerify: (contractId: string, milestoneId: string, rationale: string) => Promise<void>
 
@@ -810,7 +810,9 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
     if (isUuid) {
       try {
-        await api.payments.releasePayout({ contract_id: contractId, milestone_id: milestoneId })
+        const result = await api.payments.releasePayout({ contract_id: contractId, milestone_id: milestoneId })
+        await get().fetchContractById(contractId)
+        return result
       } catch (err) {
         console.error('Backend release payout failed:', err)
         throw err
@@ -853,6 +855,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       })
       return { contracts: updated }
     })
+    return { status: 'success' }
   },
 
   reclaimMilestoneFunds: async (contractId, milestoneId, reason) => {

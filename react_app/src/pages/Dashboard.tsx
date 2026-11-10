@@ -207,9 +207,17 @@ export const Dashboard: React.FC = () => {
 
   const activeMilestone = selectedContract?.milestones?.find((m) => m.status === 'verifying' || m.status === 'submitted') || selectedContract?.milestones?.[0]
 
-  const handleRelease = (milestoneId: string, amount: number) => {
-    releasePayment(selectedContract.id, milestoneId)
-    toast.success(`Payment released: ${formatCurrency(amount)} USD to freelancer!`)
+  const handleRelease = async (milestoneId: string, amount: number) => {
+    try {
+      const result = await releasePayment(selectedContract.id, milestoneId)
+      if ((result.status || '').toLowerCase() === 'success') {
+        toast.success(`PayPal confirmed the ${formatCurrency(amount)} USD payout.`)
+      } else {
+        toast.info(`PayPal accepted the payout request. ${formatCurrency(amount)} USD is still processing.`)
+      }
+    } catch (error: any) {
+      toast.error(error?.detail || error?.message || 'Failed to release PayPal payout.')
+    }
   }
 
   if (activeRole === 'freelancer') {
