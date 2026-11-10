@@ -65,11 +65,11 @@ TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 4. **Milestone Escrow via PayPal Orders v2**: Clients fund milestone deliverables using PayPal Smart Buttons. Funds are captured and held staged in sandbox with real PayPal Order and Capture IDs.
 5. **Multimodal Delivery Inspection**: When freelancers deliver, an agentic verification engine inspects evidence across 4 parallel adapters:
    - **HTTP Probe Adapter**: Validates live URL response codes, HTTPS/TLS certificates, and latency.
-   - **Vision Heuristic Adapter**: Analyzes UI screenshots against UX requirements.
+   - **Vision AI Adapter**: Analyzes UI screenshots against UX requirements.
    - **Document Adapter**: Scans delivery attestations and documentation.
    - **Repository Adapter**: Inspects GitHub repos for code structure, package manifests, and test suites.
 6. **PolicyEngine Settlement**: A deterministic backend policy engine enforces that no payout can occur unless the milestone is verified, capture is confirmed, and the client authorizes disbursement.
-7. **Instant Payouts via PayPal Payouts API**: Client authorizes payout with one click. Funds disburse instantly to the freelancer's registered PayPal email with an idempotency key (`payout:{milestone_id}`) to prevent double-disbursement.
+7. **PayPal Payouts API Disbursement**: Client authorizes payout with one click. The PayPal Payouts API submits the disbursement to the freelancer's registered PayPal email with an idempotency key (`payout:{milestone_id}`) to prevent double-disbursement. Status transitions to `PAYOUT SUBMITTED` immediately and `PAID` once PayPal webhook confirms.
 8. **AG Studio Operations & AI Copilot**: Live telemetry dashboards powered by enterprise AG Grid ledgers and an AG Studio React agent that reasons over real-time ledger data.
 
 ---
@@ -79,7 +79,7 @@ TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 As a solo developer, I architected and built the entire full-stack application from scratch:
 
 - **FinTech Payment Layer**: PayPal REST APIs using Python SDK and direct HTTP endpoints — PayPal Orders v2 (`/v2/checkout/orders` with `CAPTURE` intent), PayPal Payouts API (`/v1/payments/payouts`), and asynchronous PayPal Webhook event listeners.
-- **Agentic AI & LLM Inference**: Powered by Groq LPU running Llama 3.3 70B Versatile (sub-400ms SOW drafting and vetting) and Llama 3.2 11B Vision for multimodal screenshot heuristic inspection, with OpenRouter fallback.
+- **Agentic AI & LLM Inference**: Powered by Groq LPU running Llama 3.3 70B Versatile (rapid SOW drafting and vetting) and Llama 3.2 11B Vision for multimodal screenshot inspection, with OpenRouter fallback chain (DeepSeek, etc.) for resilience.
 - **Deterministic PolicyEngine**: Python FastAPI service that enforces 4 non-negotiable security invariant checks before any financial transaction can execute.
 - **Frontend & Operations**: React 18, TypeScript, Tailwind CSS, Lucide icons, and **AG Grid Enterprise** for the financial ledgers.
 - **Database & Identity**: Supabase (PostgreSQL with RLS, Supabase Auth, and private evidence storage buckets).

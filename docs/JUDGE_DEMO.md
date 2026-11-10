@@ -167,7 +167,7 @@ After submission, the Groq-powered verification agent automatically evaluates th
 | Adapter | What It Checks |
 |---|---|
 | **HTTP Probe** | Live URL response code, HTTPS, latency |
-| **Vision Heuristic** | Uploaded screenshot authenticity via vision model |
+| **Vision AI** | Uploaded screenshot analysis via multimodal vision model |
 | **Document Analysis** | Delivery notes and attestation completeness |
 | **Repository Inspection** | GitHub repo for required files (TypeScript, package.json, README, license) |
 
@@ -178,7 +178,7 @@ The **criterion assessment matrix** shows:
 - Milestone status transitions to `verified` on successful completion
 
 > [!NOTE]
-> All AI inference runs on Groq's LPU — typical verification completes in under 400ms.
+> All AI inference runs on Groq's LPU — typical verification completes in under a few seconds. If the AI provider is unavailable or rate-limited, verification returns `NEEDS_REVIEW` (requires human client decision) rather than a synthetic pass.
 
 ---
 
@@ -222,8 +222,11 @@ The **criterion assessment matrix** shows:
 3. Click **Confirm & Disburse Payout**:
    - Backend calls `POST /v1/payments/payouts` (PayPal Payouts API)
    - Backend stores `paypal_batch_id` and `paypal_item_id`
-   - Milestone transitions to `settled` and `released`
+   - Milestone transitions to `settled` with payment status `released` (payout submitted to PayPal; awaiting PayPal webhook confirmation)
 4. A **success toast** appears with the real **PayPal Batch Payout ID**
+
+> [!IMPORTANT]
+> **Payout lifecycle accuracy:** The payout is *submitted* to PayPal immediately. The milestone shows "Payout Submitted" until PayPal sends a `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` webhook confirming the freelancer received the funds. This distinction is intentional — TrustBroker never claims "sent" until PayPal confirms. If PayPal times out, the milestone is marked `RECONCILIATION_REQUIRED` for manual review.
 
 > [!IMPORTANT]
 > The PolicyEngine enforces these non-negotiable rules before any payout can proceed:
@@ -243,7 +246,7 @@ The **criterion assessment matrix** shows:
 3. Observe the **PayPal Disbursement Ledger** row:
    - Milestone & Contract reference
    - Amount (`$XXX.XX USD`)
-   - Status: `PAID VIA PAYPAL`
+   - Status: `PAYOUT SUBMITTED` → `PAID VIA PAYPAL` (after PayPal webhook confirmation)
    - Copyable **PayPal Batch ID** and **Payout Item ID**
    - Recipient PayPal email
    - Timestamp
@@ -321,7 +324,20 @@ To independently confirm money movement in your sandbox:
 
 ---
 
-## 7. Technical Safeguards & Edge Cases
+## 7. Known Limitations (Sandbox / Hackathon Scope)
+
+| Limitation | Detail |
+|---|---|
+| **PayPal Sandbox only** | All Orders and Payouts run against `api-m.sandbox.paypal.com`. No real funds are moved. |
+| **No real escrow** | Captured funds sit in the sandbox platform account, not a regulated escrow. The *milestone staging* model demonstrates the escrow concept but is not a licensed financial product. |
+| **Payout pending until webhook** | A submitted payout shows `PAYOUT SUBMITTED` until PayPal delivers a `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` webhook. If this webhook is delayed or missing (e.g., sandbox latency), the milestone status shows `RECONCILIATION_REQUIRED`. |
+| **Verification uses in-process workers** | AI verification runs via FastAPI BackgroundTasks. If the server restarts during verification, the job is detected as `interrupted` (> 90s with no report) and surfaced to the client for human review. No silent false PASS is returned. |
+| **Storage fallback** | If Supabase credentials are not configured, evidence files are stored on ephemeral server disk (Render). Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` for durable storage in production. |
+| **AI availability** | If Groq / OpenRouter / DeepSeek are unavailable, verification returns `NEEDS_REVIEW` — never a synthetic PASS. The client can manually approve after reviewing evidence. |
+
+---
+
+## 8. Technical Safeguards & Edge Cases
 
 | Safeguard | Implementation |
 |---|---|
@@ -338,19 +354,19 @@ To independently confirm money movement in your sandbox:
 
 ---
 
-## 8. Prize Category Checklist
+## 9. Prize Category Checklist
 
 | Prize | Evidence Location |
 |---|---|
 | **Best Use of PayPal** | Steps 3, 7 — Orders v2 (real Order ID + Capture ID), Payouts API (real Batch ID + Item ID), idempotency keys, Smart Buttons |
-| **Agentic AI** | Steps 2b, 10, 5 — AG Studio React agent, Groq LPU <400ms, multimodal verification (4 adapters), AI SOW generation, AI applicant vetting |
+| **Agentic AI** | Steps 2b, 10, 5 — AG Studio React agent, Groq LPU multimodal verification (4 adapters), AI SOW generation, AI applicant vetting |
 | **AG Studio / AG Grid** | Step 9 — Client + Freelancer Operations Studio, enterprise AG Grid ledgers, real-time KPI cards, AI Copilot with live tool access |
 | **Best Dev Experience** | Codebase — TypeScript, `ROUTES.*` constants system, PolicyEngine, role-based routing architecture |
 | **Overall Grand Prize** | Full end-to-end flow demonstrating all categories in one coherent product |
 
 ---
 
-## 9. Quick-Start: 5-Minute Minimal Demo Path
+## 10. Quick-Start: 5-Minute Minimal Demo Path
 
 For judges who want the fastest possible verification of the core loop:
 
@@ -368,7 +384,7 @@ Total time: approximately 5 minutes.
 
 ---
 
-## 10. Deliverable Storage Architecture & Supabase Free-Tier Setup
+## 11. Deliverable Storage Architecture & Supabase Free-Tier Setup
 
 TrustBroker AI stores freelancer evidence files (screenshots, zip archives, design files, PDF documents) using a resilient dual-storage architecture:
 

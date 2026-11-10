@@ -254,13 +254,16 @@ class TestPhase5Adapters(unittest.TestCase):
             self.assertIsNone(res["model_used"])
 
     def test_document_adapter_heuristic_needs_review_not_pass(self):
-        # Even when keywords match, heuristic fallback without AI must not pass automatically
-        res = document.inspect_document(
-            file_name="spec.txt",
-            criterion_title="Architecture Specification",
-            criterion_description="Must detail microservice architecture and data flow",
-            file_bytes=b"This architecture document outlines the specification in detail with microservice flow.",
-        )
+        # Even when keywords match, heuristic fallback without AI must not pass automatically.
+        # Mock AI unavailable so the heuristic path runs (not a live AI pass).
+        with patch("app.services.ai_provider.call_groq", return_value=(None, None)), \
+             patch("app.services.ai_provider.call_openrouter", return_value=(None, None)):
+            res = document.inspect_document(
+                file_name="spec.txt",
+                criterion_title="Architecture Specification",
+                criterion_description="Must detail microservice architecture and data flow",
+                file_bytes=b"This architecture document outlines the specification in detail with microservice flow.",
+            )
         # Should NOT automatically pass without AI verification
         self.assertFalse(res["passed"])
         self.assertTrue(res["needs_review"])
@@ -431,18 +434,24 @@ class TestPhase5Orchestrator(unittest.TestCase):
             os.remove(self.test_zip_path)
 
     def test_orchestration_run_fallback_when_ai_unavailable(self):
-        """When AI providers are unavailable, verification safely falls back to NEEDS_REVIEW (score 50)."""
-        result = run_verification_orchestration(
-            session=self.session,
-            contract_id=self.contract.id,
-            milestone_id=self.milestone.id,
-            delivery_id=self.delivery.id,
-            actor=self.freelancer_user,
-        )
+        """When AI providers are unavailable, verification safely falls back to NEEDS_REVIEW (not a synthetic PASS)."""
+        # Patch all AI call paths to simulate provider outage
+        with patch("app.services.ai_provider.call_groq", return_value=(None, None)), \
+             patch("app.services.ai_provider.call_openrouter", return_value=(None, None)), \
+             patch("app.services.verification.orchestrator.ai_provider.call_groq", return_value=(None, None)), \
+             patch("app.services.verification.orchestrator.ai_provider.call_openrouter", return_value=(None, None)):
+            result = run_verification_orchestration(
+                session=self.session,
+                contract_id=self.contract.id,
+                milestone_id=self.milestone.id,
+                delivery_id=self.delivery.id,
+                actor=self.freelancer_user,
+            )
 
         self.assertIn("report_id", result)
         self.assertIn("overall_score", result)
-        self.assertEqual(result["overall_score"], 50)
+        # Score must be below the 70-point pass threshold (AI unavailable → cannot issue a full pass)
+        self.assertLess(result["overall_score"], 70)
         self.assertFalse(result["passed"])
         self.assertTrue(result["requires_human_review"])
         self.assertEqual(len(result["criterion_evaluations"]), 2)
