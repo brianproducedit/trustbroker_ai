@@ -179,7 +179,7 @@ INSERT INTO contracts (
     client_id, freelancer_id, freelancer_email, created_at, updated_at
 ) VALUES (
     '11111111-1111-1111-1111-111111111111', 'TB-2026-001', 'Global Next.js Commerce & Inventory Architecture',
-    'High-performance headless e-commerce platform with automated inventory synchronization and resilient escrow milestone release.',
+    'High-performance headless e-commerce platform with automated inventory synchronization and resilient staged funds milestone release.',
     'software', 1, 'ACTIVE', 15000.00, 'USD', 6000.00, 4000.00,
     '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'f907f77b-c340-4abe-8c12-a4606b8c2b15', 'tariro@devstudio.co.zw', NOW() - INTERVAL '14 days', NOW()
 ) ON CONFLICT (code) DO NOTHING;
@@ -245,9 +245,9 @@ INSERT INTO audit_events (id, contract_id, actor_id, actor_name, action, details
 VALUES 
     ('54e38a11-2368-4011-8c4f-0e83d4047489', '11111111-1111-1111-1111-111111111111', '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'Elena Rostova (Client)', 'CONTRACT_CREATED', 'Drafted initial contract scope TB-2026-001 with 3 staged milestones ($15,000 USD).', NOW() - INTERVAL '14 days'),
     ('1f486078-2301-41cb-9a28-1990cc28a1dc', '11111111-1111-1111-1111-111111111111', 'f907f77b-c340-4abe-8c12-a4606b8c2b15', 'Tariro Moyo (Freelancer)', 'CONTRACT_ACCEPTED', 'Accepted contract terms and cryptographic milestone boundaries.', NOW() - INTERVAL '13 days'),
-    ('e043b6fb-e697-451f-bd1e-55990f5446b8', '11111111-1111-1111-1111-111111111111', '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'Elena Rostova (Client)', 'FUNDS_STAGED', 'Funded Milestone 1 ($4,000 USD) into PayPal sandbox escrow.', NOW() - INTERVAL '13 days'),
+    ('e043b6fb-e697-451f-bd1e-55990f5446b8', '11111111-1111-1111-1111-111111111111', '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'Elena Rostova (Client)', 'FUNDS_STAGED', 'Funded Milestone 1 ($4,000 USD) into PayPal sandbox staged funds.', NOW() - INTERVAL '13 days'),
     ('4a045873-e7c9-419a-96c0-06777655ca1d', '11111111-1111-1111-1111-111111111111', 'f907f77b-c340-4abe-8c12-a4606b8c2b15', 'Tariro Moyo (Freelancer)', 'DELIVERY_SUBMITTED', 'Delivered Milestone 1 Figma components and design system tokens.', NOW() - INTERVAL '8 days'),
-    ('fbb6a782-3417-48e2-8f0a-9ca0ceb5c3da', '11111111-1111-1111-1111-111111111111', '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'Elena Rostova (Client)', 'PAYMENT_RELEASED', 'Approved delivery and authorized escrow release of $4,000 USD to Tariro Moyo.', NOW() - INTERVAL '7 days'),
+    ('fbb6a782-3417-48e2-8f0a-9ca0ceb5c3da', '11111111-1111-1111-1111-111111111111', '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'Elena Rostova (Client)', 'PAYMENT_RELEASED', 'Approved delivery and authorized staged funds release of $4,000 USD to Tariro Moyo.', NOW() - INTERVAL '7 days'),
     ('1ad453d7-58a4-453c-a8cd-51d8303acc0b', '11111111-1111-1111-1111-111111111111', '35f8c21c-b5d7-4ca7-b4e4-151f3fcfedc2', 'Elena Rostova (Client)', 'FUNDS_STAGED', 'Staged Milestone 2 ($6,000 USD) funds via PayPal checkout.', NOW() - INTERVAL '6 days'),
     ('98949cc9-fdc8-4e26-8807-1c68afe59ba1', '11111111-1111-1111-1111-111111111111', 'f907f77b-c340-4abe-8c12-a4606b8c2b15', 'Tariro Moyo (Freelancer)', 'DELIVERY_SUBMITTED', 'Submitted Milestone 2 API repository and test coverage reports.', NOW() - INTERVAL '2 days'),
     ('8797a07b-59e2-4289-b231-f83507950129', '11111111-1111-1111-1111-111111111111', NULL, 'TrustBroker AI Guardian', 'VERIFICATION_PASSED', 'AI Verification engine scored delivery at 97/100 (Pass threshold: 85/100). Milestone unlocked for payout approval.', NOW() - INTERVAL '1 days')

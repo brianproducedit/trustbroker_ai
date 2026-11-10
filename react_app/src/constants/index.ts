@@ -1,6 +1,6 @@
 export const APP_NAME = 'TrustBroker AI'
 export const APP_TAGLINE = 'Smart Contracts & Milestone Payments for Freelancers'
-export const PAYPAL_SANDBOX_DISCLAIMER = 'TrustBroker coordinates PayPal-secured milestone payments. It is not a licensed bank or escrow institution.'
+export const PAYPAL_SANDBOX_DISCLAIMER = 'TrustBroker coordinates PayPal sandbox milestone payments. It is not a bank or a regulated payment institution.'
 
 export const ROUTES = {
   // Public Pages

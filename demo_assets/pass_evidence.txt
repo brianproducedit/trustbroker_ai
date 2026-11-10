@@ -32,7 +32,7 @@ PASS tests/e2e/checkout.spec.ts (6.42s)
   ✓ PayPal modal launches with currency USD and calculated tax (1120ms)
   ✓ Server receives and captures PayPal Order ID (450ms)
   ✓ Webhook PAYMENT.CAPTURE.COMPLETED received and verified (310ms)
-  ✓ Database milestone escrow reflects COMPLETED status (120ms)
+  ✓ Database milestone staged funds reflects COMPLETED status (120ms)
 
 Test Suites: 8 passed, 8 total
 Tests:       42 passed, 42 total

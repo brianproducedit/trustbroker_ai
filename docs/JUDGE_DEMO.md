@@ -329,7 +329,7 @@ To independently confirm money movement in your sandbox:
 | Limitation | Detail |
 |---|---|
 | **PayPal Sandbox only** | All Orders and Payouts run against `api-m.sandbox.paypal.com`. No real funds are moved. |
-| **No real escrow** | Captured funds sit in the sandbox platform account, not a regulated escrow. The *milestone staging* model demonstrates the escrow concept but is not a licensed financial product. |
+| **No real staged funds** | Captured funds sit in the sandbox platform account, not a regulated staged funds. The *milestone staging* model demonstrates the staged funds concept but is not a licensed financial product. |
 | **Payout pending until webhook** | A submitted payout shows `PAYOUT SUBMITTED` until PayPal delivers a `PAYMENT.PAYOUTS-ITEM.SUCCEEDED` webhook. If this webhook is delayed or missing (e.g., sandbox latency), the milestone status shows `RECONCILIATION_REQUIRED`. |
 | **Verification uses in-process workers** | AI verification runs via FastAPI BackgroundTasks. If the server restarts during verification, the job is detected as `interrupted` (> 90s with no report) and surfaced to the client for human review. No silent false PASS is returned. |
 | **Storage fallback** | If Supabase credentials are not configured, evidence files are stored on ephemeral server disk (Render). Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` for durable storage in production. |

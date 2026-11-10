@@ -22,8 +22,8 @@ from app.models.payment import PaymentAttempt
 from app.models.user import UserProfile
 from app.models.marketplace import Payout, PayoutStatus
 from app.services.payment_service import (
-    create_milestone_escrow_order,
-    capture_milestone_escrow_payment,
+    create_milestone_funding_order,
+    capture_milestone_funding_payment,
     release_milestone_payout,
 )
 from app.services.policy_engine import PolicyEngine
@@ -66,7 +66,7 @@ async def test_capture_error_does_not_fabricate_completed_status(session: Sessio
 
     with patch("app.utils.paypal_client.capture_paypal_order", side_effect=Exception("INSTRUMENT_DECLINED")):
         with pytest.raises(HTTPException) as exc_info:
-            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-DECLINED-ORDER")
+            await capture_milestone_funding_payment(session, client_user, paypal_order_id="TEST-DECLINED-ORDER")
         assert exc_info.value.status_code in (409, 502)
 
     # Verify attempt and milestone were NOT marked funded or completed
@@ -105,12 +105,12 @@ async def test_duplicate_order_creation_returns_existing_attempt(session: Sessio
         mock_create.return_value = {"id": "ORDER-SINGLE-123", "status": "CREATED", "links": []}
 
         # First call creates order
-        res1 = await create_milestone_escrow_order(session, contract.id, milestone.id, client_user)
+        res1 = await create_milestone_funding_order(session, contract.id, milestone.id, client_user)
         assert res1["order_id"] == "ORDER-SINGLE-123"
         assert mock_create.call_count == 1
 
         # Second call returns existing attempt without calling PayPal API again
-        res2 = await create_milestone_escrow_order(session, contract.id, milestone.id, client_user)
+        res2 = await create_milestone_funding_order(session, contract.id, milestone.id, client_user)
         assert res2["order_id"] == "ORDER-SINGLE-123"
         assert mock_create.call_count == 1  # Still 1!
 
@@ -259,7 +259,7 @@ async def test_capture_rejects_missing_amount_or_currency(session: Session, clie
 
     with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_capture_no_amt)):
         with pytest.raises(HTTPException) as exc_info:
-            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-NO-AMT")
+            await capture_milestone_funding_payment(session, client_user, paypal_order_id="TEST-ORDER-NO-AMT")
         assert exc_info.value.status_code == 409
         assert "missing required amount" in exc_info.value.detail.lower()
 
@@ -316,7 +316,7 @@ async def test_capture_rejects_amount_and_currency_mismatch(session: Session, cl
     }
     with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_mismatch_amount)):
         with pytest.raises(HTTPException) as exc_info:
-            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-MISMATCH")
+            await capture_milestone_funding_payment(session, client_user, paypal_order_id="TEST-ORDER-MISMATCH")
         assert exc_info.value.status_code == 409
         assert "does not match milestone amount" in exc_info.value.detail
 
@@ -339,7 +339,7 @@ async def test_capture_rejects_amount_and_currency_mismatch(session: Session, cl
     }
     with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_mismatch_currency)):
         with pytest.raises(HTTPException) as exc_info:
-            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-MISMATCH")
+            await capture_milestone_funding_payment(session, client_user, paypal_order_id="TEST-ORDER-MISMATCH")
         assert exc_info.value.status_code == 409
         assert "does not match milestone currency" in exc_info.value.detail
 
@@ -383,7 +383,7 @@ async def test_capture_rejects_multiple_purchase_units(session: Session, client_
     }
     with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_multi_units)):
         with pytest.raises(HTTPException) as exc_info:
-            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-MULTI")
+            await capture_milestone_funding_payment(session, client_user, paypal_order_id="TEST-ORDER-MULTI")
         assert exc_info.value.status_code == 400
         assert "multiple purchase units" in exc_info.value.detail.lower()
 
@@ -391,7 +391,7 @@ async def test_capture_rejects_multiple_purchase_units(session: Session, client_
 @pytest.mark.asyncio
 async def test_refund_unapproved_checkout_returns_cancelled_not_refunded(session: Session, client_user: UserProfile):
     """Cancelling an unapproved CHECKOUT_CREATED order must return status: cancelled (not refunded)."""
-    from app.services.payment_service import refund_milestone_escrow
+    from app.services.payment_service import refund_staged_milestone
     contract = Contract(
         id=uuid.uuid4(),
         code="TB-INT-008",
@@ -414,7 +414,7 @@ async def test_refund_unapproved_checkout_returns_cancelled_not_refunded(session
     session.add(milestone)
     session.commit()
 
-    res = refund_milestone_escrow(session, contract.id, milestone.id, client_user)
+    res = refund_staged_milestone(session, contract.id, milestone.id, client_user)
     assert res["status"] == "cancelled"
     assert res["mode"] == "checkout_cancelled"
     assert res["amount_reclaimed"] == 0.0
@@ -605,7 +605,7 @@ def test_apply_payout_status_unknown_status_maps_to_reconciliation_required(sess
 async def test_webhook_checkout_order_completed_reconciles_amount(session: Session, client_user: UserProfile):
     """CHECKOUT.ORDER.COMPLETED webhook must reconcile capture amount against expected attempt amount.
     Mismatched amount must NOT fund milestone and must require reconciliation."""
-    from app.services.payment_service import process_paypal_webhook, create_milestone_escrow_order
+    from app.services.payment_service import process_paypal_webhook, create_milestone_funding_order
     from app.models.contract import Contract
     from app.models.milestone import Milestone
     from app.models.payment import PaymentStatus
@@ -635,7 +635,7 @@ async def test_webhook_checkout_order_completed_reconciles_amount(session: Sessi
 
     with patch("app.utils.paypal_client.create_paypal_order", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = {"id": "ORDER-WH-TEST", "status": "CREATED", "links": []}
-        await create_milestone_escrow_order(session, contract.id, milestone.id, client_user)
+        await create_milestone_funding_order(session, contract.id, milestone.id, client_user)
 
     with patch("app.services.payment_service.paypal_client.verify_webhook_signature", return_value=True):
         # 1. Send webhook with mismatched amount ($150 instead of $300)

@@ -359,7 +359,7 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ reason }),
       }),
-    refundEscrow: (contractId: string, milestoneId: string, reason?: string) =>
+    refundStagedMilestone: (contractId: string, milestoneId: string, reason?: string) =>
       apiFetch<any>(`/payments/${contractId}/${milestoneId}/refund`, {
         method: 'POST',
         body: JSON.stringify({ reason }),

@@ -12,7 +12,7 @@
 
 1. Work **one phase at a time**, top to bottom.
 2. Check a box only when the **acceptance criteria** for that item are true in running code, not when the file exists.
-3. Do not skip Phase 0 terminology. Do not claim PayPal escrow, Zimbabwe payouts or live legal status.
+3. Do not skip Phase 0 terminology. Do not claim PayPal staged funds, Zimbabwe payouts or live legal status.
 4. If a stretch item would delay the core money loop, leave it unchecked and continue.
 5. After each phase, run the **phase gate** checklist before starting the next phase.
 
@@ -31,7 +31,7 @@ These are locked unless the project owner explicitly changes them.
 | KERNEL / Bryntum | **Do not add.** Verification uses HTTP probe + user screenshots + vision/PDF adapters. No Gantt library. | Owner decision: smaller stack. |
 | Gemini API | **Do not use.** Unreliable for this project. Groq + OpenRouter only. PDFs: extract text locally, then Groq JSON. Scanned PDFs: screenshots + Groq vision, else Needs review. | Owner decision 27 Oct 2026. |
 | Hiring model | Client publishes an **open contract**. Freelancers **apply**. AI **vets**. Client **awards**. Then payment + delivery. | Owner instruction. Replaces invite-only Step 3 in Create Project. |
-| Payment honesty | Product copy: **“PayPal-secured milestone payments.”** Never “licensed escrow,” never “sandbox demo” as a hero label. Judges get sandbox credentials in README only. | Hackathon uses PayPal sandbox; Design criterion wants a real product, not a labeled prototype. |
+| Payment honesty | Product copy: **“PayPal-secured milestone payments.”** Never “licensed staged funds,” never “sandbox demo” as a hero label. Judges get sandbox credentials in README only. | Hackathon uses PayPal sandbox; Design criterion wants a real product, not a labeled prototype. |
 | Money control | AI never moves money. FastAPI **policy engine** + verified PayPal state do. | Original guide; also safer for judging. |
 | Currency | USD only for the demo. No ZiG/ZAR settlement claims. | PayPal sandbox + country limits. |
 | Cost | **$0 paid APIs.** Groq / OpenRouter free tiers, Supabase free, Render free, PayPal sandbox, AG Studio trial. | Owner constraint. |
@@ -43,7 +43,7 @@ TrustBroker AI is the trust layer between **clients** and **freelancers**. A cli
 
 ### 0.2 What this product is not
 
-- Not a licensed bank, escrow company or legal arbitrator.
+- Not a licensed bank, staged funds company or legal arbitrator.
 - Not Upwork clone with reviews, disputes courts and global tax forms.
 - Not an autonomous agent that pays people without a policy check.
 - Not a shopping app (do **not** bolt on Channel3).
@@ -134,7 +134,7 @@ Inspected as of this roadmap. Agents must treat this as the starting point.
 | buyer | client |
 | supplier | freelancer |
 | Buyer Mode / Supplier Mode | Client workspace / Freelancer workspace |
-| escrow (as legal claim) | staged PayPal payment / milestone-secured payment |
+| staged funds (as legal claim) | staged PayPal payment / milestone-secured payment |
 | sandbox (hero, badges, CTAs) | omit. Judges: README “PayPal Sandbox environment” |
 | Elena Rostova / Tariro Moyo as the signed-in user | the real `profile.full_name` |
 | I am Hiring (Client Demo) | Hire with TrustBroker / Post a contract |
@@ -426,7 +426,7 @@ Product language: “Client funds the milestone. TrustBroker releases the PayPal
 - [ ] Enable **Payouts** on the REST app.
 - [ ] Fund the business sandbox account so payouts do not fail (PayPal developer dashboard).
 - [ ] Store freelancer `paypal_payout_email` on profile; validate it is present before Award.
-- [ ] `create_milestone_escrow_order` stays, but rename user-facing strings from “escrow” to “fund milestone”.
+- [ ] `create_milestone_staged funds_order` stays, but rename user-facing strings from “staged funds” to “fund milestone”.
 - [ ] Capture still sets `funded` only after PayPal `COMPLETED` (API or webhook). Cancelled checkout ≠ funded.
 - [ ] Replace `release_milestone_payout` DB-only update with:
   1. PolicyEngine: client + milestone `verified` + payment `funded` + freelancer email present + not already paid.

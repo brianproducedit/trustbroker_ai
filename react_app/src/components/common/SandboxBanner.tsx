@@ -55,7 +55,7 @@ export const SandboxBanner: React.FC<SandboxBannerProps> = ({
           >
             PayPal-secured payments
           </strong>
-          TrustBroker coordinates milestone payments through PayPal after work is verified. It is not a licensed bank or escrow institution.
+          TrustBroker coordinates PayPal sandbox milestone payments after work is reviewed. It is not a bank or a regulated payment institution.
         </p>
       </div>
       <a

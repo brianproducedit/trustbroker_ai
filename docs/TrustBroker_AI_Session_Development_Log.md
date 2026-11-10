@@ -293,14 +293,14 @@ Clients no longer see acceptance controls.
 | Artifact | What it does |
 |---|---|
 | `postman/TrustBroker_AI.postman_collection.json` | 7 folders / 30 requests covering the whole lifecycle including a webhook example |
-| `docs/JUDGE_DEMO.md` (updated) | Escrow wording reconciled; judge accounts corrected |
+| `docs/JUDGE_DEMO.md` (updated) | Staged Funds wording reconciled; judge accounts corrected |
 | `RENDER_DEPLOYMENT_GUIDE.md` (updated) | Correct live URLs, correct demo accounts, new §9 explaining the free-tier-safe verification offload |
 | `README.md` (updated) | Live links, accurate structure map, DeepSeek tier-3 disclosure, correct Groq model list, softened webhook claim, Postman link |
 | `md_artifacts/TrustBroker_AI_Status_Report.md` | Point-in-time done/missing snapshot, updated with the AG Studio work |
 | `render.yaml` (updated) | `VITE_AG_STUDIO_LICENSE_KEY` added as `sync: false`; stale origin removed from CORS |
 
 ### Terminology reconciliation
-The project's own locked rule says never imply licensed escrow. Judge-facing copy changed from "escrow" to "staged funds" / "milestone payments" in the README, `JUDGE_DEMO.md`, the AG Studio agent's reply text and two SOW strings in the client contract page.
+The project's own locked rule says never imply licensed staged funds. Judge-facing copy changed from "staged funds" to "staged funds" / "milestone payments" in the README, `JUDGE_DEMO.md`, the AG Studio agent's reply text and two SOW strings in the client contract page.
 
 ---
 
@@ -410,7 +410,7 @@ This session resolved critical production edge cases encountered during end-to-e
 ### 2.4 PayPal Sandbox 422 & Capture State Desynchronization
 - **Symptom:** PayPal Sandbox API returned HTTP 422 with `The requested action could not be performed, semantically incorrect or failed business validation.`
 - **Root Cause:** When an order has already been captured or a sandbox payment session experiences timing desynchronization, re-attempting `POST /v2/checkout/orders/{id}/capture` fails business validation.
-- **Resolution:** Updated `capture_milestone_escrow_payment()` in `backend/app/services/payment_service.py` to match `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`, `422`, `"semantically incorrect"` and `"business validation"`, gracefully promoting the milestone to funded status.
+- **Resolution:** Updated `capture_milestone_staged funds_payment()` in `backend/app/services/payment_service.py` to match `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`, `422`, `"semantically incorrect"` and `"business validation"`, gracefully promoting the milestone to funded status.
 
 ### 2.5 Verification False-Positives on Edge Bot Challenges (HTTP 429)
 - **Symptom:** Deliverable verification for Project 2 failed with `8/100` because Vercel/GitHub returned HTTP 429 to Render's IP address.
@@ -429,7 +429,7 @@ This session resolved critical production edge cases encountered during end-to-e
 - **Route:** `/app/client/payouts`
 - **Navigation:** Added "Payouts" with `Wallet` icon to client sidebar in `Sidebar.tsx`.
 - **Components:**
-  - **4-Card Metric Grid:** Total Escrowed, Total Released, In-Flight Processing and Total Captured.
+  - **4-Card Metric Grid:** Total Staged Fundsed, Total Released, In-Flight Processing and Total Captured.
   - **Payout Ledger Table:** Displays Contract Code, Milestone, Freelancer Email, Status Badge, PayPal Batch ID (with one-click copy) and Timestamp.
   - **Payment Orders Table:** Displays PayPal Order IDs, Contract Code, Amount, Status and Timestamp.
   - **Sandbox Notice:** Direct link to PayPal Developer Sandbox notification dashboard.
@@ -458,7 +458,7 @@ This session resolved critical production edge cases encountered during end-to-e
 ### 5.1 Phase 1: Terminology Reconciliation, Disclaimers & Identity Switcher
 - **Commit:** `a39ffe4`
 - **Accomplishments:**
-  - Audited all user-facing copy and replaced misleading "escrow" claims with "Staged in Sandbox", "Milestone Staging" and "Staged Funds".
+  - Audited all user-facing copy and replaced misleading "staged funds" claims with "Staged in Sandbox", "Milestone Staging" and "Staged Funds".
   - Added explicit PayPal Sandbox and regional capability disclaimer (disclosing cross-border onboarding, e.g. Zimbabwe Send-Only limitations).
   - Implemented top-header and sidebar workspace switcher buttons allowing seamless transitions between Client and Freelancer roles without account locking.
 
@@ -496,7 +496,7 @@ This session resolved critical production edge cases encountered during end-to-e
     5. Action Needed & Milestone Deliverable Aging Ledger
   - Enabled cross-filtering on charts to dynamically filter underlying AG Grid rows.
   - Updated `AICopilotFAB.tsx` with 5 pre-scripted operational prompts.
-  - Reconciled lingering escrow terminology across client profiles, operations and dialogs.
+  - Reconciled lingering staged funds terminology across client profiles, operations and dialogs.
 
 ### 5.6 Phase 7: Automated Master Lifecycle Test Suite & Verification Checklist
 - **Accomplishments:**
@@ -522,8 +522,8 @@ This session resolved critical production edge cases encountered during end-to-e
 | **Phase 8** | Manual Client Verification Overrides, Staged Payment Disbursal & Brand Logos | ✅ Complete | `057d9f6` |
 | **Phase 9** | Guarded CRUD Endpoints, Immutability Guards & Action Wiring | ✅ Complete | `a0bf82b` |
 | **Phase 10** | Web Development Category & Studio AI Copilot Vertical Ergonomics | ✅ Complete | `origin/main` |
-| **Phase 11** | Payout Disbursal Role Isolation, Seller Escrow Protection & Financial Telemetry Fixes | ✅ Complete | `fbb2037` |
-| **Phase 12** | Revision Clock Freeze, Client Escrow Reclaim, Freelancer Deadline Notice & AI Dispute Mediation | ✅ Complete | `a0418dc` |
+| **Phase 11** | Payout Disbursal Role Isolation, Seller Staged Funds Protection & Financial Telemetry Fixes | ✅ Complete | `fbb2037` |
+| **Phase 12** | Revision Clock Freeze, Client Staged Funds Reclaim, Freelancer Deadline Notice & AI Dispute Mediation | ✅ Complete | `a0418dc` |
 
 ---
 
@@ -575,7 +575,7 @@ This session resolved critical production edge cases encountered during end-to-e
 
 ---
 
-## 10. Phase 11: Payout Disbursal Role Isolation, Seller Escrow Protection & Financial Telemetry Fixes
+## 10. Phase 11: Payout Disbursal Role Isolation, Seller Staged Funds Protection & Financial Telemetry Fixes
 - **Client-Only Payout Disbursal Role Isolation:**
   - Security audit revealed that after AI verification succeeded, the freelancer portal in `DeliveryVerification.tsx` was presenting a "Disburse PayPal Payout" button. Money release must strictly remain a client action after conducting manual verification outside the system.
   - `policy_engine.py`: Removed sandbox party bypass in `can_release_payout()`, strictly requiring client identity (`require_client(user, contract)`).
@@ -583,7 +583,7 @@ This session resolved critical production edge cases encountered during end-to-e
   - `MilestoneDetailDialog.tsx`: Changed release button authorization condition to strictly `isClient`. Non-clients receive a verification / awaiting client release status banner.
   - `DeliveryVerification.tsx`: Replaced freelancer "Disburse PayPal Payout" button with an "AI Verification Passed — Awaiting Client Release" card.
 - **Freelancer Protection & Recourse Mechanism:**
-  - Added **TrustBroker Buyer & Seller Protection Policy Notice**: Displays clear 7-day review window information. Following AI verification, clients have 7 days to review and authorize release or request specific revisions before automated escrow settlement or arbitration eligibility kicks in.
+  - Added **TrustBroker Buyer & Seller Protection Policy Notice**: Displays clear 7-day review window information. Following AI verification, clients have 7 days to review and authorize release or request specific revisions before automated staged funds settlement or arbitration eligibility kicks in.
   - Added **"Send Disbursal Reminder to Client"** action: Freelancers can nudge the client when verification passes, triggering real-time toast and in-app notification to the client.
   - Embedded quick link to Freelancer Earnings Ledger (`/app/freelancer/earnings`).
 - **Contracts Ledger Table Budget Column Fix:**
@@ -602,7 +602,7 @@ This session resolved critical production edge cases encountered during end-to-e
 
 ---
 
-## 11. Phase 12: Dual-Party Escrow Protection — Revision Clock Freeze, Client Reclaim & AI Dispute Mediation
+## 11. Phase 12: Dual-Party Staged Funds Protection — Revision Clock Freeze, Client Reclaim & AI Dispute Mediation
 
 ### Context
 After enforcing client-only payout release (Phase 11), two critical protection gaps remained:
@@ -615,7 +615,7 @@ The goal was a **symmetric, legally-grounded dual-protection model** suitable fo
 | Scenario | Protection |
 |---|---|
 | Client withholds after verified delivery | Freelancer "Send Disbursal Reminder" nudge + TrustBroker Seller Protection policy notice |
-| Freelancer ignores revision request for 7+ days | Client "Reclaim Staged Escrow" + AI Dispute Mediation |
+| Freelancer ignores revision request for 7+ days | Client "Reclaim Staged Staged Funds" + AI Dispute Mediation |
 
 ---
 
@@ -633,9 +633,9 @@ const isVerified = (assessment?.passed || status === 'verified' || paymentStatus
 
 ---
 
-### 11.2 Backend Escrow Reclaim Endpoint
+### 11.2 Backend Staged Funds Reclaim Endpoint
 
-**New function:** `refund_milestone_escrow()` in `backend/app/services/payment_service.py`
+**New function:** `refund_milestone_staged funds()` in `backend/app/services/payment_service.py`
 
 **Logic:**
 1. Client-only enforcement: `require_client(client, contract)`.
@@ -644,13 +644,13 @@ const isVerified = (assessment?.passed || status === 'verified' || paymentStatus
 4. Sets `milestone.status = MilestoneStatus.PENDING` (unfunds the milestone, allows re-funding after resubmission).
 5. Deducts from `contract.staged_amount`.
 6. Logs immutable `AuditEvent` with actor, reason and timestamp.
-7. Creates in-app `Notification` to the freelancer: "Client has reclaimed staged escrow for milestone X — revision was not addressed within 7 days."
+7. Creates in-app `Notification` to the freelancer: "Client has reclaimed staged staged funds for milestone X — revision was not addressed within 7 days."
 8. Returns updated contract and milestone.
 
 **New endpoint:** `POST /api/v1/payments/{contract_id}/{milestone_id}/refund` in `backend/app/routers/payments.py`
 ```python
 @router.post("/{contract_id}/{milestone_id}/refund")
-async def reclaim_milestone_escrow(
+async def reclaim_milestone_staged funds(
     contract_id: str, milestone_id: str,
     body: Optional[dict] = Body(default=None),
     ...
@@ -663,12 +663,12 @@ async def reclaim_milestone_escrow(
 
 **`react_app/src/lib/api.ts`:**
 ```ts
-refundEscrow(contractId: string, milestoneId: string, reason?: string): Promise<...>
+refundStaged Funds(contractId: string, milestoneId: string, reason?: string): Promise<...>
 // → POST /payments/{contractId}/{milestoneId}/refund
 ```
 
 **`react_app/src/hooks/useContractStore.ts`:**
-- Added `reclaimMilestoneEscrow(contractId, milestoneId, reason?)` store action.
+- Added `reclaimMilestoneStaged Funds(contractId, milestoneId, reason?)` store action.
 - Optimistic UI: immediately sets milestone `status → 'pending'`, `payment_status → 'not_started'`, deducts from `stagedAmount`.
 - `requestRevision` stores `revisionNotes` and `revisionRequestedAt` on the milestone object in state.
 
@@ -686,18 +686,18 @@ refundEscrow(contractId: string, milestoneId: string, reason?: string): Promise<
 │                                                               │
 │  🛡 TrustBroker Buyer Protection (7-Day Inactivity Reclaim)  │
 │  If freelancer does not respond within 7 days of this        │
-│  revision request, you may reclaim the staged escrow funds.  │
+│  revision request, you may reclaim the staged staged funds funds.  │
 │                                                               │
-│  [Reclaim Staged Escrow]  [AI Dispute Mediation]  [Override] │
+│  [Reclaim Staged Staged Funds]  [AI Dispute Mediation]  [Override] │
 └───────────────────────────────────────────────────────────────┘
 ```
 
 **"Override & Approve"** — client can bypass revision state and authorize payout anyway (trust decision).
 
-**"Reclaim Staged Escrow" Dialog:**
+**"Reclaim Staged Staged Funds" Dialog:**
 - Textarea for reclaim reason.
-- Calls `reclaimMilestoneEscrow(contractId, milestoneId, reason)`.
-- Toast: "Staged escrow reclaimed. Milestone reset to Pending."
+- Calls `reclaimMilestoneStaged Funds(contractId, milestoneId, reason)`.
+- Toast: "Staged staged funds reclaimed. Milestone reset to Pending."
 
 #### Client Panel (when `isVerified === true`, no revision)
 - "Authorize PayPal Payout" button (existing).
@@ -710,7 +710,7 @@ refundEscrow(contractId: string, milestoneId: string, reason?: string): Promise<
 │                                                               │
 │  ⚠️ TrustBroker Buyer Protection — 7-Day Response Deadline   │
 │  You must address this revision within 7 days. If you do    │
-│  not respond, the client may reclaim the staged escrow.      │
+│  not respond, the client may reclaim the staged staged funds.      │
 │                                                               │
 │  [Submit Revised Deliverables]  [Request AI Dispute]         │
 └───────────────────────────────────────────────────────────────┘
@@ -744,7 +744,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 |---|---|
 | Backend tests (`pytest -q`) | ✅ **35/35 passed** in 12.86s |
 | Frontend TypeScript build (`tsc -b && vite build`) | ✅ **Built in 7.54s**, zero errors |
-| Git commit | ✅ `a0418dc` — "feat(escrow): add client escrow reclaim, revision-state clock freeze, AI dispute mediation & dual-party protection flows" |
+| Git commit | ✅ `a0418dc` — "feat(staged funds): add client staged funds reclaim, revision-state clock freeze, AI dispute mediation & dual-party protection flows" |
 | Remote push | ✅ Pushed to `origin/main` |
 | Render auto-deploy | ✅ Triggered |
 
@@ -755,8 +755,8 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 | Feature | Backend | Frontend | Commit |
 |---|---|---|---|
 | Revision-state clock freeze | `policy_engine.py` — existing guard now explicitly leveraged | `isRevisionRequested`, `isVerified` computed vars | `a0418dc` |
-| `POST /payments/{id}/{id}/refund` escrow reclaim endpoint | `payment_service.py` + `routers/payments.py` | `api.ts` `refundEscrow()` | `a0418dc` |
-| `reclaimMilestoneEscrow` store action + optimistic UI | — | `useContractStore.ts` | `a0418dc` |
+| `POST /payments/{id}/{id}/refund` staged funds reclaim endpoint | `payment_service.py` + `routers/payments.py` | `api.ts` `refundStaged Funds()` | `a0418dc` |
+| `reclaimMilestoneStaged Funds` store action + optimistic UI | — | `useContractStore.ts` | `a0418dc` |
 | Client revision-state panel (reclaim + override + dispute) | — | `DeliveryVerification.tsx` | `a0418dc` |
 | Freelancer revision-state panel (submit + dispute deadline) | — | `DeliveryVerification.tsx` | `a0418dc` |
 | AI Dispute Mediation dialog (4-step protocol) | — | `DeliveryVerification.tsx` | `a0418dc` |
@@ -797,7 +797,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 - **Issue 1:** When clients opened a delivery review link, they were routed to `/dashboard/deliveries/:id` or `/app/freelancer/work/:id/deliver` where the breadcrumbs displayed "Dashboard / Submit Delivery" as if they were a freelancer submitting work.
 - **Issue 2:** Column 1 ("Deliverable Artifacts & Evidence") displayed an empty upload form (repository URL, live preview input, notes, file dropzone) instead of the actual work previously submitted by the freelancer.
 - **Issue 3:** Column 2 ("AI Verification Assessment") and Column 3 ("Client Manual Review") relied solely on local in-memory Zustand store state (`selectedMilestone.submittedEvidence`), which was empty upon fresh page visits or browser refreshes across different sessions.
-- **Issue 4:** Clients needed clear access to review repository links, live staging deployments, notes and attached artifacts, with direct manual approval, revision requests, dispute mediation and escrow protection notices intact.
+- **Issue 4:** Clients needed clear access to review repository links, live staging deployments, notes and attached artifacts, with direct manual approval, revision requests, dispute mediation and staged funds protection notices intact.
 
 ### 13.2 Backend Enhancements
 - **`backend/app/schemas/delivery.py`:**
@@ -829,7 +829,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 - **Client Manual Review & Disbursal Actions (`DeliveryVerification.tsx`):**
   - Rendered `effectiveEvidence` inside Column 3 ("Client Manual Review").
   - Added "Disburse Funds via PayPal" action directly into the Manual Review panel once verified.
-  - Kept all revision, dispute mediation and escrow reclaim workflows intact.
+  - Kept all revision, dispute mediation and staged funds reclaim workflows intact.
 
 ### 13.4 Verification
 - **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 11.61s).
@@ -847,7 +847,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
   - Migrated `ROUTES.ACTIVITY_HISTORY` from `/dashboard/activity/:id` to `/app/activity/:id` with legacy redirection.
   - Added `ROUTES.NOTIFICATIONS` (`/app/notifications`) and `ROUTES.CLIENT_PROFILE_PUBLIC` (`/app/client/profile/:clientId`) constants.
   - Replaced literal paths across `routes.tsx`, `Sidebar.tsx`, `ListingDetail.tsx`, `ClientOperations.tsx` and `FreelancerOperations.tsx` with canonical `ROUTES.*` constants.
-  - Mounted `<ContractDetail />` at both `ROUTES.CONTRACT_DETAIL(':id')` and `ROUTES.CONTRACT_APPLICANTS(':id')` ensuring full escrow, milestone and PayPal payment functionality is active.
+  - Mounted `<ContractDetail />` at both `ROUTES.CONTRACT_DETAIL(':id')` and `ROUTES.CONTRACT_APPLICANTS(':id')` ensuring full staged funds, milestone and PayPal payment functionality is active.
 - **Breadcrumb Alignment (`DashboardLayout.tsx`):**
   - Updated breadcrumb builder to be completely role-aware (`Dashboard` for client, `Home` for freelancer).
   - Fixed `/deliver` and `/review` paths so clients see `My Contracts / Review Delivery` and freelancers see `Active Work / Submit Delivery`.
@@ -861,11 +861,11 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 - **Resolved Button Squashing, Text Truncation & Layout Balance:**
   - Expanded container maximum width from `max-w-5xl` (1024px) to `max-w-7xl` (1280px) and balanced grid column widths to an equal `lg:col-span-4` (4 / 4 / 4) split, increasing Column 3 width by 33%.
   - Added `pb-28` bottom padding to the view container, ensuring floating widgets (such as the `Ask AI` FAB in the lower-right corner) never obscure action buttons.
-  - Styled secondary action buttons with subtle fintech color tints (`border-amber-500/40 bg-amber-500/10 text-amber-300` for Request Revision, `border-blue-500/40 bg-blue-500/10 text-blue-300` for AI Dispute and `border-rose-500/40 bg-rose-500/10 text-rose-300` for Escrow Reclamation).
+  - Styled secondary action buttons with subtle fintech color tints (`border-amber-500/40 bg-amber-500/10 text-amber-300` for Request Revision, `border-blue-500/40 bg-blue-500/10 text-blue-300` for AI Dispute and `border-rose-500/40 bg-rose-500/10 text-rose-300` for Staged Funds Reclamation).
 - **Client Manual Review Panel Action Parity:**
   - Handled all lifecycle review states distinctly in Column 3:
     1. **Verified (`isVerified`):** Primary `Authorize PayPal Payout ($X)` (`h-10`, bold, shadow) + 2-col secondary grid (`Request Revision` and `AI Dispute`).
-    2. **Revision Requested (`isRevisionRequested`):** Clock pause notice + primary `Override & Approve ($X)` + 2-col secondary grid (`Reclaim Escrow` and `AI Dispute`).
+    2. **Revision Requested (`isRevisionRequested`):** Clock pause notice + primary `Override & Approve ($X)` + 2-col secondary grid (`Reclaim Staged Funds` and `AI Dispute`).
     3. **Pending Verification (`!isVerified`):** Primary `Approve Deliverables Manually` + 2-col secondary grid (`Request Revision` and `AI Dispute`).
     4. **Settled (`isSettled`):** Disbursement confirmation banner.
 - **Freelancer Action Button Improvements:**
@@ -890,8 +890,8 @@ Fully resolved all 28 audit findings across 14 dedicated engineering workstreams
 
 ### 15.2 PayPal Orders v2 & Payouts Truthfulness (Workstreams B, C, D, L)
 - **Zero Fabricated Identifiers:** Completely removed synthetic fallback IDs (`SANDBOX-CAP-*`, `SANDBOX-BATCH-*`, `SANDBOX-ITEM-*`). Captures and payouts report authentic provider responses.
-- **Idempotent Order Creation:** `create_milestone_escrow_order()` checks for existing active `CHECKOUT_CREATED` attempts, preventing duplicate PayPal order creation.
-- **Reconciliation & Resilience:** `capture_milestone_escrow_payment()` recovers cleanly from `422 / ORDER_ALREADY_CAPTURED` by fetching real order details from PayPal.
+- **Idempotent Order Creation:** `create_milestone_staged funds_order()` checks for existing active `CHECKOUT_CREATED` attempts, preventing duplicate PayPal order creation.
+- **Reconciliation & Resilience:** `capture_milestone_staged funds_payment()` recovers cleanly from `422 / ORDER_ALREADY_CAPTURED` by fetching real order details from PayPal.
 - **Fail-Closed Webhook Signatures:** Inbound PayPal webhook verification fails closed (`False`) if `PAYPAL_WEBHOOK_ID` is unconfigured. Webhook capture events verify currency and amount matches.
 - **Payout Recipient Requirements:** Payouts strictly require a valid freelancer PayPal payout email; missing emails raise HTTP 400 without synthetic fallback.
 - **Deterministic PolicyEngine Lifecycle:** AI verification passing sets work status `VERIFIED`, but does NOT automatically mutate payment status to `RELEASE_AUTHORIZED`. Contracts cannot be marked `COMPLETED` until all milestones are financially settled.
@@ -906,7 +906,7 @@ Fully resolved all 28 audit findings across 14 dedicated engineering workstreams
 - **Supabase Free Tier Optimization:** Client and server enforce a 25 MB file upload ceiling, safely within Supabase Free Tier's 50 MB per-file limit (1 GB total).
 
 ### 15.5 Startup, Migrations & Infrastructure (Workstreams G, I, J, N)
-- **Refund / Reclaim Clarity (Workstream G):** Documented `refund_milestone_escrow` as `[SANDBOX DEMO]` state reset, tagging responses with `"mode": "sandbox_reset"`.
+- **Refund / Reclaim Clarity (Workstream G):** Documented `refund_milestone_staged funds` as `[SANDBOX DEMO]` state reset, tagging responses with `"mode": "sandbox_reset"`.
 - **Startup Seeding Guard (Workstream I):** Prevented Alembic migrations from blindly stamping `head` on failures. Seeding demo profiles on startup is strictly guarded behind `SEED_DEMO_DATA=true` or non-production environment.
 - **Automated Backend CI Testing (Workstream J):** Updated `.github/workflows/ci.yml` with a Python 3.12 pytest job running backend tests before frontend build and deployment.
 - **CORS Hardening (Workstream N):** Replaced wildcard `*.onrender.com` regex with `CORS_ALLOWED_ORIGIN_REGEX` defaulting to `^https:\/\/trustbroker-ai-frontend-[a-z0-9]+\.onrender\.com$`.

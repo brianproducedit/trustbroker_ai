@@ -26,7 +26,7 @@ async def create_order(
     session: Session = Depends(get_session),
 ):
     """Generate a PayPal order so the client can fund a milestone."""
-    return await payment_service.create_milestone_escrow_order(
+    return await payment_service.create_milestone_funding_order(
         session=session,
         contract_id=req.contract_id,
         milestone_id=req.milestone_id,
@@ -41,7 +41,7 @@ async def capture_order(
     session: Session = Depends(get_session),
 ):
     """Capture payment after client approves PayPal popup modal."""
-    return await payment_service.capture_milestone_escrow_payment(
+    return await payment_service.capture_milestone_funding_payment(
         session=session,
         client=current_user,
         paypal_order_id=req.paypal_order_id,
@@ -65,7 +65,7 @@ async def release_payout(
 
 
 @router.post("/{contract_id}/{milestone_id}/refund", summary="Client reclaims staged milestone funds due to freelancer inactivity or unaddressed revisions")
-def refund_staged_escrow(
+def refund_staged_milestone(
     contract_id: uuid.UUID,
     milestone_id: uuid.UUID,
     reason: Optional[str] = Body(None, embed=True),
@@ -73,7 +73,7 @@ def refund_staged_escrow(
     session: Session = Depends(get_session),
 ):
     """Buyer Protection: Client reclaims staged milestone funds."""
-    return payment_service.refund_milestone_escrow(
+    return payment_service.refund_staged_milestone(
         session=session,
         contract_id=contract_id,
         milestone_id=milestone_id,

@@ -280,7 +280,7 @@ INSERT INTO contracts (
     client_id, freelancer_id, freelancer_email, created_at, updated_at
 ) VALUES (
     '{c1_id}', 'TB-2026-001', 'Global Next.js Commerce & Inventory Architecture',
-    'High-performance headless e-commerce platform with automated inventory synchronization and resilient escrow milestone release.',
+    'High-performance headless e-commerce platform with automated inventory synchronization and resilient staged funds milestone release.',
     'software', 1, 'ACTIVE', 15000.00, 'USD', 6000.00, 4000.00,
     '{ELENA_ID}', '{TARIRO_ID}', 'tariro@devstudio.co.zw', NOW() - INTERVAL '14 days', NOW()
 ) ON CONFLICT (code) DO NOTHING;
@@ -346,9 +346,9 @@ INSERT INTO audit_events (id, contract_id, actor_id, actor_name, action, details
 VALUES 
     ('{uuid.uuid4()}', '{c1_id}', '{ELENA_ID}', 'Elena Rostova (Client)', 'CONTRACT_CREATED', 'Drafted initial contract scope TB-2026-001 with 3 staged milestones ($15,000 USD).', NOW() - INTERVAL '14 days'),
     ('{uuid.uuid4()}', '{c1_id}', '{TARIRO_ID}', 'Tariro Moyo (Freelancer)', 'CONTRACT_ACCEPTED', 'Accepted contract terms and cryptographic milestone boundaries.', NOW() - INTERVAL '13 days'),
-    ('{uuid.uuid4()}', '{c1_id}', '{ELENA_ID}', 'Elena Rostova (Client)', 'FUNDS_STAGED', 'Funded Milestone 1 ($4,000 USD) into PayPal sandbox escrow.', NOW() - INTERVAL '13 days'),
+    ('{uuid.uuid4()}', '{c1_id}', '{ELENA_ID}', 'Elena Rostova (Client)', 'FUNDS_STAGED', 'Funded Milestone 1 ($4,000 USD) into PayPal sandbox staged funds.', NOW() - INTERVAL '13 days'),
     ('{uuid.uuid4()}', '{c1_id}', '{TARIRO_ID}', 'Tariro Moyo (Freelancer)', 'DELIVERY_SUBMITTED', 'Delivered Milestone 1 Figma components and design system tokens.', NOW() - INTERVAL '8 days'),
-    ('{uuid.uuid4()}', '{c1_id}', '{ELENA_ID}', 'Elena Rostova (Client)', 'PAYMENT_RELEASED', 'Approved delivery and authorized escrow release of $4,000 USD to Tariro Moyo.', NOW() - INTERVAL '7 days'),
+    ('{uuid.uuid4()}', '{c1_id}', '{ELENA_ID}', 'Elena Rostova (Client)', 'PAYMENT_RELEASED', 'Approved delivery and authorized staged funds release of $4,000 USD to Tariro Moyo.', NOW() - INTERVAL '7 days'),
     ('{uuid.uuid4()}', '{c1_id}', '{ELENA_ID}', 'Elena Rostova (Client)', 'FUNDS_STAGED', 'Staged Milestone 2 ($6,000 USD) funds via PayPal checkout.', NOW() - INTERVAL '6 days'),
     ('{uuid.uuid4()}', '{c1_id}', '{TARIRO_ID}', 'Tariro Moyo (Freelancer)', 'DELIVERY_SUBMITTED', 'Submitted Milestone 2 API repository and test coverage reports.', NOW() - INTERVAL '2 days'),
     ('{uuid.uuid4()}', '{c1_id}', NULL, 'TrustBroker AI Guardian', 'VERIFICATION_PASSED', 'AI Verification engine scored delivery at 97/100 (Pass threshold: 85/100). Milestone unlocked for payout approval.', NOW() - INTERVAL '1 days')

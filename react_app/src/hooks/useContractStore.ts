@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import type { Contract, Milestone, ContractStatus, MilestoneStatus } from '@/types/contract'
 import type { PaymentStatus } from '@/types/payment'
-import { INITIAL_CONTRACTS } from '@/lib/mockData'
 import type { EvidenceSubmission, VerificationAssessment } from '@/types/verification'
 import { api } from '@/lib/api'
 import { transformContract } from '@/lib/transformers'
@@ -41,7 +40,6 @@ interface ContractStore {
   getRoleMetrics: () => {
     activeCount: number
     stagedAmount: number
-    escrowAmount: number
     pendingCount: number
     settledAmount: number
   }
@@ -84,7 +82,6 @@ interface ContractStore {
   resubmitDelivery: (contractId: string, milestoneId: string) => void
   releasePayment: (contractId: string, milestoneId: string) => Promise<void>
   reclaimMilestoneFunds: (contractId: string, milestoneId: string, reason?: string) => Promise<void>
-  reclaimMilestoneEscrow: (contractId: string, milestoneId: string, reason?: string) => Promise<void>
   manualVerify: (contractId: string, milestoneId: string, rationale: string) => Promise<void>
 
   // Add Audit Event
@@ -92,8 +89,8 @@ interface ContractStore {
 }
 
 export const useContractStore = create<ContractStore>((set, get) => ({
-  contracts: INITIAL_CONTRACTS,
-  activeContractId: 'contract-1',
+  contracts: [],
+  activeContractId: '',
   activeRole: (localStorage.getItem('tb_active_role') as 'client' | 'freelancer') || 'client',
   isAuthenticated: true,
   isLoading: false,
@@ -247,7 +244,6 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     return {
       activeCount: activeCount || roleContracts.length,
       stagedAmount,
-      escrowAmount: stagedAmount,
       pendingCount,
       settledAmount,
     }
@@ -848,11 +844,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   overrideReview: async (contractId, milestoneId, reason) => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
     if (isUuid) {
-      try {
-        await api.deliveries.overrideReview(contractId, milestoneId, reason)
-      } catch (err) {
-        console.warn('Backend overrideReview warning:', err)
-      }
+      await api.deliveries.overrideReview(contractId, milestoneId, reason)
     }
 
     set((state) => ({
@@ -956,17 +948,9 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   },
 
   reclaimMilestoneFunds: async (contractId, milestoneId, reason) => {
-    return get().reclaimMilestoneEscrow(contractId, milestoneId, reason)
-  },
-
-  reclaimMilestoneEscrow: async (contractId, milestoneId, reason) => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
     if (isUuid) {
-      try {
-        await api.payments.refundEscrow(contractId, milestoneId, reason)
-      } catch (err) {
-        console.warn('Backend refund escrow warning:', err)
-      }
+      await api.payments.refundStagedMilestone(contractId, milestoneId, reason)
     }
 
     set((state) => {
@@ -1010,11 +994,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   manualVerify: async (contractId, milestoneId, rationale) => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId)
     if (isUuid) {
-      try {
-        await api.deliveries.overrideReview(contractId, milestoneId, rationale)
-      } catch (err) {
-        console.warn('Backend manualVerify warning:', err)
-      }
+      await api.deliveries.overrideReview(contractId, milestoneId, rationale)
     }
 
     set((state) => ({
@@ -1027,9 +1007,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 return {
                   ...m,
                   status: 'verified' as MilestoneStatus,
-                  paymentStatus: (m.paymentStatus === 'staged_in_sandbox'
-                    ? 'release_authorized'
-                    : m.paymentStatus) as PaymentStatus,
+                  paymentStatus: m.paymentStatus as PaymentStatus,
                 }
               }
               return m

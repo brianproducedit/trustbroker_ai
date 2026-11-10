@@ -234,6 +234,7 @@ def run_verification_orchestration(
             repo_url=delivery.repo_url or None,
             live_url=delivery.live_url or None,
             file_names=uploaded_file_names or None,
+            evidence_findings=criterion_facts,
         )
 
         ai_provider_used: str = ai_result.get("provider_used", "fallback:none")

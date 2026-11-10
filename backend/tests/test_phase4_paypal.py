@@ -2,7 +2,7 @@
 TrustBroker AI — Phase 4 PayPal Integration & Idempotency Test Suite
 Tests:
 1. PayPal OAuth2 Client Credentials Authentication.
-2. Orders v2 Milestone Escrow Order Generation.
+2. Orders v2 Milestone Staged Funds Order Generation.
 3. PolicyEngine Payout & Funding Rules Validation.
 4. Payout Idempotency Key Preservation (payout:{milestone_id}).
 5. Webhook Signature & Idempotent Processing Simulation.

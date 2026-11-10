@@ -113,7 +113,7 @@ def _apply_payout_status(session: Session, payout: Payout, status_value: str) ->
                 session.add(contract)
 
 
-async def create_milestone_escrow_order(
+async def create_milestone_funding_order(
     session: Session,
     contract_id: uuid.UUID,
     milestone_id: Optional[uuid.UUID],
@@ -221,7 +221,7 @@ async def create_milestone_escrow_order(
     }
 
 
-async def capture_milestone_escrow_payment(
+async def capture_milestone_funding_payment(
     session: Session,
     client: UserProfile,
     paypal_order_id: Optional[str] = None,
@@ -596,7 +596,7 @@ async def release_milestone_payout(
     }
 
 
-def refund_milestone_escrow(
+def refund_staged_milestone(
     session: Session,
     contract_id: uuid.UUID,
     milestone_id: uuid.UUID,
@@ -604,7 +604,7 @@ def refund_milestone_escrow(
     reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     """[SANDBOX DEMO] Resets milestone staged-funding state in the database. In production, this would call the PayPal v2 Refunds API (POST /v2/payments/captures/{capture_id}/refund) with the capture_id before resetting local state."""
-    logger.info("[DEMO] refund_milestone_escrow: local state reset only. No PayPal Refunds API call made (sandbox scope).")
+    logger.info("[DEMO] refund_staged_milestone: local state reset only. No PayPal Refunds API call made (sandbox scope).")
     contract = session.get(Contract, contract_id)
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found")
@@ -782,22 +782,40 @@ async def process_paypal_webhook(
         raise HTTPException(status_code=400, detail="Missing webhook event ID")
 
     existing = session.exec(select(ProviderEvent).where(ProviderEvent.event_id == event_id)).first()
-    if existing:
+    if existing and existing.processed:
         return {"status": "already_processed", "event_id": event_id}
 
-    provider_event = ProviderEvent(
-        event_id=event_id,
-        event_type=event_type,
-        resource_id=resource_id,
-        payload=payload,
-        processed=False,
-    )
-    try:
-        session.add(provider_event)
-        session.flush()
-    except IntegrityError:
-        session.rollback()
-        return {"status": "already_processed", "event_id": event_id}
+    if existing:
+        # An earlier delivery was retained for reconciliation. Retry the same
+        # event using its original payload instead of inserting a duplicate.
+        provider_event = existing
+        event_type = existing.event_type
+        resource_id = existing.resource_id
+        payload = existing.payload
+    else:
+        provider_event = ProviderEvent(
+            event_id=event_id,
+            event_type=event_type,
+            resource_id=resource_id,
+            payload=payload,
+            processed=False,
+        )
+        try:
+            session.add(provider_event)
+            session.flush()
+        except IntegrityError:
+            session.rollback()
+            concurrent = session.exec(
+                select(ProviderEvent).where(ProviderEvent.event_id == event_id)
+            ).first()
+            if not concurrent:
+                raise
+            if concurrent.processed:
+                return {"status": "already_processed", "event_id": event_id}
+            provider_event = concurrent
+            event_type = concurrent.event_type
+            resource_id = concurrent.resource_id
+            payload = concurrent.payload
 
     reconciliation_required = False
 

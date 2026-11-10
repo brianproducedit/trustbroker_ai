@@ -15,3 +15,4 @@ ENV/
 .pytest_cache/
 dev.db
 alembic.log
+/md_artifacts/
