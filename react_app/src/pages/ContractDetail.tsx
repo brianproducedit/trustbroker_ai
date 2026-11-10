@@ -7,7 +7,7 @@ import { useContractStore } from '@/hooks/useContractStore'
 import { useNotificationStore } from '@/hooks/useNotifications'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ROUTES } from '@/constants'
-import { api } from '@/lib/api'
+import { api, formatApiError } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -211,6 +211,7 @@ export const ContractDetail: React.FC = () => {
   const isClient = activeRole === 'client'
   const isFreelancer = activeRole === 'freelancer'
   const isUserAccepted = isClient ? clientParty.accepted : freelancerParty.accepted
+  const canAcceptTerms = ['draft', 'awarded', 'pending_acceptance'].includes(contract.status)
 
   // Financial Metrics
   const totalAmount = contract.totalAmount || 1
@@ -338,17 +339,21 @@ export const ContractDetail: React.FC = () => {
     toast.success('SOW Specification exported successfully!')
   }
 
-  const handleConfirmAcceptTerms = () => {
-    acceptContract(contract.id, activeRole)
-    setAcceptDialogOpen(false)
-    const roleName = isClient ? 'Client' : 'Freelancer'
-    toast.success(`You have accepted the terms as ${roleName}!`)
-    addNotification({
-      title: 'Contract Terms Accepted',
-      description: `${roleName} digitally confirmed the contract specifications.`,
-      type: 'contract',
-      link: ROUTES.CONTRACT_DETAIL(contract.id),
-    })
+  const handleConfirmAcceptTerms = async () => {
+    try {
+      await acceptContract(contract.id, activeRole)
+      setAcceptDialogOpen(false)
+      const roleName = isClient ? 'Client' : 'Freelancer'
+      toast.success(`You have accepted the terms as ${roleName}!`)
+      addNotification({
+        title: 'Contract Terms Accepted',
+        description: `${roleName} digitally confirmed the contract specifications.`,
+        type: 'contract',
+        link: ROUTES.CONTRACT_DETAIL(contract.id),
+      })
+    } catch (error) {
+      toast.error(formatApiError(error))
+    }
   }
 
   const handlePaymentSuccess = (details: any) => {
@@ -1791,7 +1796,7 @@ export const ContractDetail: React.FC = () => {
               {/* CLIENT NEXT ACTION */}
               {isClient && (
                 <div className="space-y-2">
-                  {!isUserAccepted ? (
+                  {!isUserAccepted && canAcceptTerms ? (
                     <>
                       <div className="text-sm font-bold text-white">Sign Contract Agreement</div>
                       <p className="text-xs text-slate-300">Review terms and provide your digital signature.</p>
@@ -1802,6 +1807,13 @@ export const ContractDetail: React.FC = () => {
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Sign Contract</span>
                       </Button>
+                    </>
+                  ) : !isUserAccepted ? (
+                    <>
+                      <div className="text-sm font-bold text-white">Signature unavailable</div>
+                      <p className="text-xs text-slate-300">
+                        The contract must be awarded before either party can sign it.
+                      </p>
                     </>
                   ) : pendingReleaseMilestone ? (
                     <>
