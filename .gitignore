@@ -18,3 +18,6 @@ dev.db
 alembic.log
 /md_artifacts/
 /md_artefacts/
+backend/scripts/reset_db.py
+scripts/reset_db.py
+*reset_db.py
