@@ -52,20 +52,20 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `POST /webhook`: Inbound PayPal webhook listener with signature verification.
 
 ### Verification Engine & Deliveries (`/api/v1/deliveries`)
-- `POST /upload-file`: Accept multipart evidence upload, validating file size, type and storing securely on server/Supabase.
+- `POST /upload-file`: Accept multipart evidence upload, validating file size, type, and enforcing server-scoped storage paths (`validate_storage_path`) to prevent cross-user file hijacking.
 - `POST /`: Submit freelancer deliverable package (repo URL, live staging preview, notes, file attachments); queues background AI verification.
-- `GET /{delivery_id}/verification-status`: Poll background AI verification job status and results.
+- `GET /{delivery_id}/verification-status`: Poll background AI verification job status and results. Enforces terminal states: flags jobs running > 90s without reports as `interrupted` (service restart) or > 45s as `needs_review`, preventing indefinite polling hangs.
 - `GET /milestone/{milestone_id}`: List all milestone deliveries with embedded `verification_report` and itemized `CriterionResult` evaluations.
 - `GET /{delivery_id}`: Retrieve detailed delivery submission package and assessment report.
-- `GET /files/{file_id}/download`: Authenticated download URL or file stream for contract parties.
+- `GET /files/{file_id}/download`: Authenticated download URL or file stream for contract parties with directory traversal protection (`os.path.realpath`).
 - `POST /{contract_id}/{milestone_id}/request-revision`: Client requests revisions with notes.
 - `POST /{contract_id}/{milestone_id}/override-review`: Client human override approval with required audit trail rationale.
 - **Multimodal Adapters:**
-  - **HTTP Probe Adapter:** Verifies live staging URLs with resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
-  - **Vision Adapter:** Inspects screenshots and UI designs against visual requirements using Groq vision inference.
-  - **Document Adapter:** Extracts PDF and markdown content, automatically routing raster screenshots to vision.
-  - **Repository Meta Adapter:** Inspects public GitHub repositories and directory trees via GitHub API.
-  - **Scoring Engine:** Deterministically aggregates evidence scores and flags rate-limiting as `NEEDS_REVIEW` instead of false-positive hard failures.
+  - **HTTP Probe Adapter:** Verifies live staging URLs with SSRF protection and resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
+  - **Vision Adapter:** Multimodal screenshot analysis via vision model; strictly returns `NEEDS_REVIEW` (score 50) when API is unavailable—zero synthetic passes.
+  - **Document Adapter:** Extracts PDF and text content locally; flags unreadable or scanned documents for human review.
+  - **Repository Meta Adapter:** Inspects public GitHub repositories via API; strict URL parsing (no deceptive hosts) and flags 429/403/non-GitHub as `NEEDS_REVIEW`.
+  - **Scoring Engine:** Aggregates evidence scores deterministically, attributes models truthfully (`fallback:none` if no model ran), and requires client review for ambiguous results.
 
 ### Immutability & Role Safeguards
 - **Client-Only Payout Disbursals:** Releases are strictly restricted to verified contract clients in `PolicyEngine.can_release_payout()`; non-clients are rejected with HTTP 403.
@@ -150,7 +150,7 @@ If a deploy encounters a migration error:
 
 ## Automated Test Suite
 
-The backend includes a comprehensive 55-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, and vetting scoring:
+The backend includes a comprehensive 79-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, CORS security, and vetting scoring:
 
 ```bash
 # Run the full test suite
@@ -158,9 +158,11 @@ python -m pytest tests/ -v
 
 # Run specific test suites
 python -m pytest tests/test_paypal_integrity.py -v
+python -m pytest tests/test_cors_security.py -v
 python -m pytest tests/test_ssrf_safety.py -v
 python -m pytest tests/test_auth_security.py -v
 python -m pytest tests/test_phase5_verification.py -v
+python -m pytest tests/test_e2e_lifecycle.py -v
 ```
 
 ---

@@ -75,13 +75,13 @@ Judges score five equal criteria. Every phase below maps to at least one.
 
 ### 1.2 Submission hard requirements (fail Stage One if missed)
 
-- [ ] Public GitHub/GitLab/Bitbucket repo with **LICENSE** visible in About.
-- [ ] Working hosted demo **or** complete local run instructions plus judge test accounts.
-- [ ] YouTube demo **under 3 minutes**, public, no copyrighted music, shows the app running.
-- [ ] Devpost text: what it does, which PayPal APIs, which AI tools, which sponsor tools.
-- [ ] Meaningful PayPal sandbox integration (not a screenshot of PayPal’s site).
-- [ ] Meaningful AI (not a static FAQ).
-- [ ] English materials.
+- [x] Public GitHub/GitLab/Bitbucket repo with **LICENSE** visible in About.
+- [x] Working hosted demo **or** complete local run instructions plus judge test accounts.
+- [ ] YouTube demo **under 3 minutes**, public, no copyrighted music, shows the app running (video script ready in `md_artifacts/video_script.md`).
+- [x] Devpost text: what it does, which PayPal APIs, which AI tools, which sponsor tools (prepared in `md_artifacts/DEVPOST_SUBMISSION.md`).
+- [x] Meaningful PayPal sandbox integration (not a screenshot of PayPal’s site).
+- [x] Meaningful AI (not a static FAQ).
+- [x] English materials.
 
 ---
 

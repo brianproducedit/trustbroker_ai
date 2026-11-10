@@ -915,3 +915,62 @@ Fully resolved all 28 audit findings across 14 dedicated engineering workstreams
 - **Backend Test Suite:** **55 of 55 tests passed** (100% pass rate in 30.22s).
 - **Frontend Production Build:** TypeScript type-check and Vite production bundle passed in 7.62s with **0 errors**.
 - **Git Commits:** Pushed clean commits to `main` branch.
+
+---
+
+## 16. Phase 17: Production Hardening & Complete Hackathon Remediation (Phases 1–9)
+
+**Execution Date:** 10 November 2026  
+**Reference Document:** `md_artifacts/TrustBroker_AI_Remaining_Issues_and_Coding_Agent_Work_Order.md` & `final_submission_plan.md`
+
+Systematically resolved all audit findings and completed the full 9-phase remediation plan across backend services, adapters, models, and frontend state machines:
+
+### 16.1 Phase 1 — Verification False Positives (P0)
+- **Vision Adapter (`adapters/vision.py`):** Eliminated heuristic PASS fallback (`vision_heuristic_fallback`). Image format errors, API failures, or missing credentials safely return `NEEDS_REVIEW` (score 50, requires human review). Removed hardcoded model names when no model ran.
+- **Repository Meta Adapter (`adapters/repo_meta.py`):** Removed `github_heuristic_fallback` and fabricated files list. Implemented strict URL parsing (`urlparse`) requiring exact `github.com` hostname. Non-GitHub repositories (GitLab, Bitbucket) and edge rate limits (429/403) return `NEEDS_REVIEW`.
+- **Document Adapter (`adapters/document.py`):** Keyword match converted to context observation rather than automated pass.
+- **Orchestrator (`orchestrator.py`):** Connected real AI evaluator via `evaluate_delivery_against_criteria()` with OpenRouter fallback. Truthful model attribution persists actual provider model or `fallback:none`.
+- **Scoring Engine (`scoring.py`):** Preserves `NEEDS_REVIEW` through criterion aggregation.
+
+### 16.2 Phase 2 — CORS Exception Handler Reflection (P0)
+- **Global Exception Handler (`main.py`):** Removed dynamic origin reflection (`request.headers.get("origin") or "*"`) and manual `Access-Control-Allow-Origin` injection in 500 error responses. Standard CORS middleware handles response headers.
+- **Masked Internal Exceptions:** Replaced internal exception stack traces, paths, and SQL errors with a generic error message and unique correlation ID in production.
+- **Added 5 Tests (`test_cors_security.py`):** Validated unapproved origins receive no reflected CORS credentials.
+
+### 16.3 Phase 3 — Startup Migration Stamping (P0)
+- **Startup Entrypoint (`start.py`):** Removed automatic `alembic stamp head` on non-zero CLI exit codes. Server safely logs failure and aborts rather than serving against unknown schemas.
+- **Recovery Guide:** Documented production migration recovery steps in `backend/README.md`.
+
+### 16.4 Phase 4 — PayPal Capture Validation (P0)
+- **Payment Service (`payment_service.py`):** Enforced required amount and currency validation with exact `Decimal` precision comparisons.
+- **Single Purchase Unit Enforcement:** Multiple purchase units rejected.
+- **Refund Terminology:** Unapproved checkout returns `cancelled` rather than `refunded`.
+
+### 16.5 Phase 5 — Evidence Upload Ownership & Scoped Paths (P1)
+- **Scoped Path Validation (`safety.py`):** Added `validate_storage_path()` enforcing scoped storage namespaces (`supabase://delivery-evidence/{uploader_id}/...` or `uploads/evidence/{uploader_id}/...`).
+- **Path Traversal Protection:** Canonicalized download paths with `os.path.realpath`, preventing `..` or null byte attacks.
+- **Production Durability:** Enforces Supabase cloud storage in production, returning HTTP 503 rather than silent local disk fallback.
+
+### 16.6 Phase 6 — Payout State Labels & UI Accuracy (P1)
+- **Reconciliation State (`models/marketplace.py`):** Added `RECONCILIATION_REQUIRED = "reconciliation_required"` to `PayoutStatus`.
+- **Truthful Status Mapping (`payment_service.py`):** Separates network timeouts (`RECONCILIATION_REQUIRED`, HTTP 504) from confirmed failure. Disbursal responses accurately reflect requested vs released amounts.
+- **Truthful Notifications:** In-app notification updated to "Payout submitted to PayPal" until webhook confirmation.
+- **UI Status Badges:** Updated `ClientPayoutsPage.tsx` and `FreelancerPayouts.tsx` with distinct status pills for `submitted`, `release_authorized`, `returned`, and `reconciliation_required`.
+
+### 16.7 Phase 7 — Verification Job Terminal State (P1)
+- **Age-Based Detection (`routers/deliveries.py`):** Background jobs without reports are flagged as `interrupted` if older than 90s (service restart detection) or `needs_review` if older than 45s, preventing infinite hangs.
+- **Frontend Store Polling (`useContractStore.ts`):** Polling loop cleanly breaks on terminal states (`interrupted`, `failed`, `needs_review`).
+
+### 16.8 Phase 8 — Demo Seeding Safety (P1)
+- **Seed Script (`seed.py`):** Tagged demo profile updates with `# [DEMO SEED DATA]`. Preserves user credentials and avoids destructive updates to financial records.
+- **Truthful Seed Notifications:** Freelancer notification phrasing updated to "Payout Submitted to PayPal".
+
+### 16.9 Phase 9 — Documentation & Demo Walkthrough Accuracy (P1)
+- **Judge Walkthrough (`docs/JUDGE_DEMO.md`):** Replaced "Vision Heuristic" with "Vision AI", removed exaggerated latency claims, added accurate payout lifecycle notes, and documented Section 7 Known Limitations (sandbox scope, in-process workers, cloud storage fallback).
+- **Devpost Guide (`md_artifacts/DEVPOST_SUBMISSION.md`):** Updated capabilities, removed "instant payout" language, and detailed the OpenRouter fallback chain.
+- **Video Script (`md_artifacts/video_script.md`):** Prepared complete 3-minute hackathon demo video script covering all 8 scenes with timing and recording checklist.
+
+### 16.10 Verification & Test Metrics
+- **Backend Test Suite:** **79 of 79 tests passed** (100% pass rate in 51.56s).
+- **Frontend Production Build:** Vite production bundle passed in 4.59s with **0 errors**.
+- **Git Commits:** Pushed clean commits to `main` branch.
