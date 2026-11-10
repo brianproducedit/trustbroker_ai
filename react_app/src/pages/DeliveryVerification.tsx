@@ -127,19 +127,6 @@ export const DeliveryVerification: React.FC = () => {
   const [isReclaiming, setIsReclaiming] = useState(false)
   const [disputeDialogOpen, setDisputeDialogOpen] = useState(false)
 
-  if (!contract || !selectedMilestone) {
-    return (
-      <DashboardLayout>
-        <div className="text-center py-20">
-          <h2 className="text-xl font-bold text-white">Milestone not found</h2>
-          <Button asChild variant="outline" className="mt-4 border-slate-700 text-slate-300">
-            <Link to={activeRole === 'client' ? ROUTES.CLIENT_CONTRACTS : ROUTES.FREELANCER_WORK}>Return to {activeRole === 'client' ? 'Contracts' : 'Active Work'}</Link>
-          </Button>
-        </div>
-      </DashboardLayout>
-    )
-  }
-
   const handleAddAttachment = () => {
     if (!newFileName.trim()) return
     if (newFileUrl.trim().startsWith('blob:')) {
@@ -229,6 +216,21 @@ export const DeliveryVerification: React.FC = () => {
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
+
+  if (!contract || !selectedMilestone) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-20">
+          <h2 className="text-xl font-bold text-white">Milestone not found</h2>
+          <Button asChild variant="outline" className="mt-4 border-slate-700 text-slate-300">
+            <Link to={activeRole === 'client' ? ROUTES.CLIENT_CONTRACTS : ROUTES.FREELANCER_WORK}>
+              Return to {activeRole === 'client' ? 'Contracts' : 'Active Work'}
+            </Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   const handleSubmitEvidence = async (e: React.FormEvent) => {
     e.preventDefault()

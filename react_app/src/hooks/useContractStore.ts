@@ -814,7 +814,6 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       } catch (err) {
         console.error('Backend release payout failed:', err)
         throw err
-        throw err
       }
     }
 
