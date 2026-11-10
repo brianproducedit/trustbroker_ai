@@ -393,7 +393,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   resetPasswordForEmail: async (email: string) => {
     if (!isSupabaseConfigured) {
-      return { success: true } // Mock success for dev/offline testing
+      return { success: false, error: 'Authentication service is not configured in this environment.' }
     }
 
     try {
@@ -410,7 +410,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   updatePassword: async (password: string) => {
     if (!isSupabaseConfigured) {
-      return { success: true } // Mock success
+      return { success: false, error: 'Authentication service is not configured in this environment.' }
     }
 
     try {
@@ -424,7 +424,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   resendVerification: async (email: string) => {
     if (!isSupabaseConfigured) {
-      return { success: true }
+      return { success: false, error: 'Authentication service is not configured in this environment.' }
     }
 
     try {

@@ -406,7 +406,7 @@ def seed_database():
                 criterion_id=crit2_2.id,
                 passed=True,
                 score=92,
-                explanation="Server capture API logs match PayPal sandbox mock execution.",
+                explanation="Server capture API logs match PayPal sandbox capture execution.",
                 assessed_at=now - timedelta(hours=3),
             )
             session.add(c_res1)

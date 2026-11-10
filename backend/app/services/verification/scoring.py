@@ -1,4 +1,4 @@
-﻿"""
+"""
 Scoring and Decision Engine for Multimodal Milestone Verification.
 Enforces the strict judging rules defined in §7.2 of the TrustBroker AI Roadmap:
 - Pass: Evidence directly supports the criterion (factual verification).

@@ -53,7 +53,7 @@ export const DeliveryVerification: React.FC = () => {
     activeRole,
     submitEvidence,
     releasePayment,
-    reclaimMilestoneEscrow,
+    reclaimMilestoneFunds,
     requestRevision,
     overrideReview,
     manualVerify,
@@ -349,7 +349,7 @@ export const DeliveryVerification: React.FC = () => {
   const handleConfirmReclaim = async () => {
     setIsReclaiming(true)
     try {
-      await reclaimMilestoneEscrow(contract.id, selectedMilestone.id, reclaimReason)
+      await reclaimMilestoneFunds(contract.id, selectedMilestone.id, reclaimReason)
       setReclaimDialogOpen(false)
       toast.success(`Staged funds of ${formatCurrency(selectedMilestone.amount)} reclaimed back to your account.`)
       addNotification({
@@ -1242,7 +1242,7 @@ export const DeliveryVerification: React.FC = () => {
                                 <span>7-Day Freelancer Response Deadline (Buyer Protection Active)</span>
                               </div>
                               <p className="text-slate-400 text-[10px] leading-relaxed">
-                                You have 7 days to address the client's revision notes and submit updated deliverables using the form on the left. If no revision or response is provided within 7 days, the client is protected and may reclaim their staged escrow funds.
+                                You have 7 days to address the client's revision notes and submit updated deliverables using the form on the left. If no revision or response is provided within 7 days, the client is protected and may reclaim their staged funds.
                               </p>
                             </div>
 
@@ -1276,12 +1276,12 @@ export const DeliveryVerification: React.FC = () => {
                                 <span>AI Verification Passed — Awaiting Client Release</span>
                               </div>
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Escrow Staged
+                                Payment Staged
                               </span>
                             </div>
 
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely locked in PayPal Escrow Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
+                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely staged in PayPal Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
                             </p>
 
                             {/* TrustBroker Seller Protection Policy */}

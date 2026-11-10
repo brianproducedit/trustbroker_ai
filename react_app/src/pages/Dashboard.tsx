@@ -284,7 +284,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="mt-3">
                 <div className="text-2xl font-bold font-mono text-emerald-400">
-                  {formatCurrency(roleMetrics.escrowAmount)}
+                  {formatCurrency(roleMetrics.stagedAmount ?? roleMetrics.escrowAmount)}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-0.5">
                   {activeRole === 'client' ? 'Funded in PayPal' : 'Guaranteed by client'}

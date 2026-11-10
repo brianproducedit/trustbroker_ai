@@ -60,12 +60,14 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `GET /files/{file_id}/download`: Authenticated download URL or file stream for contract parties with directory traversal protection (`os.path.realpath`).
 - `POST /{contract_id}/{milestone_id}/request-revision`: Client requests revisions with notes.
 - `POST /{contract_id}/{milestone_id}/override-review`: Client human override approval with required audit trail rationale.
-- **Multimodal Adapters:**
-  - **HTTP Probe Adapter:** Verifies live staging URLs with SSRF protection and resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
+- **Multimodal Adapters & Evidence Loader:**
+  - **Supabase Evidence Loader (`evidence_loader.py`):** Securely fetches deliverable file bytes directly from private Supabase Storage (`supabase://delivery-evidence/...`) via the Supabase Storage SDK, feeding raw bytes to multimodal inspectors. If a file cannot be retrieved or is unavailable, the pipeline safely returns `NEEDS_REVIEW` (score 50) rather than a false synthetic pass.
+  - **HTTP Probe Adapter:** Verifies live staging URLs with SSRF protection (`validate_url_for_ssrf`) and resilience against edge/bot-protection challenges (Vercel, Cloudflare, GitHub, Netlify).
   - **Vision Adapter:** Multimodal screenshot analysis via vision model; strictly returns `NEEDS_REVIEW` (score 50) when API is unavailable—zero synthetic passes.
   - **Document Adapter:** Extracts PDF and text content locally; flags unreadable or scanned documents for human review.
   - **Repository Meta Adapter:** Inspects public GitHub repositories via API; strict URL parsing (no deceptive hosts) and flags 429/403/non-GitHub as `NEEDS_REVIEW`.
   - **Scoring Engine:** Aggregates evidence scores deterministically, attributes models truthfully (`fallback:none` if no model ran) and requires client review for ambiguous results.
+  - **Zero-Mock Architecture:** Production application code contains zero mock fallbacks. All PayPal payment staging and payouts communicate directly with authentic PayPal Sandbox REST endpoints (`/v2/checkout/orders`, `/v1/payments/payouts`), and all AI evaluations call live models with multi-tier failover (Groq -> OpenRouter -> DeepSeek).
 
 ### Immutability & Role Safeguards
 - **Client-Only Payout Disbursals:** Releases are strictly restricted to verified contract clients in `PolicyEngine.can_release_payout()`; non-clients are rejected with HTTP 403.

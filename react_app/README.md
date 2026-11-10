@@ -69,7 +69,7 @@ Visit `http://localhost:5173`.
 
 ## Interactive Features
 
-- **Delivery Review & Settlement Ergonomics:** Balanced 3-column layout (`4 / 4 / 4` grid on `max-w-7xl`) separating the read-only Freelancer Package (Column 1), automated AI Evaluation (Column 2) and human Client Manual Review & Settlement (Column 3). Primary `Authorize PayPal Payout` disbursement button is paired with distinct secondary actions (`Request Revision`, `AI Dispute Mediation`, `Reclaim Staged Escrow`) with bottom clearance above floating elements.
+- **Delivery Review & Settlement Ergonomics:** Balanced 3-column layout (`4 / 4 / 4` grid on `max-w-7xl`) separating the read-only Freelancer Package (Column 1), automated AI Evaluation (Column 2) and human Client Manual Review & Settlement (Column 3). Primary `Authorize PayPal Payout` disbursement button is paired with distinct secondary actions (`Request Revision`, `AI Dispute Mediation`, `Reclaim Staged Funds`) with bottom clearance above floating elements.
 - **Role-Aware Portal Navigation:** Distinct persona experiences with dedicated workspaces (`/app/client` vs `/app/freelancer`), role-aware breadcrumbs and 1-click workspace switching in the header and sidebar.
 - **Studio AI Copilot (`AICopilotFAB.tsx`):** Floating operations assistant with extended vertical viewport (`700px`), unconstrained flex scrolling, live telemetry querying and 1-click suggested prompts.
 - **Contract Creation Wizard (`CreateProject.tsx`):** Multi-step AI SOW generator supporting **Web Development**, Software Development, UI/UX, AI/ML and 18+ industries with budget and deadline calculators.

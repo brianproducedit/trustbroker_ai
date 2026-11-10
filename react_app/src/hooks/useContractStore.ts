@@ -40,6 +40,7 @@ interface ContractStore {
   getRoleContracts: () => Contract[]
   getRoleMetrics: () => {
     activeCount: number
+    stagedAmount: number
     escrowAmount: number
     pendingCount: number
     settledAmount: number
@@ -82,6 +83,7 @@ interface ContractStore {
   overrideReview: (contractId: string, milestoneId: string, reason: string) => Promise<void>
   resubmitDelivery: (contractId: string, milestoneId: string) => void
   releasePayment: (contractId: string, milestoneId: string) => Promise<void>
+  reclaimMilestoneFunds: (contractId: string, milestoneId: string, reason?: string) => Promise<void>
   reclaimMilestoneEscrow: (contractId: string, milestoneId: string, reason?: string) => Promise<void>
   manualVerify: (contractId: string, milestoneId: string, rationale: string) => Promise<void>
 
@@ -225,7 +227,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
     const activeCount = roleContracts.filter(
       (c) => c.status !== 'completed' && c.status !== 'cancelled'
     ).length
-    const escrowAmount = roleContracts.reduce((sum, c) => sum + c.stagedAmount, 0)
+    const stagedAmount = roleContracts.reduce((sum, c) => sum + c.stagedAmount, 0)
     const settledAmount = roleContracts.reduce((sum, c) => sum + c.releasedAmount, 0)
 
     let pendingCount = 0
@@ -244,7 +246,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
 
     return {
       activeCount: activeCount || roleContracts.length,
-      escrowAmount,
+      stagedAmount,
+      escrowAmount: stagedAmount,
       pendingCount,
       settledAmount,
     }
@@ -950,6 +953,10 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       })
       return { contracts: updated }
     })
+  },
+
+  reclaimMilestoneFunds: async (contractId, milestoneId, reason) => {
+    return get().reclaimMilestoneEscrow(contractId, milestoneId, reason)
   },
 
   reclaimMilestoneEscrow: async (contractId, milestoneId, reason) => {

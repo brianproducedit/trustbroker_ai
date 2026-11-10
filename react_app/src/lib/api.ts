@@ -333,7 +333,7 @@ export const api = {
       }),
   },
 
-  // Payments & Escrow
+  // Payments & Staged Funds
   payments: {
     createOrder: (data: { contract_id: string; milestone_id: string }) =>
       apiFetch<any>('/payments/create-order', {
@@ -353,6 +353,11 @@ export const api = {
       apiFetch<any>('/payments/release', {
         method: 'POST',
         body: JSON.stringify(data),
+      }),
+    refundStagedFunds: (contractId: string, milestoneId: string, reason?: string) =>
+      apiFetch<any>(`/payments/${contractId}/${milestoneId}/refund`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
       }),
     refundEscrow: (contractId: string, milestoneId: string, reason?: string) =>
       apiFetch<any>(`/payments/${contractId}/${milestoneId}/refund`, {

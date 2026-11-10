@@ -76,7 +76,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         set({ notifications: mapped })
       }
     } catch {
-      // In offline / mock mode, keep fallback initial notifications
+      // In offline or network error state, retain current notifications
     } finally {
       set({ isLoading: false })
     }

@@ -51,7 +51,7 @@ export const ClientApplications: React.FC = () => {
       await fetchContracts()
       const currentContracts = useContractStore.getState().contracts
       const allApps: any[] = []
-      // Standard UUID validator to prevent 422 errors on mock contract IDs
+      // Standard UUID validator to ensure valid backend UUID format before API request
       const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
       // Query applications for each valid backend contract
