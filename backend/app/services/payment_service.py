@@ -710,6 +710,45 @@ def list_my_payouts(session: Session, freelancer: UserProfile) -> List[PayoutRea
     return [PayoutRead.model_validate(p) for p in rows]
 
 
+async def refresh_my_payouts(session: Session, freelancer: UserProfile) -> List[PayoutRead]:
+    """Reconcile active freelancer payouts with PayPal before returning the ledger."""
+    rows = list(
+        session.exec(
+            select(Payout)
+            .where(
+                Payout.freelancer_id == freelancer.id,
+                Payout.status.in_(
+                    [
+                        PayoutStatus.PROCESSING.value,
+                        PayoutStatus.UNCLAIMED.value,
+                        PayoutStatus.RECONCILIATION_REQUIRED.value,
+                    ]
+                ),
+            )
+            .order_by(Payout.created_at.desc())
+        ).all()
+    )
+    for payout in rows:
+        if not payout.paypal_batch_id:
+            continue
+        try:
+            batch = await paypal_client.get_payout_batch(payout.paypal_batch_id)
+        except Exception as exc:
+            logger.warning("Unable to refresh PayPal payout %s: %s", payout.id, exc)
+            continue
+        header = batch.get("batch_header") or {}
+        items = batch.get("items") or []
+        item = next(
+            (entry for entry in items if entry.get("payout_item_id") == payout.paypal_item_id),
+            items[0] if items else {},
+        )
+        status_value = item.get("transaction_status") or header.get("batch_status")
+        if status_value:
+            _apply_payout_status(session, payout, status_value)
+    session.commit()
+    return list_my_payouts(session, freelancer)
+
+
 def list_client_payouts(session: Session, client: UserProfile) -> List[PayoutRead]:
     """Retrieve all payouts disbursed across contracts owned by this client."""
     client_contract_ids = list(

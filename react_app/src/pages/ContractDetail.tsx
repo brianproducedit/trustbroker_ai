@@ -1259,8 +1259,8 @@ export const ContractDetail: React.FC = () => {
                                 )
                               )}
 
-                              {/* CLIENT / AUTHORIZED: Authorize PayPal Payout Release */}
-                              {(isClient || isReleaseAuthorized) && (isVerified || isReleaseAuthorized) && !isReleased && (
+                              {/* CLIENT: Authorize PayPal Payout Release */}
+                              {isClient && (isVerified || isReleaseAuthorized) && !isReleased && (
                                 isStaged ? (
                                   <Button
                                     size="sm"
@@ -1802,7 +1802,7 @@ export const ContractDetail: React.FC = () => {
                         The contract must be awarded before either party can sign it.
                       </p>
                     </>
-                  ) : pendingReleaseMilestone ? (
+                  ) : isClient && pendingReleaseMilestone ? (
                     <>
                       <div className="text-sm font-bold text-white">Approve Verified Payout</div>
                       <p className="text-xs text-slate-300">

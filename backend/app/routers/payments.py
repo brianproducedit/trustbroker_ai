@@ -84,14 +84,14 @@ def refund_staged_milestone(
 
 
 @router.get("/earnings", response_model=List[PayoutRead], summary="Freelancer or Client payout rows")
-def list_earnings(
+async def list_earnings(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """PayPal payout ledger for the signed-in user (freelancer earnings or client disbursements)."""
     if current_user.primary_workspace == "client":
         return payment_service.list_client_payouts(session, current_user)
-    return payment_service.list_my_payouts(session, current_user)
+    return await payment_service.refresh_my_payouts(session, current_user)
 
 
 @router.get("/client-ledger", summary="Get all payouts and payment attempts across client contracts")
@@ -147,4 +147,3 @@ async def paypal_webhook(
         headers=headers,
         payload=payload,
     )
-

@@ -131,6 +131,18 @@ async def create_payout(
         return res.json()
 
 
+async def get_payout_batch(batch_id: str) -> Dict[str, Any]:
+    """Fetch the current PayPal status for a previously created payout batch."""
+    token = await get_paypal_access_token()
+    base_url = get_base_url()
+    headers = {"Authorization": f"******", "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        res = await client.get(f"{base_url}/v1/payments/payouts/{batch_id}", headers=headers)
+        if res.status_code != 200:
+            raise Exception(f"Failed to fetch PayPal payout batch {batch_id}: {res.text}")
+        return res.json()
+
+
 async def capture_paypal_order(order_id: str) -> Dict[str, Any]:
     """Capture payment for an approved PayPal order."""
     token = await get_paypal_access_token()
@@ -192,4 +204,3 @@ async def verify_webhook_signature(
         if res.status_code == 200:
             return res.json().get("verification_status") == "SUCCESS"
         return False
-
