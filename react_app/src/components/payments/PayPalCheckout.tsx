@@ -56,7 +56,8 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
     )
   }
 
-  const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID as string | undefined
+  const rawClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID as string | undefined
+  const clientId = rawClientId?.trim()
 
   return (
     <div className="bg-[#131B2E] rounded-xl border border-[#222A3D] p-5 flex flex-col gap-4 shadow-sm text-white">
@@ -87,9 +88,9 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         <PayPalScriptProvider
           options={{
             clientId,
-            currency: import.meta.env.VITE_PAYPAL_CURRENCY || currency,
+            currency: (import.meta.env.VITE_PAYPAL_CURRENCY || currency).trim(),
             intent: 'capture',
-            environment: (import.meta.env.VITE_PAYPAL_MODE || 'sandbox') as 'sandbox' | 'production',
+            environment: ((import.meta.env.VITE_PAYPAL_MODE || 'sandbox') as string).trim() as 'sandbox' | 'production',
           }}
         >
           <PayPalButtons
