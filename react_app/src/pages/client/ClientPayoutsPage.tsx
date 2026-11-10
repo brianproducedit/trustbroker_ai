@@ -66,11 +66,15 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     completed: { label: 'Released', cls: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
     pending: { label: 'Pending', cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/30' },
     processing: { label: 'Processing', cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/30' },
+    submitted: { label: 'Payout Submitted', cls: 'bg-sky-500/15 text-sky-400 border border-sky-500/30' },
     staged: { label: 'Staged (Sandbox)', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
     staged_in_sandbox: { label: 'Staged (Sandbox)', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+    release_authorized: { label: 'Client Approved Release', cls: 'bg-teal-500/15 text-teal-400 border border-teal-500/30' },
     unclaimed: { label: 'Unclaimed', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
     failed: { label: 'Failed', cls: 'bg-rose-500/15 text-rose-400 border border-rose-500/30' },
     denied: { label: 'Denied', cls: 'bg-rose-500/15 text-rose-400 border border-rose-500/30' },
+    returned: { label: 'Returned', cls: 'bg-purple-500/15 text-purple-400 border border-purple-500/30' },
+    reconciliation_required: { label: 'Reconciliation Required', cls: 'bg-orange-500/15 text-orange-400 border border-orange-500/30' },
     captured: { label: 'Captured', cls: 'bg-violet-500/15 text-violet-400 border border-violet-500/30' },
   }
   const found = cfg[s] ?? { label: status || 'Unknown', cls: 'bg-slate-700/50 text-slate-400 border border-slate-600/30' }

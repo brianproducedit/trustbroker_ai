@@ -36,6 +36,7 @@ class PayoutStatus(str, Enum):
     UNCLAIMED = "unclaimed"
     FAILED = "failed"
     RETURNED = "returned"
+    RECONCILIATION_REQUIRED = "reconciliation_required"
 
 
 class Application(SQLModel, table=True):

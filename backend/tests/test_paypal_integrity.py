@@ -424,3 +424,180 @@ async def test_refund_unapproved_checkout_returns_cancelled_not_refunded(session
     session.refresh(milestone)
     assert milestone.payment_status == PaymentStatus.CANCELLED
 
+
+@pytest.mark.asyncio
+async def test_payout_timeout_sets_reconciliation_required(session: Session, client_user: UserProfile):
+    """When PayPal payout creation times out ambiguously, backend marks payout as reconciliation_required (not failed)."""
+    import httpx
+    freelancer = UserProfile(
+        id=uuid.uuid4(),
+        email="freelancer.timeout@example.com",
+        full_name="Timeout Freelancer",
+        role="freelancer",
+        paypal_payout_email="freelancer.payout@sandbox.paypal.com",
+    )
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-TIMEOUT-001",
+        title="Payout Timeout Contract",
+        client_id=client_user.id,
+        freelancer_id=freelancer.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("250.00"),
+        staged_amount=Decimal("250.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("250.00"),
+        status=MilestoneStatus.VERIFIED,
+        payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+    )
+    session.add(freelancer)
+    session.add(contract)
+    session.add(milestone)
+    session.commit()
+
+    with patch("app.utils.paypal_client.create_payout", AsyncMock(side_effect=httpx.ReadTimeout("Read timed out"))):
+        with pytest.raises(HTTPException) as exc_info:
+            await release_milestone_payout(session, contract.id, milestone.id, client_user)
+        assert exc_info.value.status_code == 504
+        assert "reconciliation_required" in exc_info.value.detail
+
+    payout = session.exec(select(Payout).where(Payout.milestone_id == milestone.id)).first()
+    assert payout is not None
+    assert payout.status == PayoutStatus.RECONCILIATION_REQUIRED.value
+
+
+@pytest.mark.asyncio
+async def test_payout_missing_batch_id_sets_reconciliation_required(session: Session, client_user: UserProfile):
+    """When PayPal returns a response without a batch ID, backend treats it as ambiguous reconciliation_required."""
+    freelancer = UserProfile(
+        id=uuid.uuid4(),
+        email="freelancer.nobatch@example.com",
+        full_name="NoBatch Freelancer",
+        role="freelancer",
+        paypal_payout_email="freelancer.nobatch@sandbox.paypal.com",
+    )
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-NOBATCH-001",
+        title="Payout NoBatch Contract",
+        client_id=client_user.id,
+        freelancer_id=freelancer.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("150.00"),
+        staged_amount=Decimal("150.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("150.00"),
+        status=MilestoneStatus.VERIFIED,
+        payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+    )
+    session.add(freelancer)
+    session.add(contract)
+    session.add(milestone)
+    session.commit()
+
+    with patch("app.utils.paypal_client.create_payout", AsyncMock(return_value={"batch_header": {}})):
+        with pytest.raises(HTTPException) as exc_info:
+            await release_milestone_payout(session, contract.id, milestone.id, client_user)
+        assert exc_info.value.status_code == 502
+        assert "reconciliation_required" in exc_info.value.detail
+
+    payout = session.exec(select(Payout).where(Payout.milestone_id == milestone.id)).first()
+    assert payout is not None
+    assert payout.status == PayoutStatus.RECONCILIATION_REQUIRED.value
+
+
+@pytest.mark.asyncio
+async def test_payout_notification_and_amounts_accurate(session: Session, client_user: UserProfile):
+    """Payout submission sets 'Payout submitted to PayPal' notification and returns requested_amount without claiming release."""
+    from app.models.marketplace import Notification
+    freelancer = UserProfile(
+        id=uuid.uuid4(),
+        email="freelancer.notify@example.com",
+        full_name="Notify Freelancer",
+        role="freelancer",
+        paypal_payout_email="freelancer.notify@sandbox.paypal.com",
+    )
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-NOTIFY-001",
+        title="Payout Notification Contract",
+        client_id=client_user.id,
+        freelancer_id=freelancer.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("200.00"),
+        staged_amount=Decimal("200.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("200.00"),
+        status=MilestoneStatus.VERIFIED,
+        payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+    )
+    session.add(freelancer)
+    session.add(contract)
+    session.add(milestone)
+    session.commit()
+
+    mock_resp = {
+        "batch_header": {
+            "payout_batch_id": "REAL-BATCH-777",
+            "batch_status": "PENDING",
+        },
+        "items": [
+            {
+                "payout_item_id": "REAL-ITEM-888",
+                "transaction_status": "PENDING",
+            }
+        ],
+    }
+    with patch("app.utils.paypal_client.create_payout", AsyncMock(return_value=mock_resp)):
+        res = await release_milestone_payout(session, contract.id, milestone.id, client_user)
+
+    assert res["status"] == "processing"
+    assert res["requested_amount"] == "200.00"
+    assert res["payout_amount"] == "200.00"
+    # released_amount must be 0.00 because PayPal item status is still pending/processing
+    assert res["released_amount"] == "0.00"
+    assert res["paypal_batch_id"] == "REAL-BATCH-777"
+    assert res["paypal_item_id"] == "REAL-ITEM-888"
+
+    # Notification must say "Payout submitted to PayPal", NOT "PayPal payout sent"
+    notif = session.exec(select(Notification).where(Notification.user_id == freelancer.id)).first()
+    assert notif is not None
+    assert notif.title == "Payout submitted to PayPal"
+    assert "submitted to PayPal" in notif.body
+
+
+def test_apply_payout_status_unknown_status_maps_to_reconciliation_required(session: Session):
+    """Unknown provider status strings must map to reconciliation_required, never fabricated success."""
+    from app.services.payment_service import _apply_payout_status
+    payout = Payout(
+        id=uuid.uuid4(),
+        contract_id=uuid.uuid4(),
+        milestone_id=uuid.uuid4(),
+        freelancer_id=uuid.uuid4(),
+        amount=Decimal("100.00"),
+        currency="USD",
+        status=PayoutStatus.PENDING.value,
+        idempotency_key="payout:test",
+    )
+    session.add(payout)
+    session.commit()
+
+    _apply_payout_status(session, payout, "UNKNOWN_PROVIDER_STATUS_XYZ")
+    assert payout.status == PayoutStatus.RECONCILIATION_REQUIRED.value
+
+

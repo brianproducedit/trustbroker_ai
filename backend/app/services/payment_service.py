@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
+import httpx
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -74,7 +75,7 @@ def _mark_milestone_funded(session: Session, attempt: PaymentAttempt) -> None:
 
 
 def _apply_payout_status(session: Session, payout: Payout, status_value: str) -> None:
-    mapped = status_value.lower()
+    mapped = (status_value or "").strip().lower()
     aliases = {
         "success": PayoutStatus.SUCCESS.value,
         "succeeded": PayoutStatus.SUCCESS.value,
@@ -86,8 +87,9 @@ def _apply_payout_status(session: Session, payout: Payout, status_value: str) ->
         "returned": PayoutStatus.RETURNED.value,
         "canceled": PayoutStatus.FAILED.value,
         "cancelled": PayoutStatus.FAILED.value,
+        "reconciliation_required": PayoutStatus.RECONCILIATION_REQUIRED.value,
     }
-    payout.status = aliases.get(mapped, mapped)
+    payout.status = aliases.get(mapped, PayoutStatus.RECONCILIATION_REQUIRED.value)
     payout.updated_at = datetime.now(timezone.utc)
     session.add(payout)
     if payout.status == PayoutStatus.SUCCESS.value:
@@ -413,9 +415,16 @@ async def release_milestone_payout(
         PayoutStatus.SUCCESS.value,
         PayoutStatus.PROCESSING.value,
         PayoutStatus.UNCLAIMED.value,
+        PayoutStatus.RECONCILIATION_REQUIRED.value,
     ):
         return {
             "status": existing.status,
+            "milestone_id": str(milestone.id),
+            "requested_amount": str(milestone.amount),
+            "payout_amount": str(milestone.amount),
+            "released_amount": str(milestone.amount) if existing.status == PayoutStatus.SUCCESS.value else "0.00",
+            "paypal_batch_id": existing.paypal_batch_id,
+            "paypal_item_id": existing.paypal_item_id,
             "payout": PayoutRead.model_validate(existing).model_dump(mode="json"),
             "duplicate": True,
         }
@@ -440,6 +449,12 @@ async def release_milestone_payout(
             if existing:
                 return {
                     "status": existing.status,
+                    "milestone_id": str(milestone.id),
+                    "requested_amount": str(milestone.amount),
+                    "payout_amount": str(milestone.amount),
+                    "released_amount": str(milestone.amount) if existing.status == PayoutStatus.SUCCESS.value else "0.00",
+                    "paypal_batch_id": existing.paypal_batch_id,
+                    "paypal_item_id": existing.paypal_item_id,
                     "payout": PayoutRead.model_validate(existing).model_dump(mode="json"),
                     "duplicate": True,
                 }
@@ -453,7 +468,45 @@ async def release_milestone_payout(
             request_id=request_id,
             note=f"TrustBroker payout for {contract.code} — {milestone.title}",
         )
+    except (httpx.TimeoutException, TimeoutError) as exc:
+        payout.status = PayoutStatus.RECONCILIATION_REQUIRED.value
+        payout.updated_at = datetime.now(timezone.utc)
+        session.add(payout)
+        session.commit()
+        log_audit_event(
+            session=session,
+            action="payout_ambiguous_timeout",
+            details=f"PayPal payout request timed out for milestone {milestone.id}. Marked reconciliation_required: {exc}",
+            contract_id=contract.id,
+            actor_id=client.id,
+            actor_name=client.full_name or client.email,
+            metadata={"milestone_id": str(milestone.id), "error": str(exc)},
+        )
+        raise HTTPException(
+            status_code=504,
+            detail=f"PayPal payout request timed out. Payout status set to reconciliation_required to avoid duplicate disbursement.",
+        ) from exc
     except Exception as exc:
+        err_str = str(exc).lower()
+        if "timeout" in err_str or "timed out" in err_str:
+            payout.status = PayoutStatus.RECONCILIATION_REQUIRED.value
+            payout.updated_at = datetime.now(timezone.utc)
+            session.add(payout)
+            session.commit()
+            log_audit_event(
+                session=session,
+                action="payout_ambiguous_timeout",
+                details=f"PayPal payout request timed out for milestone {milestone.id}. Marked reconciliation_required: {exc}",
+                contract_id=contract.id,
+                actor_id=client.id,
+                actor_name=client.full_name or client.email,
+                metadata={"milestone_id": str(milestone.id), "error": str(exc)},
+            )
+            raise HTTPException(
+                status_code=504,
+                detail=f"PayPal payout request timed out. Payout status set to reconciliation_required to avoid duplicate disbursement.",
+            ) from exc
+
         payout.status = PayoutStatus.FAILED.value
         payout.updated_at = datetime.now(timezone.utc)
         session.add(payout)
@@ -470,7 +523,26 @@ async def release_milestone_payout(
         raise HTTPException(status_code=502, detail=f"PayPal payout request failed: {exc}") from exc
 
     header = payout_data.get("batch_header") or {}
-    payout.paypal_batch_id = header.get("payout_batch_id") or payout.paypal_batch_id
+    batch_id = header.get("payout_batch_id")
+    if not batch_id:
+        payout.status = PayoutStatus.RECONCILIATION_REQUIRED.value
+        payout.updated_at = datetime.now(timezone.utc)
+        session.add(payout)
+        session.commit()
+        log_audit_event(
+            session=session,
+            action="payout_missing_batch_id",
+            details=f"PayPal response omitted payout_batch_id for milestone {milestone.id}",
+            contract_id=contract.id,
+            actor_id=client.id,
+            actor_name=client.full_name or client.email,
+            metadata={"milestone_id": str(milestone.id), "response": str(payout_data)},
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="PayPal response omitted payout_batch_id; status set to reconciliation_required.",
+        )
+    payout.paypal_batch_id = batch_id
     items = payout_data.get("items") or []
     if items:
         payout.paypal_item_id = items[0].get("payout_item_id") or payout.paypal_item_id
@@ -503,9 +575,9 @@ async def release_milestone_payout(
         queue_notification(
             session,
             user_id=freelancer.id,
-            type="payout_sent",
-            title="PayPal payout sent",
-            body=f"{milestone.amount} {contract.currency} was sent to {receiver} for {contract.code}.",
+            type="payout_submitted",
+            title="Payout submitted to PayPal",
+            body=f"{milestone.amount} {contract.currency} was submitted to PayPal ({receiver}) for {contract.code}. Disbursement will complete upon PayPal processing.",
             entity_type="payout",
             entity_id=payout.id,
         )
@@ -514,7 +586,9 @@ async def release_milestone_payout(
     return {
         "status": payout.status,
         "milestone_id": str(milestone.id),
-        "released_amount": str(milestone.amount),
+        "requested_amount": str(milestone.amount),
+        "payout_amount": str(milestone.amount),
+        "released_amount": str(milestone.amount) if payout.status == PayoutStatus.SUCCESS.value else "0.00",
         "paypal_batch_id": payout.paypal_batch_id,
         "paypal_item_id": payout.paypal_item_id,
         "payout": PayoutRead.model_validate(payout).model_dump(mode="json"),
@@ -828,6 +902,18 @@ async def process_paypal_webhook(
                 if payout.status == PayoutStatus.SUCCESS.value
                 else "payout_item_updated"
             )
+            if payout.status == PayoutStatus.SUCCESS.value:
+                contract = session.get(Contract, payout.contract_id)
+                if contract and contract.freelancer_id:
+                    queue_notification(
+                        session,
+                        user_id=contract.freelancer_id,
+                        type="payout_completed",
+                        title="PayPal payout completed",
+                        body=f"{payout.amount} {payout.currency} has been successfully sent to your PayPal account for {contract.code}.",
+                        entity_type="payout",
+                        entity_id=payout.id,
+                    )
             log_audit_event(
                 session=session,
                 action=action,

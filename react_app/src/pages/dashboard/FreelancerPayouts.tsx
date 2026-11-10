@@ -113,11 +113,19 @@ export const FreelancerPayouts: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const s = (status || '').toLowerCase()
-    if (s === 'success' || s === 'succeeded') {
+    if (s === 'success' || s === 'succeeded' || s === 'completed') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
           PAID VIA PAYPAL
+        </span>
+      )
+    }
+    if (s === 'submitted') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/60">
+          <Clock className="w-3 h-3 text-sky-400 animate-spin" />
+          PAYOUT SUBMITTED
         </span>
       )
     }
@@ -134,6 +142,22 @@ export const FreelancerPayouts: React.FC = () => {
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-amber-950/80 text-amber-400 border border-amber-800/60">
           <AlertCircle className="w-3 h-3 text-amber-400" />
           UNCLAIMED (SANDBOX)
+        </span>
+      )
+    }
+    if (s === 'returned') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-purple-950/80 text-purple-400 border border-purple-800/60">
+          <AlertCircle className="w-3 h-3 text-purple-400" />
+          RETURNED
+        </span>
+      )
+    }
+    if (s === 'reconciliation_required') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-orange-950/80 text-orange-400 border border-orange-800/60">
+          <AlertCircle className="w-3 h-3 text-orange-400" />
+          RECONCILIATION REQUIRED
         </span>
       )
     }
