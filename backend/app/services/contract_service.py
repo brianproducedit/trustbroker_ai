@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, List, Optional, Tuple
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select, func, delete as sql_delete
 from app.models.contract import Contract, ContractStatus, ContractVisibility, ContractVersion
 from app.models.milestone import Milestone, MilestoneStatus, AcceptanceCriterion, CriterionStatus, PaymentStatus
@@ -78,7 +79,11 @@ def generate_contract_code(session: Session) -> str:
     prefix = f"TB-{year}-"
     count = session.exec(select(func.count(Contract.id))).one()
     sequence = count + 1
-    return f"{prefix}{sequence:03d}"
+    candidate = f"{prefix}{sequence:03d}"
+    while session.exec(select(Contract.id).where(Contract.code == candidate)).first():
+        sequence += 1
+        candidate = f"{prefix}{sequence:03d}"
+    return candidate
 
 
 def get_contract_full(session: Session, contract_id: uuid.UUID) -> ContractRead:
@@ -208,7 +213,6 @@ def create_contract(
     req: ContractCreateRequest,
 ) -> ContractRead:
     """Create a new contract draft with milestones and acceptance criteria."""
-    code = generate_contract_code(session)
     total_amount = sum((m.amount for m in req.milestones), Decimal("0.00"))
 
     # Resolve freelancer if freelancer_id not given but email matches existing user
@@ -229,7 +233,7 @@ def create_contract(
     )
 
     contract = Contract(
-        code=code,
+        code=generate_contract_code(session),
         title=req.title,
         description=req.description,
         category=req.category,
@@ -244,8 +248,21 @@ def create_contract(
         freelancer_id=freelancer_id,
         freelancer_email=req.freelancer_email,
     )
-    session.add(contract)
-    session.flush()
+    for attempt in range(3):
+        try:
+            with session.begin_nested():
+                session.add(contract)
+                session.flush()
+            break
+        except IntegrityError as exc:
+            if "ix_contracts_code" not in str(exc):
+                raise
+            if attempt == 2:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="A unique contract code could not be allocated. Please retry.",
+                ) from exc
+            contract.code = generate_contract_code(session)
 
     # Create initial version snapshot
     version = ContractVersion(
