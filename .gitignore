@@ -17,3 +17,4 @@ ENV/
 dev.db
 alembic.log
 /md_artifacts/
+/md_artefacts/
