@@ -55,19 +55,24 @@ app.add_middleware(
 )
 
 
+import uuid
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.exception("Unhandled server exception on %s %s: %s", request.method, request.url.path, exc)
-    origin = request.headers.get("origin") or "*"
+    error_id = uuid.uuid4().hex[:12]
+    logger.exception("Unhandled server exception [%s] on %s %s: %s", error_id, request.method, request.url.path, exc)
+    
+    # Generic public message in production to prevent leaking internals, SQL or file paths
+    if settings.environment.lower() == "production":
+        detail = f"An internal server error occurred. Reference ID: {error_id}"
+    else:
+        detail = f"Internal server error: {str(exc)} (Ref: {error_id})"
+
+    # Return clean JSONResponse WITHOUT manual Access-Control-Allow-Origin reflection.
+    # FastAPI's CORSMiddleware will evaluate the origin against allow_origins/allow_origin_regex.
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"},
-        headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
+        content={"detail": detail, "error_id": error_id},
     )
 
 # Include API v1 Routers

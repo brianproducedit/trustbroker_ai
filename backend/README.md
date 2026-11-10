@@ -122,7 +122,29 @@ alembic upgrade head
 
 # Rollback one migration
 alembic downgrade -1
+
+# Show current migration revision
+alembic current
+
+# Show revision history
+alembic history --verbose
 ```
+
+### Production Migration Recovery Procedure
+In production, automatic migration failures **never** automatically stamp to `head` (preventing corrupt or incomplete schema states).
+If a deploy encounters a migration error:
+1. Inspect the migration failure in Render application logs (`[STARTUP] [ERROR] Alembic CLI migration failed...`).
+2. Run database backup before applying schema modifications.
+3. If the schema was already manually created or out of sync with Alembic revisions, inspect current state:
+   ```bash
+   alembic current
+   ```
+4. Only reconcile after confirming all required tables and columns exist:
+   ```bash
+   alembic stamp <target_revision_id>
+   alembic upgrade head
+   ```
+5. If a migration broke halfway through, rollback the failed transaction or column, then re-run `alembic upgrade head`.
 
 ---
 

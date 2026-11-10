@@ -95,9 +95,10 @@ def inspect_document(
             logger.warning(f"Vision fallback for image document failed: {e}")
             return {
                 "adapter": "document_extractor_image_fallback",
-                "passed": True,
-                "score": 70,
-                "confidence": 0.60,
+                "model_used": None,
+                "passed": False,
+                "score": 50,
+                "confidence": 0.50,
                 "needs_review": True,
                 "explanation": (
                     f"Image file '{file_name}' submitted as architecture diagram evidence. "
@@ -168,16 +169,20 @@ def inspect_document(
             "word_count": word_count,
         }
 
-    # Deterministic fallback
+    # Deterministic fallback when AI provider is unavailable
     has_keywords = any(kw.lower() in extracted_text.lower() for kw in criterion_title.split() if len(kw) > 3)
     return {
         "adapter": "document_extractor_heuristic",
-        "model_used": "deterministic_keyword_matcher",
-        "passed": has_keywords,
-        "score": 85 if has_keywords else 50,
-        "confidence": 0.70,
-        "needs_review": not has_keywords,
-        "explanation": f"Document text ({word_count} words) parsed locally from '{file_name}'. Content matches criterion keywords.",
+        "model_used": None,
+        "passed": False,  # Keyword match is context, not semantic proof — manual/AI review required
+        "score": 60 if has_keywords else 40,
+        "confidence": 0.50,
+        "needs_review": True,
+        "explanation": (
+            f"Document text ({word_count} words) parsed locally from '{file_name}'. "
+            f"{'Content matches criterion keywords. ' if has_keywords else ''}"
+            "AI evaluator unavailable — flagged for human review."
+        ),
         "cited_snippet": f"Parsed {word_count} words from '{file_name}'",
         "word_count": word_count,
     }

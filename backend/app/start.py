@@ -70,6 +70,7 @@ def main():
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     alembic_ini_path = os.path.join(backend_dir, "alembic.ini")
 
+    migration_success = False
     try:
         from alembic.config import Config
         from alembic import command
@@ -80,21 +81,16 @@ def main():
         try:
             command.upgrade(cfg, "head")
             print("[STARTUP] [OK] Alembic migrations completed successfully.")
+            migration_success = True
         except Exception as mig_err:
-            mig_err_str = str(mig_err).lower()
-            print(f"[STARTUP] [NOTICE] Alembic upgrade encountered: {mig_err}")
-            # Only stamp to head when the revision table is simply out of sync with existing tables.
-            # Stamping on an actual failed migration would corrupt the schema state on next restart.
-            out_of_sync_patterns = ("can't locate revision", "already exists", "no such table: alembic_version", "relation \"alembic_version\" does not exist", "target database is not up to date")
-            if any(pattern in mig_err_str for pattern in out_of_sync_patterns):
-                print("[STARTUP] Detected revision-out-of-sync condition — stamping to head to reconcile...")
-                cfg.set_main_option("sqlalchemy.url", settings.sqlalchemy_database_url.replace("%", "%%"))
-                command.stamp(cfg, "head")
-                print("[STARTUP] [OK] Alembic database successfully reconciled and stamped to head.")
-            else:
-                print("[STARTUP] [WARNING] Migration error does not match known sync patterns — skipping stamp to avoid corrupting schema state. SQLModel.metadata.create_all() will handle schema creation below.")
+            print(f"[STARTUP] [WARNING] In-process Alembic upgrade encountered error: {mig_err}")
+            # Do NOT silently stamp head on error — that corrupts schema state.
+            # Attempt CLI runner as a fallback only for environment differences.
     except Exception as e:
-        print(f"[STARTUP] Notice: In-process Alembic runner deferred ({e}). Attempting CLI runner...")
+        print(f"[STARTUP] Notice: In-process Alembic runner unavailable ({e}).")
+
+    if not migration_success:
+        print("[STARTUP] Attempting Alembic CLI migration...")
         try:
             res = subprocess.run(
                 [sys.executable, "-m", "alembic", "upgrade", "head"],
@@ -104,17 +100,18 @@ def main():
             )
             if res.returncode == 0:
                 print("[STARTUP] [OK] Alembic CLI migrations completed successfully.")
+                migration_success = True
             else:
-                print(f"[STARTUP] [NOTICE] Alembic CLI exited with code {res.returncode}. Stamping head...")
-                subprocess.run(
-                    [sys.executable, "-m", "alembic", "stamp", "head"],
-                    cwd=backend_dir,
-                    capture_output=True,
-                    text=True,
-                )
-                print("[STARTUP] [OK] Alembic CLI stamped head successfully.")
+                # Do NOT automatically call `alembic stamp head` after a failed migration.
+                # A failed migration means the schema is incomplete; stamping head would deceive future runs.
+                print(f"[STARTUP] [ERROR] Alembic CLI migration failed with exit code {res.returncode}.")
+                if res.stderr:
+                    print(f"[STARTUP] Stderr: {res.stderr.strip()[:500]}")
+                if res.stdout:
+                    print(f"[STARTUP] Stdout: {res.stdout.strip()[:500]}")
+                print("[STARTUP] [NOTICE] Skipping automatic stamp to preserve schema integrity.")
         except Exception as cli_err:
-            print(f"[STARTUP] Notice: Alembic CLI runner skipped ({cli_err})")
+            print(f"[STARTUP] [WARNING] Alembic CLI runner error: {cli_err}")
 
     # Direct SQLModel table verification, column healing & showcase seeding
     try:

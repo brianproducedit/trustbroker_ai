@@ -18,9 +18,10 @@ from app.models.milestone import Milestone, MilestoneStatus, AcceptanceCriterion
 from app.models.delivery import Delivery, DeliveryFile
 from app.models.user import UserProfile
 from app.services.verification.safety import validate_evidence_file, sanitize_filename
-from app.services.verification.adapters import http_probe, zip_listing, repo_meta, document
+from app.services.verification.adapters import http_probe, zip_listing, repo_meta, document, vision
 from app.services.verification import scoring
 from app.services.verification.orchestrator import run_verification_orchestration
+from unittest.mock import patch, MagicMock
 from sqlmodel import Session, create_engine, SQLModel
 
 
@@ -149,6 +150,59 @@ class TestPhase5Adapters(unittest.TestCase):
         self.assertIsNotNone(coords)
         self.assertEqual(coords[0], "devstudio")
         self.assertEqual(coords[1], "react-landing-verified")
+
+    def test_repo_meta_deceptive_host_rejected(self):
+        self.assertIsNone(repo_meta.parse_github_coords("https://evilgithub.com/owner/repo"))
+        self.assertIsNone(repo_meta.parse_github_coords("https://github.com.evil.com/owner/repo"))
+
+    def test_repo_meta_gitlab_needs_review(self):
+        res = repo_meta.inspect_repository("https://gitlab.com/owner/repo")
+        self.assertFalse(res["passed"])
+        self.assertTrue(res["needs_review"])
+        self.assertEqual(res["adapter"], "repo_meta_unsupported")
+
+    def test_repo_meta_network_exception_needs_review_not_pass(self):
+        with patch("httpx.Client") as mock_client:
+            mock_client.return_value.__enter__.side_effect = Exception("DNS resolution failed")
+            res = repo_meta.inspect_repository("https://github.com/nonexistent-org/nonexistent-repo-99")
+            self.assertFalse(res["passed"])
+            self.assertTrue(res["needs_review"])
+            self.assertEqual(res["files_found"], [])  # Must NOT fabricate files_found
+            self.assertIn("unavailable", res["adapter"])
+
+    def test_vision_adapter_missing_file_needs_review_not_pass(self):
+        res = vision.inspect_screenshot_with_vision(
+            image_source="nonexistent_file_path.png",
+            criterion_title="UI Hero Section",
+            criterion_description="Landing page hero with clear CTA button",
+        )
+        self.assertFalse(res["passed"])
+        self.assertTrue(res["needs_review"])
+        self.assertIsNone(res["model_used"])
+        self.assertEqual(res["adapter"], "vision_needs_review")
+
+    def test_vision_adapter_missing_api_key_needs_review(self):
+        with patch("app.config.settings.groq_api_key", ""):
+            res = vision.inspect_screenshot_with_vision(
+                image_source="data:image/png;base64,iVBORw0KGgo=",
+                criterion_title="UI Hero Section",
+                criterion_description="Landing page hero with clear CTA button",
+            )
+            self.assertFalse(res["passed"])
+            self.assertTrue(res["needs_review"])
+            self.assertIsNone(res["model_used"])
+
+    def test_document_adapter_heuristic_needs_review_not_pass(self):
+        # Even when keywords match, heuristic fallback without AI must not pass automatically
+        res = document.inspect_document(
+            file_name="spec.txt",
+            criterion_title="Architecture Specification",
+            criterion_description="Must detail microservice architecture and data flow",
+            file_bytes=b"This architecture document outlines the specification in detail with microservice flow.",
+        )
+        # Should NOT automatically pass without AI verification
+        self.assertFalse(res["passed"])
+        self.assertTrue(res["needs_review"])
 
 
 class TestPhase5Scoring(unittest.TestCase):
@@ -315,7 +369,8 @@ class TestPhase5Orchestrator(unittest.TestCase):
         if hasattr(self, "test_zip_path") and os.path.exists(self.test_zip_path):
             os.remove(self.test_zip_path)
 
-    def test_orchestration_run(self):
+    def test_orchestration_run_fallback_when_ai_unavailable(self):
+        """When AI providers are unavailable, verification safely falls back to NEEDS_REVIEW (score 50)."""
         result = run_verification_orchestration(
             session=self.session,
             contract_id=self.contract.id,
@@ -326,13 +381,75 @@ class TestPhase5Orchestrator(unittest.TestCase):
 
         self.assertIn("report_id", result)
         self.assertIn("overall_score", result)
-        self.assertGreaterEqual(result["overall_score"], 70)
-        self.assertIn("criterion_evaluations", result)
+        self.assertEqual(result["overall_score"], 50)
+        self.assertFalse(result["passed"])
+        self.assertTrue(result["requires_human_review"])
         self.assertEqual(len(result["criterion_evaluations"]), 2)
 
-        # Refresh milestone
+        # Milestone must be set to SUBMITTED (needs human review), NOT automatically VERIFIED
         self.session.refresh(self.milestone)
-        self.assertIn(self.milestone.status, [MilestoneStatus.VERIFIED, MilestoneStatus.SUBMITTED])
+        self.assertEqual(self.milestone.status, MilestoneStatus.SUBMITTED)
+
+    def test_orchestration_run_with_passing_ai(self):
+        """When AI evaluator passes criteria and adapter facts verify, milestone is VERIFIED."""
+        mock_ai_eval = {
+            "overall_score": 90,
+            "passed": True,
+            "summary_analysis": "All criteria met based on intact ZIP and repository structure.",
+            "requires_human_review": False,
+            "provider_used": "groq:openai/gpt-oss-120b",
+            "criterion_evaluations": [
+                {
+                    "criterion_id": str(self.criterion1.id),
+                    "passed": True,
+                    "score": 92,
+                    "confidence": 0.95,
+                    "explanation": "Valid source archive with App.tsx and package.json",
+                    "evidence_match_snippet": "Intact ZIP archive",
+                },
+                {
+                    "criterion_id": str(self.criterion2.id),
+                    "passed": True,
+                    "score": 88,
+                    "confidence": 0.90,
+                    "explanation": "GitHub repository exists and is accessible.",
+                    "evidence_match_snippet": "GitHub octocat/Hello-World",
+                },
+            ],
+        }
+
+        with patch("app.services.ai_provider.evaluate_delivery_against_criteria", return_value=mock_ai_eval):
+            with patch("app.services.verification.adapters.repo_meta.inspect_repository") as mock_repo:
+                mock_repo.return_value = {
+                    "adapter": "github_api",
+                    "is_github": True,
+                    "exists": True,
+                    "passed": True,
+                    "needs_review": False,
+                    "owner": "octocat",
+                    "repo": "Hello-World",
+                    "language": "JavaScript",
+                    "default_branch": "master",
+                    "files_found": ["README"],
+                    "readme_snippet": "Hello World",
+                    "citation": "GitHub octocat/Hello-World verified",
+                    "error": None,
+                }
+                result = run_verification_orchestration(
+                    session=self.session,
+                    contract_id=self.contract.id,
+                    milestone_id=self.milestone.id,
+                    delivery_id=self.delivery.id,
+                    actor=self.freelancer_user,
+                )
+
+        self.assertIn("report_id", result)
+        self.assertTrue(result["passed"])
+        self.assertGreaterEqual(result["overall_score"], 80)
+        self.assertFalse(result["requires_human_review"])
+
+        self.session.refresh(self.milestone)
+        self.assertEqual(self.milestone.status, MilestoneStatus.VERIFIED)
 
 
 if __name__ == "__main__":

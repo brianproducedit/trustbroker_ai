@@ -133,17 +133,27 @@ def score_criterion_result(
                 "requires_review": False,
             }
         else:
+            is_review = (
+                adapter_facts.get("needs_review", False)
+                or llm_evaluation.get("needs_review", False)
+                or llm_evaluation.get("requires_human_review", False)
+                or llm_evaluation.get("requires_review", False)
+                or (llm_score >= 50 and not adapter_error)
+                or "review" in llm_expl.lower()
+                or "unavailable" in llm_expl.lower()
+                or "manual" in llm_expl.lower()
+            )
             return {
                 "criterion_id": criterion_id,
                 "title": title,
-                "status": CriterionStatus.FAIL,
+                "status": CriterionStatus.NEEDS_REVIEW if is_review else CriterionStatus.FAIL,
                 "passed": False,
                 "score": llm_score,
                 "confidence": llm_conf,
-                "explanation": llm_expl or "Deliverables did not satisfy criterion requirements.",
+                "explanation": llm_expl or ("Manual review required." if is_review else "Deliverables did not satisfy criterion requirements."),
                 "evidence_match_snippet": llm_snip,
                 "adapter_used": adapter_name,
-                "requires_review": False,
+                "requires_review": is_review,
             }
 
     # Pure adapter evaluation

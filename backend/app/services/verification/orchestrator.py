@@ -23,6 +23,7 @@ from app.services.audit_service import log_audit_event
 from app.services.notification_service import queue_notification
 from app.services.verification.adapters import http_probe, vision, document, repo_meta, zip_listing
 from app.services.verification import scoring
+from app.services import ai_provider
 
 logger = logging.getLogger("trustbroker.verification.orchestrator")
 
@@ -71,13 +72,15 @@ def run_verification_orchestration(
         doc_files = [f for f in delivery_files if f.file_name.lower().endswith((".pdf", ".docx", ".txt", ".md"))]
         zip_files = [f for f in delivery_files if f.file_name.lower().endswith(".zip")]
 
-        criterion_evaluations: List[Dict[str, Any]] = []
+        criterion_facts: Dict[str, Dict[str, Any]] = {}
+        criterion_etypes: Dict[str, str] = {}
         models_used: List[str] = []
 
         for c in criteria:
+            cid = str(c.id)
             etype = (c.evidence_type or "text").lower().strip()
+            criterion_etypes[cid] = etype
             facts: Dict[str, Any] = {}
-            llm_eval: Optional[Dict[str, Any]] = None
 
             title_lower = (c.title or "").lower()
             desc_lower = (c.description or "").lower()
@@ -174,37 +177,106 @@ def run_verification_orchestration(
                 facts = {
                     "adapter": "video_link_recorder",
                     "passed": False,
+                    "needs_review": True,
                     "citation": f"Video link: {delivery.live_url or 'submitted'}",
                     "error": None,
                 }
 
             # 8. TEXT / GENERAL ATTESTATION (FALLBACK)
             else:
-                # If repo_url exists, inspect repo
                 if delivery.repo_url and "github.com" in delivery.repo_url:
                     facts = repo_meta.inspect_repository(delivery.repo_url)
                 elif delivery.live_url:
                     facts = http_probe.probe_live_url(delivery.live_url)
                 else:
+                    # Text description alone is NOT evidence — it is a freelancer attestation.
                     facts = {
                         "adapter": "text_attestation",
-                        "passed": len(delivery.description) > 30,
-                        "citation": f"Notes verified ({len(delivery.description)} chars)",
-                        "error": None if len(delivery.description) > 30 else "Insufficient delivery description",
+                        "passed": False,
+                        "needs_review": True,
+                        "citation": f"Delivery description submitted ({len(delivery.description)} chars) — requires AI/human assessment",
+                        "error": None,
                     }
 
-            # Score the criterion
+            criterion_facts[cid] = facts
+
+        # ------------------------------------------------------------------ #
+        # AI Criterion Evaluator — connected to real orchestration path       #
+        # ------------------------------------------------------------------ #
+        ai_criteria_input = [
+            {
+                "id": str(c.id),
+                "title": c.title,
+                "description": c.description or "",
+                "evidence_type": criterion_etypes.get(str(c.id), "text"),
+            }
+            for c in criteria
+        ]
+
+        uploaded_file_names = [df.file_name for df in delivery_files] if delivery_files else []
+
+        ai_result = ai_provider.evaluate_delivery_against_criteria(
+            milestone_title=milestone.title,
+            milestone_description=milestone.description or "",
+            criteria=ai_criteria_input,
+            delivery_description=delivery.description or "",
+            repo_url=delivery.repo_url or None,
+            live_url=delivery.live_url or None,
+            file_names=uploaded_file_names or None,
+        )
+
+        ai_provider_used: str = ai_result.get("provider_used", "fallback:none")
+        ai_criterion_evals: List[Dict[str, Any]] = ai_result.get("criterion_evaluations", [])
+
+        ai_eval_by_id: Dict[str, Dict[str, Any]] = {}
+        for ae in ai_criterion_evals:
+            cid = str(ae.get("criterion_id", ""))
+            if cid:
+                raw_passed = ae.get("passed")
+                raw_score = ae.get("score", 50)
+                try:
+                    validated_passed = bool(raw_passed)
+                    validated_score = max(0, min(100, int(raw_score)))
+                except (TypeError, ValueError):
+                    logger.warning(f"AI evaluator returned invalid passed/score for criterion {cid} — using NEEDS_REVIEW")
+                    validated_passed = False
+                    validated_score = 50
+                ai_eval_by_id[cid] = {
+                    "passed": validated_passed,
+                    "score": validated_score,
+                    "confidence": float(ae.get("confidence", 0.5)),
+                    "explanation": str(ae.get("explanation", "")),
+                    "cited_snippet": str(ae.get("evidence_match_snippet", "")),
+                }
+
+        # Score each criterion combining adapter facts + AI evaluation
+        criterion_evaluations: List[Dict[str, Any]] = []
+        for c in criteria:
+            cid = str(c.id)
+            etype = criterion_etypes.get(cid, "text")
+            facts = criterion_facts.get(cid, {})
+            llm_eval_for_criterion = ai_eval_by_id.get(cid)
+
             c_score = scoring.score_criterion_result(
-                criterion_id=str(c.id),
+                criterion_id=cid,
                 title=c.title,
                 description=c.description,
                 evidence_type=etype,
                 adapter_facts=facts,
-                llm_evaluation=llm_eval,
+                llm_evaluation=llm_eval_for_criterion,
             )
             criterion_evaluations.append(c_score)
 
-        primary_model = models_used[0] if models_used else "groq-qwen-3.8-27b"
+        # Truthful model attribution:
+        # If vision/document models ran, record them.
+        # Otherwise, if AI evaluator ran (not fallback), record that.
+        # Otherwise, record "fallback:none" — NEVER fabricate a model name!
+        if models_used:
+            primary_model = models_used[0]
+        elif ai_provider_used and not ai_provider_used.startswith("fallback"):
+            primary_model = ai_provider_used
+        else:
+            primary_model = "fallback:none"
 
         # Aggregate overall assessment
         assessment = scoring.aggregate_verification_assessment(
