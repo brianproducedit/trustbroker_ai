@@ -18,7 +18,7 @@ export const ForFreelancers: React.FC = () => {
   const benefits = [
     {
       title: 'Work Against Pre-Funded Milestones',
-      desc: 'Never risk working on unpaid promises. The client funds each milestone into PayPal sandbox escrow before you start delivering.',
+      desc: 'Never risk working on unpaid promises. The client funds each milestone via PayPal before you start delivering, so your payment is staged and confirmed.',
       icon: CreditCard,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-200',
     },
@@ -71,7 +71,7 @@ export const ForFreelancers: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-[#475569] max-w-2xl leading-relaxed">
-              Browse open listings, apply with your real portfolio artifacts, work with pre-funded escrow protection and receive disbursements immediately after AI inspection.
+              Browse open listings, apply with your real portfolio artifacts, work with pre-staged PayPal milestone funding and receive disbursements after AI inspection.
             </p>
 
             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
@@ -160,7 +160,7 @@ export const ForFreelancers: React.FC = () => {
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#11231F] border border-[#1E3B33] space-y-1">
-                  <span className="text-[11px] text-slate-400 block">Staged in Sandbox Escrow</span>
+                  <span className="text-[11px] text-slate-400 block">Staged via PayPal</span>
                   <span className="text-xl font-bold font-mono text-blue-400">$5,500.00 USD</span>
                   <span className="text-[10px] text-blue-300 block font-mono">Funded by Client</span>
                 </div>

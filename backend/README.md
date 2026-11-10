@@ -1,6 +1,6 @@
 # TrustBroker AI — Backend Service
 
-FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-governed milestone payments, automated multimodal AI delivery verification, audit logging, and PayPal sandbox payments & payouts.
+FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-governed milestone payments, automated multimodal AI delivery verification, audit logging and PayPal sandbox payments & payouts.
 
 ---
 
@@ -12,7 +12,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - **Identity & Auth:** Supabase Auth (JWT validation)
 - **Storage:** Supabase Storage (Deliverables bucket)
 - **AI Verification & Drafting:** Groq LPU (`llama-3.3-70b-versatile`) with OpenRouter and DeepSeek fallbacks
-- **Payments:** PayPal Orders v2 (Escrow Staging) and PayPal Payouts API (Instant Milestone Disbursement)
+- **Payments:** PayPal Orders v2 (Milestone Staging) and PayPal Payouts API (Milestone Disbursement)
 - **Deployment:** Render (Python Web Service / Docker)
 
 ---
@@ -22,7 +22,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 ### Contracts & Milestones (`/api/v1/contracts`)
 - `POST /`: Create contract with SOW milestones and criteria.
 - `GET /`: List user contracts with status filtering and pagination.
-- `GET /{contract_id}`: Fetch detailed contract agreement, milestones, and version history.
+- `GET /{contract_id}`: Fetch detailed contract agreement, milestones and version history.
 - `DELETE /{contract_id}`: **Guarded delete** for `DRAFT` contracts only, cascading across draft milestones and criteria.
 - `PATCH /{contract_id}/milestones/{milestone_id}`: Update individual milestone title, description, amount, or deadline for draft contracts (recalculates contract totals and SHA-256 content hash).
 - `DELETE /{contract_id}/milestones/{milestone_id}`: Delete an unstarted draft milestone (enforces 1 milestone minimum).
@@ -36,7 +36,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `DELETE /{application_id}`: Freelancer withdraws pending application before award.
 
 ### Notifications (`/api/v1/notifications`)
-- `GET /`: List user notifications across payment, verification, and contract milestones.
+- `GET /`: List user notifications across payment, verification and contract milestones.
 - `PATCH /{id}/read` & `PATCH /read-all`: Mark notifications as read.
 - `DELETE /{id}`: Delete a single notification.
 - `DELETE /`: Bulk-clear all read notifications.
@@ -46,13 +46,13 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `POST /capture-order`: Complete order capture with sandbox error recovery (handles `422`, `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`).
 - `POST /release`: Release milestone funds to the freelancer via PayPal Payouts API (`/v1/payments/payouts`), verified by PolicyEngine.
 - `GET /earnings`: Return payout transaction history for the authenticated user (freelancer earnings or client payouts).
-- `GET /client-ledger`: Full escrow and payout ledger across all client contracts and payment attempts.
+- `GET /client-ledger`: Full payment staging and payout ledger across all client contracts and payment attempts.
 - `GET /payouts/{contract_id}`: Contract-specific payout transactions.
 - `GET /history/{contract_id}`: Contract-specific payment orders and capture attempts.
 - `POST /webhook`: Inbound PayPal webhook listener with signature verification.
 
 ### Verification Engine & Deliveries (`/api/v1/deliveries`)
-- `POST /upload-file`: Accept multipart evidence upload, validating file size, type, and enforcing server-scoped storage paths (`validate_storage_path`) to prevent cross-user file hijacking.
+- `POST /upload-file`: Accept multipart evidence upload, validating file size, type and enforcing server-scoped storage paths (`validate_storage_path`) to prevent cross-user file hijacking.
 - `POST /`: Submit freelancer deliverable package (repo URL, live staging preview, notes, file attachments); queues background AI verification.
 - `GET /{delivery_id}/verification-status`: Poll background AI verification job status and results. Enforces terminal states: flags jobs running > 90s without reports as `interrupted` (service restart) or > 45s as `needs_review`, preventing indefinite polling hangs.
 - `GET /milestone/{milestone_id}`: List all milestone deliveries with embedded `verification_report` and itemized `CriterionResult` evaluations.
@@ -65,7 +65,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
   - **Vision Adapter:** Multimodal screenshot analysis via vision model; strictly returns `NEEDS_REVIEW` (score 50) when API is unavailable—zero synthetic passes.
   - **Document Adapter:** Extracts PDF and text content locally; flags unreadable or scanned documents for human review.
   - **Repository Meta Adapter:** Inspects public GitHub repositories via API; strict URL parsing (no deceptive hosts) and flags 429/403/non-GitHub as `NEEDS_REVIEW`.
-  - **Scoring Engine:** Aggregates evidence scores deterministically, attributes models truthfully (`fallback:none` if no model ran), and requires client review for ambiguous results.
+  - **Scoring Engine:** Aggregates evidence scores deterministically, attributes models truthfully (`fallback:none` if no model ran) and requires client review for ambiguous results.
 
 ### Immutability & Role Safeguards
 - **Client-Only Payout Disbursals:** Releases are strictly restricted to verified contract clients in `PolicyEngine.can_release_payout()`; non-clients are rejected with HTTP 403.
@@ -150,7 +150,7 @@ If a deploy encounters a migration error:
 
 ## Automated Test Suite
 
-The backend includes a comprehensive 79-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, CORS security, and vetting scoring:
+The backend includes a comprehensive 84-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, CORS security and vetting scoring:
 
 ```bash
 # Run the full test suite

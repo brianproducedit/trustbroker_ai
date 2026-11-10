@@ -9,14 +9,14 @@
 
 ---
 
-## 🎬 Scene 1 — Hook (0:00 – 0:20)
+## 🎬 Scene 1 — Hook & Problem (0:00 – 0:20)
 
-**[Screen: Landing page or a plain slide with the TrustBroker AI logo]**
+**[Screen: Landing page — highlighting the dual persona banner and live contract cards]**
 
 **Narrate:**
-> *"Freelancers lose billions every year to unpaid invoices. Clients risk capital on unfinished work. Traditional escrow takes days and charges 15% fees.*
+> *"Freelancers lose billions every year to unpaid invoices and endless revision cycles. Clients risk capital on unfinished code or vague promises. Traditional platforms take 10 to 20% cuts and lock funds in slow, manual dispute queues.*
 >
-> *TrustBroker AI solves this with autonomous AI milestone verification, real PayPal money movement, and a PolicyEngine that ensures AI inspects evidence — but humans and PayPal move the money."*
+> *TrustBroker AI flips the script: clients pre-stage milestone funds via authentic PayPal Orders v2, an agentic AI engine validates concrete evidence against measurable acceptance criteria and payouts disburse via the official PayPal Payouts API. AI inspects evidence — humans authorize — and PayPal moves the money."*
 
 ---
 
@@ -46,26 +46,24 @@
 
 **[Action: Click the PayPal button → PayPal sandbox popup opens → complete checkout]**
 
-> *"The PayPal modal captures the payment. The backend validates the COMPLETED status, real Order ID, and Capture ID — no synthetic IDs, no fabricated data."*
+> *"The PayPal modal captures the payment. The backend validates the COMPLETED status, real Order ID and Capture ID — no synthetic IDs, no fabricated data."*
 
 **[Show: Milestone status → `Funded / Staged in Sandbox`. Payments ledger shows real Capture ID]**
 
 ---
 
-## 🎬 Scene 4 — Freelancer Submits Evidence (1:20 – 1:50)
+## 🎬 Scene 4 — Freelancer Submits Evidence & Multimodal Verification (1:20 – 1:50)
 
 **[Screen: Switch to Freelancer workspace → `/app/freelancer/work/:id/deliver`]**
 
 **Narrate:**
-> *"The freelancer submits deliverable evidence — a GitHub repo, a live staging URL, delivery notes, and an uploaded screenshot."*
+> *"The freelancer submits concrete deliverable evidence — a GitHub repo, a live staging URL, delivery notes and UI screenshots.*
+>
+> *TrustBroker's verification engine runs across specialized adapters: the HTTP probe validates live endpoint health, Vision AI inspects design compliance, the Document adapter checks specifications and the Repository adapter audits file structures and tests.*
+>
+> *Crucially: verification is truthful. If evidence is subjective, missing, or requires human eyes, it flags NEEDS REVIEW — preventing unsafe auto-pass. Only verified criteria with strict AI assessment can proceed to automatic settlement eligibility."*
 
-**[Action: Fill in and submit the delivery form]**
-
-> *"The AI verification engine runs — four parallel adapters: HTTP probe checks the live URL, Vision AI analyzes the screenshot, Document adapter reviews the notes, Repository adapter inspects the GitHub repo for required files."*
-
-**[Show: Verification progress → score badge appears (e.g., 94/100 PASSED)]**
-
-> *"If the AI is unavailable or evidence is weak, it returns NEEDS REVIEW — never a synthetic pass."*
+**[Show: Verification progress → score badge appears (e.g., 92/100 PASSED) with citations]**
 
 ---
 
@@ -74,9 +72,9 @@
 **[Screen: Switch to Client → `/app/client/contracts/:id/review`]**
 
 **Narrate:**
-> *"The client sees the 3-column review interface: delivery evidence, AI assessment, and the settlement panel."*
+> *"The client sees the 3-column review interface: delivery evidence, AI assessment and the settlement panel."*
 
-> *"The PolicyEngine enforces four non-negotiable conditions: verified milestone, confirmed PayPal capture, registered freelancer PayPal email, and client authorization."*
+> *"The PolicyEngine enforces four non-negotiable conditions: verified milestone, confirmed PayPal capture, registered freelancer PayPal email and client authorization."*
 
 **[Action: Click "Authorize PayPal Payout"]**
 

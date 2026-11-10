@@ -25,7 +25,7 @@ from app.routers import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup validation, database schema reconciliation, and table creation
+    # Startup validation, database schema reconciliation and table creation
     try:
         run_auto_migrations(engine)
     except Exception as exc:

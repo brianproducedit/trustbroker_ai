@@ -27,7 +27,7 @@ def parse_github_coords(repo_url: str) -> Optional[Tuple[str, str]]:
 
     Requires the hostname to be exactly ``github.com``.  Deceptive hostnames
     such as ``evilgithub.com`` or ``github.com.evil.com`` are rejected.
-    Returns None for GitLab, Bitbucket, and all non-GitHub URLs.
+    Returns None for GitLab, Bitbucket and all non-GitHub URLs.
     """
     clean = (repo_url or "").strip().rstrip("/")
     if not clean:

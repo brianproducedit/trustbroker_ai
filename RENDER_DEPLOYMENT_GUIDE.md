@@ -17,7 +17,7 @@ graph LR
     Frontend -->|"Auth Sessions"| Supabase["Supabase<br/>PostgreSQL + Auth"]
     Backend -->|"SQLModel / Alembic"| Supabase
     Backend -->|"Inference"| Groq["Groq LPU<br/>gpt-oss-120b"]
-    Backend -->|"Escrow Orders"| PayPal["PayPal Sandbox<br/>Orders v2"]
+    Backend -->|"Milestone Funding"| PayPal["PayPal Sandbox<br/>Orders v2"]
 ```
 
 ---
@@ -157,7 +157,7 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
 ## 7. Automated GitHub Actions CI/CD Pipeline
 
 The workflow at [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) automatically runs on push to `main` and pull requests:
-1. **Backend Test Suite:** Sets up Python 3.12, installs dependencies and executes `pytest tests/` (all 79 automated tests covering auth security, PayPal Orders/Payouts, PolicyEngine, SSRF, adapters, and verification).
+1. **Backend Test Suite:** Sets up Python 3.12, installs dependencies and executes `pytest tests/` (all 84 automated tests covering auth security, PayPal Orders/Payouts, PolicyEngine, SSRF, adapters and verification).
 2. **Frontend Type Check:** Executes `npx tsc -b` (TypeScript strict mode verification).
 3. **Frontend Production Build:** Executes `npm run build` (Vite production asset bundling).
 4. **Automated Deploy Hook:** Optionally calls the Render Deploy Hook if secret `RENDER_DEPLOY_HOOK_URL` is set in GitHub repository settings.

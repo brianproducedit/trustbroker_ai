@@ -1,7 +1,7 @@
 # TrustBroker AI — Complete Redesign & Implementation Plan
 
 > **Context:** PayPal AI Hackathon 2026 | Deadline: Nov 12, 2026 12:00 PM PT
-> **Goal:** Transform the current prototype into a polished, judge-impressing MVP that demonstrates a complete contract, payment, verification, and settlement lifecycle.
+> **Goal:** Transform the current prototype into a polished, judge-impressing MVP that demonstrates a complete contract, payment, verification and settlement lifecycle.
 
 ---
 
@@ -34,16 +34,16 @@
 ## Design Philosophy for Redesign
 
 > [!IMPORTANT]
-> **Core principle:** This app tells one story - "Do I pay first, or work first?" TrustBroker solves that with AI-drafted contracts, staged payments, and verified delivery. Every screen must make that story obvious in under 5 seconds.
+> **Core principle:** This app tells one story - "Do I pay first, or work first?" TrustBroker solves that with AI-drafted contracts, staged payments and verified delivery. Every screen must make that story obvious in under 5 seconds.
 
 ### Design Rules
 
 1. **No jargon.** Replace "Sandbox Reserve Captured" with "Payment Staged". Replace "AI Validation Gate" with "Delivery Check".
 2. **Sequential workflows.** Every multi-step process (create contract, submit delivery, make payment) uses a wizard Dialog or stepper - not a flat dumped page.
-3. **Component-first.** Install shadcn/ui. Use Dialog, Sheet, Toast, Alert, Card, Badge, Tabs, Separator, Progress, Tooltip, DropdownMenu, Command, and Avatar throughout.
+3. **Component-first.** Install shadcn/ui. Use Dialog, Sheet, Toast, Alert, Card, Badge, Tabs, Separator, Progress, Tooltip, DropdownMenu, Command and Avatar throughout.
 4. **Breathing room.** Generous whitespace. One action per section. Progressive disclosure - do not show everything at once.
 5. **Status colors with labels.** Green = confirmed, Blue = in progress, Amber = needs attention, Red = failed. Always paired with text, never color-only.
-6. **Mobile-first responsive.** Test at 375px, 768px, and 1440px.
+6. **Mobile-first responsive.** Test at 375px, 768px and 1440px.
 
 ---
 

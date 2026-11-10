@@ -11,10 +11,10 @@
 ## 🎯 Verification Framework Overview
 
 Every project in TrustBroker AI follows an immutable, evidence-linked lifecycle:
-1. **Client Scoping & SOW AI Generation:** Client inputs plain brief; AI decomposes into Scope, Milestones, and Acceptance Criteria.
+1. **Client Scoping & SOW AI Generation:** Client inputs plain brief; AI decomposes into Scope, Milestones and Acceptance Criteria.
 2. **Mutual Cryptographic Acceptance:** Client and Freelancer accept the exact canonical SHA-256 content hash (`content_hash`).
 3. **PayPal Sandbox Staging:** Client funds Milestone 1; funds are staged in PayPal Sandbox (`STAGED_IN_SANDBOX`).
-4. **Multimodal Delivery Verification:** Freelancer submits Live URL, GitHub Repo, Screenshot/Vision, and Delivery Notes. AI engine evaluates each criterion.
+4. **Multimodal Delivery Verification:** Freelancer submits Live URL, GitHub Repo, Screenshot/Vision and Delivery Notes. AI engine evaluates each criterion.
 5. **PolicyEngine Payout Release:** Client authorizes release; PolicyEngine verifies 4 gatekeeping conditions and executes idempotent PayPal Payouts (`payout:{milestone_id}`).
 6. **Dual Ledger Reconciliation:** Client Payouts and Freelancer Earnings reflect confirmed batch IDs and matching amounts.
 
@@ -45,7 +45,7 @@ Every project in TrustBroker AI follows an immutable, evidence-linked lifecycle:
 - [ ] Enter Category: `Frontend & Web Apps`.
 - [ ] Enter Budget: `$700 USD`.
 - [ ] Input Brief:
-  > *"I need a responsive React and TypeScript admin dashboard with sidebar navigation, KPI cards, user data tables, and Tailwind CSS. Verified via live Vercel deployment URL and GitHub repository."*
+  > *"I need a responsive React and TypeScript admin dashboard with sidebar navigation, KPI cards, user data tables and Tailwind CSS. Verified via live Vercel deployment URL and GitHub repository."*
 - [ ] Generate SOW with AI. Confirm 2 milestones created ($350 + $350).
 - [ ] Publish contract to marketplace. Status becomes `OPEN`.
 
@@ -76,7 +76,7 @@ Every project in TrustBroker AI follows an immutable, evidence-linked lifecycle:
 - [ ] Supply Evidence:
   - Repository URL: `https://github.com/Eliasuarez04/React-Admin-Dashboard`
   - Live Staging URL: `https://dashboard-app-phi-two.vercel.app/`
-  - Notes: *"Delivered responsive React 18 admin dashboard with Vite, Zustand state management, and 98 Lighthouse score."*
+  - Notes: *"Delivered responsive React 18 admin dashboard with Vite, Zustand state management and 98 Lighthouse score."*
 - [ ] Click **Run AI Verification**.
 - [ ] Confirm all criteria pass with AI confidence > 90%. Overall score: `92–98/100`.
 - [ ] Milestone status updates to `VERIFIED`.
@@ -95,12 +95,12 @@ Every project in TrustBroker AI follows an immutable, evidence-linked lifecycle:
 #### Phase 1: Client Creation & Vercel Edge Tolerance
 - [ ] Create project: `Next.js 14 SaaS Starter with Multi-Tenant Architecture & Stripe`.
 - [ ] Budget: `$1,500 USD` (M1: $750 Architecture, M2: $750 Auth & Billing).
-- [ ] Enter Brief: *"Production Next.js 14 App Router SaaS starter with PostgreSQL Drizzle ORM, Tailwind CSS, and Stripe subscription webhook handling."*
+- [ ] Enter Brief: *"Production Next.js 14 App Router SaaS starter with PostgreSQL Drizzle ORM, Tailwind CSS and Stripe subscription webhook handling."*
 - [ ] Publish contract.
 
 #### Phase 2: Application & 95+ Match Scoring
 - [ ] Apply as Tariro Moyo.
-- [ ] Proposal specifies Next.js 14 App Router, Server Actions, and matching portfolio link (`https://github.com/nextjs/saas-starter`).
+- [ ] Proposal specifies Next.js 14 App Router, Server Actions and matching portfolio link (`https://github.com/nextjs/saas-starter`).
 - [ ] AI Assessment generates score: `95–97/100 (Exceptional Fit)`.
 - [ ] Client awards contract.
 

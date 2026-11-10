@@ -683,7 +683,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           const assessment: VerificationAssessment = {
             id: verifyRes.report_id || `assess-${Date.now()}`,
             submissionId: deliveryRes.id,
-            overallScore: Number(verifyRes.overall_score) || 85,
+            overallScore: verifyRes.overall_score ?? 0,
             passed: Boolean(verifyRes.passed),
             criteriaResults: (verifyRes.criterion_evaluations || []).map((ce: any) => ({
               id: ce.criterion_id || `crit-${Date.now()}`,
@@ -696,7 +696,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
             })),
             summaryAnalysis: verifyRes.summary_analysis || 'AI evaluation complete.',
             assessedAt: new Date().toISOString(),
-            modelUsed: verifyRes.model_used || 'Groq LPU (gpt-oss-120b)',
+            modelUsed: verifyRes.model_used ?? 'unknown',
             requiresHumanReview: Boolean(verifyRes.requires_human_review),
           }
 
@@ -715,9 +715,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                           : (assessment.requiresHumanReview
                               ? ('submitted' as MilestoneStatus)
                               : ('revision_requested' as MilestoneStatus)),
-                        paymentStatus: assessment.passed
-                          ? ('release_authorized' as PaymentStatus)
-                          : m.paymentStatus,
+                        paymentStatus: m.paymentStatus,
                         assessment,
                         submittedEvidence: {
                           repoUrl: submission.repoUrl,
@@ -864,7 +862,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 return {
                   ...m,
                   status: 'verified' as MilestoneStatus,
-                  paymentStatus: (m.paymentStatus === 'staged_in_sandbox' ? 'release_authorized' : m.paymentStatus) as PaymentStatus,
+                  paymentStatus: m.paymentStatus as PaymentStatus,
                 }
               }
               return m
@@ -990,8 +988,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
                 id: `log-${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 actor: 'Client (Buyer Protection)',
-                action: 'ESCROW_RECLAIMED',
-                details: `Milestone escrow ($${reclaimedAmount} USD) reclaimed by client due to freelancer inactivity: ${reason || 'Unaddressed revision timeout.'}`,
+                action: 'STAGED_FUNDS_RECLAIMED',
+                details: `Milestone staged funds ($${reclaimedAmount} USD) reclaimed by client due to freelancer inactivity: ${reason || 'Unaddressed revision timeout.'}`,
               },
             ],
           }

@@ -114,6 +114,14 @@ def main():
             print(f"[STARTUP] [WARNING] Alembic CLI runner error: {cli_err}")
 
     # Direct SQLModel table verification, column healing & showcase seeding
+    # Phase F: In production, stop startup if migrations failed — unknown schema is dangerous.
+    if not migration_success and settings.environment == "production":
+        print("[STARTUP] [FATAL] Alembic migrations failed in production — refusing to start against an unknown schema.")
+        print("[STARTUP] [FATAL] Fix the migration failure before redeploying. Exiting.")
+        sys.exit(1)
+    elif not migration_success:
+        print("[STARTUP] [WARNING] Migrations failed in development — proceeding with SQLModel schema healing (dev only).")
+
     try:
         from sqlmodel import SQLModel
         from app.database import engine

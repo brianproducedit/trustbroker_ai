@@ -12,14 +12,14 @@
 
 ## 🎯 Executive Overview & Architecture Principles
 
-TrustBroker AI is positioned as an **evidence-based agreement, milestone delivery-verification, and payment-coordination platform for digital services**.
+TrustBroker AI is positioned as an **evidence-based agreement, milestone delivery-verification and payment-coordination platform for digital services**.
 
 ### Core Architecture Guardrails:
-1. **Evidence-Linked Transaction Coordination:** The agreement acceptance criteria, submitted delivery evidence, and next permitted payment actions are linked deterministically.
-2. **Separation of Concerns:** AI assists with drafting, vetting, and criterion comparison, but **the backend PolicyEngine has exclusive authority** over state transitions and disbursements. AI never unilaterally moves money.
-3. **Accurate Terminology:** Replace unsupported "licensed escrow" claims with **"Staged Funds (PayPal Sandbox)"**, **"Milestone Staging"**, and **"Sandbox Disbursements"**. Clearly disclose cross-border payment / seller onboarding eligibility.
+1. **Evidence-Linked Transaction Coordination:** The agreement acceptance criteria, submitted delivery evidence and next permitted payment actions are linked deterministically.
+2. **Separation of Concerns:** AI assists with drafting, vetting and criterion comparison, but **the backend PolicyEngine has exclusive authority** over state transitions and disbursements. AI never unilaterally moves money.
+3. **Accurate Terminology:** Replace unsupported "licensed escrow" claims with **"Staged Funds (PayPal Sandbox)"**, **"Milestone Staging"** and **"Sandbox Disbursements"**. Clearly disclose cross-border payment / seller onboarding eligibility.
 4. **Deterministic Resilience:** Automated edge-case recovery for PayPal sandbox desynchronizations (`422`, `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`) and CDN bot challenges (`HTTP 429/403`).
-5. **No Faked State:** Every UI state transition, toast, and ledger record reflects confirmed backend database and provider events.
+5. **No Faked State:** Every UI state transition, toast and ledger record reflects confirmed backend database and provider events.
 
 ---
 
@@ -40,7 +40,7 @@ flowchart TD
 ## Phase 1: Terminology, Legal Precision & Identity Decoupling [✅ COMPLETED — Commit a39ffe4]
 
 ### 1.1 Objective
-Reconcile all UI copy, backend logs, models, and seed files to eliminate false claims of legal escrow, clarify PayPal sandbox staging, and ensure workspace personas (Client vs. Freelancer) are flexible contexts rather than permanent global account locks.
+Reconcile all UI copy, backend logs, models and seed files to eliminate false claims of legal escrow, clarify PayPal sandbox staging and ensure workspace personas (Client vs. Freelancer) are flexible contexts rather than permanent global account locks.
 
 ### 1.2 Target Files
 - `react_app/src/components/dialogs/MilestoneDetailDialog.tsx`
@@ -61,8 +61,8 @@ Reconcile all UI copy, backend logs, models, and seed files to eliminate false c
   - Replace `"PayPal escrow"` → `"PayPal sandbox milestone staging"`.
   - Replace `"disbursed after verification escrow"` → `"released upon verified delivery"`.
 - **Add Sandbox & Eligibility Disclaimer:**
-  - In `ClientPayoutsPage.tsx`, `FreelancerPayouts.tsx`, and `MilestoneDetailDialog.tsx`, provide explicit contextual disclosures:
-    > *"Milestone payments are staged in the PayPal Developer Sandbox. Actual cross-border disbursement availability depends on PayPal seller onboarding, currency, and regional account capabilities."*
+  - In `ClientPayoutsPage.tsx`, `FreelancerPayouts.tsx` and `MilestoneDetailDialog.tsx`, provide explicit contextual disclosures:
+    > *"Milestone payments are staged in the PayPal Developer Sandbox. Actual cross-border disbursement availability depends on PayPal seller onboarding, currency and regional account capabilities."*
 
 #### Subphase 1.2: Identity Decoupling & Dual-Role Context
 - **Refactor `UserProfile`:**
@@ -80,7 +80,7 @@ Reconcile all UI copy, backend logs, models, and seed files to eliminate false c
 ## Phase 2: Contract Versioning, Cryptographic Integrity & Mutual Acceptance [✅ COMPLETED — Commit ab091aa]
 
 ### 2.1 Objective
-Implement mathematical, tamper-evident contract versioning with SHA-256 content hashing. Guarantee that both parties mutually accept the exact same contract version, and any material change invalidates prior acceptances and creates a clean new version.
+Implement mathematical, tamper-evident contract versioning with SHA-256 content hashing. Guarantee that both parties mutually accept the exact same contract version and any material change invalidates prior acceptances and creates a clean new version.
 
 ### 2.2 Target Files
 - `backend/app/models/contract.py`
@@ -151,7 +151,7 @@ Ensure the AI vetting engine rigorously evaluates applications according to the 
     |---|---|---|
     | **Required Skills Match** | 40% | Direct substring / synonym match of contract required skills against freelancer skills. |
     | **Portfolio Relevance** | 25% | Presence of matching project types and verifiable links. |
-    | **Proposal Clarity** | 20% | Quality, structure, and technical depth (>180 characters = high score). |
+    | **Proposal Clarity** | 20% | Quality, structure and technical depth (>180 characters = high score). |
     | **Track Record & Risk** | 15% | Profile completeness + past verified contracts (newcomers scored fairly at 75–85%). |
 - **Refactor `_deterministic_vet` & LLM Prompt:**
   - Synchronize the prompt in `call_ai_with_fallbacks` with the deterministic fallback formula so results remain consistent regardless of provider availability.
@@ -175,14 +175,14 @@ Ensure the AI vetting engine rigorously evaluates applications according to the 
 ### 3.4 Verification Criteria
 - [x] Applying with the 5 project cover notes from `TrustBroker_AI_Testing_Projects_Guide.md` produces scores between 92 and 98.
 - [x] Newcomer demo account (Kuda Nyamuda) receives a fair score (78+) without being penalized with zero for empty platform history.
-- [x] Client can view the breakdown, shortlist candidates, and award the contract.
+- [x] Client can view the breakdown, shortlist candidates and award the contract.
 
 ---
 
 ## Phase 4: Multimodal Verification Engine & Revision Resubmission Loop [✅ COMPLETED — Commit 415e817]
 
 ### 4.1 Objective
-Deliver a bulletproof verification pipeline that tests all 4 evidence types (Live URL, GitHub Repository, Screenshot/Vision, Document/Text), handles edge CDN rate limits cleanly, and provides a complete revision request and resubmission loop.
+Deliver a bulletproof verification pipeline that tests all 4 evidence types (Live URL, GitHub Repository, Screenshot/Vision, Document/Text), handles edge CDN rate limits cleanly and provides a complete revision request and resubmission loop.
 
 ### 4.2 Target Files
 - `backend/app/services/verification/orchestrator.py`
@@ -231,7 +231,7 @@ Deliver a bulletproof verification pipeline that tests all 4 evidence types (Liv
 ## Phase 5: Payment Coordination, Sandbox Resilience & Payout Ledger [✅ COMPLETED — Commit 415e817]
 
 ### 5.1 Objective
-Harden PayPal Orders v2 capture and PayPal Payouts release, guarantee idempotency against double payouts, eliminate unhandled server exceptions, and provide complete financial transparency across client and freelancer workspaces.
+Harden PayPal Orders v2 capture and PayPal Payouts release, guarantee idempotency against double payouts, eliminate unhandled server exceptions and provide complete financial transparency across client and freelancer workspaces.
 
 ### 5.2 Target Files
 - `backend/app/services/payment_service.py`
@@ -269,8 +269,8 @@ Harden PayPal Orders v2 capture and PayPal Payouts release, guarantee idempotenc
   - On release success, fire toast with the exact amount and PayPal Payout Batch ID.
   - On error, display actionable message from API response.
 - **Ledger Pages Synchronization:**
-  - Client Payouts (`/app/client/payouts`): Display staged funds, released amounts, and payment attempt histories.
-  - Freelancer Earnings (`/app/freelancer/earnings`): Display cleared payouts, batch IDs, and transaction dates.
+  - Client Payouts (`/app/client/payouts`): Display staged funds, released amounts and payment attempt histories.
+  - Freelancer Earnings (`/app/freelancer/earnings`): Display cleared payouts, batch IDs and transaction dates.
 
 ### 5.4 Verification Criteria
 - [x] Milestone payout releases immediately generate a real or synthetic PayPal Batch ID.
@@ -282,7 +282,7 @@ Harden PayPal Orders v2 capture and PayPal Payouts release, guarantee idempotenc
 ## Phase 6: AG Studio Operations Experience & Whole-Project Refactoring [✅ COMPLETED — Commit 384c6e8]
 
 ### 6.1 Objective
-Transform the AG Studio analytics views into an indispensable operations dashboard solving real operational problems (stalled projects, pending reviews, payment exceptions) and execute a project-wide cleanup of unused code, legacy mocks, and inconsistent types.
+Transform the AG Studio analytics views into an indispensable operations dashboard solving real operational problems (stalled projects, pending reviews, payment exceptions) and execute a project-wide cleanup of unused code, legacy mocks and inconsistent types.
 
 ### 6.2 Target Files
 - `react_app/src/lib/studioData.ts`
@@ -299,7 +299,7 @@ Transform the AG Studio analytics views into an indispensable operations dashboa
 
 #### Subphase 6.1: Operations Dashboard Telemetry & Visualizations
 - **Data Model in `studioData.ts`:**
-  - Extract live contracts, milestones, verification reports, and payment records from the application state.
+  - Extract live contracts, milestones, verification reports and payment records from the application state.
 - **Implement the 5 Core Operations Visualizations:**
   1. **Lifecycle Funnel:** Draft → Open → Awarded → Accepted → Staged → Delivered → Verified → Released.
   2. **Verification Outcomes Breakdown:** Pass vs. Revision Requested vs. Needs Review.
@@ -321,9 +321,9 @@ Transform the AG Studio analytics views into an indispensable operations dashboa
 - **Purge Dead Mocks:**
   - Deprecate hardcoded mock contracts in `mockData.ts` in favor of authenticated API data.
 - **Unify TypeScript Interfaces:**
-  - Standardize `Contract`, `Milestone`, `PaymentAttempt`, `PayoutRecord`, and `Criterion` across all pages.
+  - Standardize `Contract`, `Milestone`, `PaymentAttempt`, `PayoutRecord` and `Criterion` across all pages.
 - **Page-Level State Hardening:**
-  - Audit every page for consistent Loading, Empty, Validation Error, and Success states.
+  - Audit every page for consistent Loading, Empty, Validation Error and Success states.
 
 ### 6.4 Verification Criteria
 - [x] AG Studio loads with zero licensing watermarks when the trial key is supplied.
@@ -335,7 +335,7 @@ Transform the AG Studio analytics views into an indispensable operations dashboa
 ## Phase 7: Automated Test Suite & 5-Project E2E Validation [✅ COMPLETED]
 
 ### 7.1 Objective
-Establish an automated test suite verifying core security, payment, and verification rules, accompanied by explicit step-by-step verification checklists for all 5 projects in the Testing Projects Guide.
+Establish an automated test suite verifying core security, payment and verification rules, accompanied by explicit step-by-step verification checklists for all 5 projects in the Testing Projects Guide.
 
 ### 7.2 Target Files
 - `backend/tests/test_policy_marketplace.py`

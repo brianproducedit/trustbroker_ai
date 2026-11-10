@@ -2,7 +2,7 @@
 
 **Session date:** 31 October 2026
 **Competition:** PayPal AI Hackathon 2026 (Devpost) — deadline 12 November 2026, 12:00 PM PST
-**Scope:** Full engineering session: hackathon compliance research, bug fixes, PayPal verification, AG Studio implementation, and end-to-end award acceptance.
+**Scope:** Full engineering session: hackathon compliance research, bug fixes, PayPal verification, AG Studio implementation and end-to-end award acceptance.
 **Companion document:** [`TrustBroker_AI_Status_Report.md`](./TrustBroker_AI_Status_Report.md) (point-in-time status snapshot)
 
 ---
@@ -129,14 +129,14 @@ CREATE ORDER OK — order_id=8H374554SS2219056 status=CREATED links=['approve','
 
 So webhooks are **not required** for the demo. `verify_webhook_signature()` is permissive when no webhook ID is set — which is functionally fine but made the README's "signature validation (`SHA256withRSA`)" claim misleading.
 
-**Fixed:** README now says *"Server-side webhook handler for payment events (signature verification activates when `PAYPAL_WEBHOOK_ID` is set)"*, and "Webhook Verification" → "Webhooks" in the Devpost tools list.
+**Fixed:** README now says *"Server-side webhook handler for payment events (signature verification activates when `PAYPAL_WEBHOOK_ID` is set)"* and "Webhook Verification" → "Webhooks" in the Devpost tools list.
 
 ---
 
 ## 5. AG Studio — from badge to real dashboard
 
 ### 5.1 What was actually there before
-Only `<AgStudioProvider>` wrapping a page that used **AG Grid Community** plus hand-rolled cards and a chat FAB. None of `AgStudio`, `createWidgets`, `GridWidget`, or `PivotGridWidget` were used, and **no license key** was configured. For the sponsor brief that is effectively "AG Grid + a badge."
+Only `<AgStudioProvider>` wrapping a page that used **AG Grid Community** plus hand-rolled cards and a chat FAB. None of `AgStudio`, `createWidgets`, `GridWidget`, or `PivotGridWidget` were used and **no license key** was configured. For the sponsor brief that is effectively "AG Grid + a badge."
 
 ### 5.2 Licensing correction (important)
 AG's official docs state that an **AG Studio licence covers AG Studio and its built-in widgets only — not standalone AG Grid Enterprise**:
@@ -186,7 +186,7 @@ A paste-mistake was also caught: the key had been added to `backend/.env`, which
 | Studio chunk | — | 4.17 MB (loads only on `/studio`) |
 
 ### 5.5 Verified in the browser
-Signed in as the demo client and confirmed the route renders with the dark theme, KPI cards (`10,250.00` total contract value), both charts, and the contract ledger — no watermark.
+Signed in as the demo client and confirmed the route renders with the dark theme, KPI cards (`10,250.00` total contract value), both charts and the contract ledger — no watermark.
 
 ---
 
@@ -232,7 +232,7 @@ Atomically, in one transaction:
 **`FreelancerWork.tsx`**
 - **"Action required" banner** listing every contract awaiting your acceptance, each with Review terms / Accept / Decline
 - **Row action** now context-aware: `Accept | Decline` while pending, `Submit Evidence` once active
-- **Accept confirmation dialog** showing contract code, value, milestone count, and what acceptance commits you to
+- **Accept confirmation dialog** showing contract code, value, milestone count and what acceptance commits you to
 - **Decline dialog** with an optional reason and an explicit "cannot be undone" warning
 - **Contract review dialog footer** offers Accept Terms / Decline instead of Submit Evidence
 
@@ -248,7 +248,7 @@ const needsMyAcceptance = (contract) => {
   const myEmail = (currentUser?.email || '').toLowerCase()
   if (!myEmail) return false
   const assignedEmail = String(freelancer.email || contract?.freelancer_email || '').toLowerCase()
-  // email OR id match, and not already accepted
+  // email OR id match and not already accepted
   return Boolean(isMe) && !freelancer.accepted
 }
 ```
@@ -300,7 +300,7 @@ Clients no longer see acceptance controls.
 | `render.yaml` (updated) | `VITE_AG_STUDIO_LICENSE_KEY` added as `sync: false`; stale origin removed from CORS |
 
 ### Terminology reconciliation
-The project's own locked rule says never imply licensed escrow. Judge-facing copy changed from "escrow" to "staged funds" / "milestone payments" in the README, `JUDGE_DEMO.md`, the AG Studio agent's reply text, and two SOW strings in the client contract page.
+The project's own locked rule says never imply licensed escrow. Judge-facing copy changed from "escrow" to "staged funds" / "milestone payments" in the README, `JUDGE_DEMO.md`, the AG Studio agent's reply text and two SOW strings in the client contract page.
 
 ---
 
@@ -365,22 +365,22 @@ The project's own locked rule says never imply licensed escrow. Judge-facing cop
 # Session 2 — Development Log
 
 **Session date:** 2 November 2026  
-**Scope:** Production disbursement error resolution, CORS masking remediation, multimodal verification bot-challenge resilience, client payout management ledger, and real-time disbursement feedback.  
+**Scope:** Production disbursement error resolution, CORS masking remediation, multimodal verification bot-challenge resilience, client payout management ledger and real-time disbursement feedback.  
 **Companion document:** [`TrustBroker_AI_Status_Report.md`](./TrustBroker_AI_Status_Report.md)
 
 ---
 
 ## 1. Executive Summary
 
-This session resolved critical production edge cases encountered during end-to-end milestone funding, delivery verification, and disbursement:
+This session resolved critical production edge cases encountered during end-to-end milestone funding, delivery verification and disbursement:
 
 1. **Disbursement Crash Resolved:** Fixed a `NameError: name 'settings' is not defined` inside `policy_engine.py` that caused a 500 error on `POST /api/v1/payments/release`.
 2. **CORS Masking Remediated:** Starlette's unhandled exception handler was intercepting 500 errors before CORS middleware headers were attached. Added a global exception handler in `main.py` ensuring CORS headers are always returned.
 3. **Freelancer Earnings 500 Fixed:** Fixed `AttributeError: 'UserProfile' object has no attribute 'role'` in `payments.py` (line 73) which crashed `GET /api/v1/payments/earnings`.
-4. **PayPal Sandbox 422 Recovery:** Expanded sandbox capture resilience to map `422 Unprocessable Entity`, `ORDER_ALREADY_CAPTURED`, and `INSTRUMENT_DECLINED` into synthetic `COMPLETED` records to guarantee unbroken test flows.
-5. **Multimodal AI Verification Resilience:** Edge protection from Vercel, Cloudflare, and GitHub (HTTP 429/403) was causing false-positive verification failures. Upgraded `http_probe.py` and `scoring.py` so rate-limiting yields `NEEDS_REVIEW` (65/100) instead of a hard fail (0/100).
+4. **PayPal Sandbox 422 Recovery:** Expanded sandbox capture resilience to map `422 Unprocessable Entity`, `ORDER_ALREADY_CAPTURED` and `INSTRUMENT_DECLINED` into synthetic `COMPLETED` records to guarantee unbroken test flows.
+5. **Multimodal AI Verification Resilience:** Edge protection from Vercel, Cloudflare and GitHub (HTTP 429/403) was causing false-positive verification failures. Upgraded `http_probe.py` and `scoring.py` so rate-limiting yields `NEEDS_REVIEW` (65/100) instead of a hard fail (0/100).
 6. **Architecture Diagram Routing:** Architecture screenshots submitted under document criteria are now automatically routed to the vision adapter rather than failing text extraction.
-7. **Client Payout Management Portal:** Created a new page at `/app/client/payouts` with a 4-card metric overview, a detailed payout ledger, and an order capture table.
+7. **Client Payout Management Portal:** Created a new page at `/app/client/payouts` with a 4-card metric overview, a detailed payout ledger and an order capture table.
 8. **Disbursement Feedback:** Added toast notifications with the verified PayPal Payout Batch ID on milestone payment release.
 
 ---
@@ -410,7 +410,7 @@ This session resolved critical production edge cases encountered during end-to-e
 ### 2.4 PayPal Sandbox 422 & Capture State Desynchronization
 - **Symptom:** PayPal Sandbox API returned HTTP 422 with `The requested action could not be performed, semantically incorrect, or failed business validation.`
 - **Root Cause:** When an order has already been captured or a sandbox payment session experiences timing desynchronization, re-attempting `POST /v2/checkout/orders/{id}/capture` fails business validation.
-- **Resolution:** Updated `capture_milestone_escrow_payment()` in `backend/app/services/payment_service.py` to match `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`, `422`, `"semantically incorrect"`, and `"business validation"`, gracefully promoting the milestone to funded status.
+- **Resolution:** Updated `capture_milestone_escrow_payment()` in `backend/app/services/payment_service.py` to match `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`, `422`, `"semantically incorrect"` and `"business validation"`, gracefully promoting the milestone to funded status.
 
 ### 2.5 Verification False-Positives on Edge Bot Challenges (HTTP 429)
 - **Symptom:** Deliverable verification for Project 2 failed with `8/100` because Vercel/GitHub returned HTTP 429 to Render's IP address.
@@ -429,9 +429,9 @@ This session resolved critical production edge cases encountered during end-to-e
 - **Route:** `/app/client/payouts`
 - **Navigation:** Added "Payouts" with `Wallet` icon to client sidebar in `Sidebar.tsx`.
 - **Components:**
-  - **4-Card Metric Grid:** Total Escrowed, Total Released, In-Flight Processing, and Total Captured.
-  - **Payout Ledger Table:** Displays Contract Code, Milestone, Freelancer Email, Status Badge, PayPal Batch ID (with one-click copy), and Timestamp.
-  - **Payment Orders Table:** Displays PayPal Order IDs, Contract Code, Amount, Status, and Timestamp.
+  - **4-Card Metric Grid:** Total Escrowed, Total Released, In-Flight Processing and Total Captured.
+  - **Payout Ledger Table:** Displays Contract Code, Milestone, Freelancer Email, Status Badge, PayPal Batch ID (with one-click copy) and Timestamp.
+  - **Payment Orders Table:** Displays PayPal Order IDs, Contract Code, Amount, Status and Timestamp.
   - **Sandbox Notice:** Direct link to PayPal Developer Sandbox notification dashboard.
 
 ### 3.2 Real-Time Toast Notifications
@@ -458,14 +458,14 @@ This session resolved critical production edge cases encountered during end-to-e
 ### 5.1 Phase 1: Terminology Reconciliation, Disclaimers & Identity Switcher
 - **Commit:** `a39ffe4`
 - **Accomplishments:**
-  - Audited all user-facing copy and replaced misleading "escrow" claims with "Staged in Sandbox", "Milestone Staging", and "Staged Funds".
+  - Audited all user-facing copy and replaced misleading "escrow" claims with "Staged in Sandbox", "Milestone Staging" and "Staged Funds".
   - Added explicit PayPal Sandbox and regional capability disclaimer (disclosing cross-border onboarding, e.g. Zimbabwe Send-Only limitations).
   - Implemented top-header and sidebar workspace switcher buttons allowing seamless transitions between Client and Freelancer roles without account locking.
 
 ### 5.2 Phase 2: Contract Versioning, SHA-256 Hashing & Mutual Acceptance
 - **Commit:** `ab091aa`
 - **Accomplishments:**
-  - Added `content_hash` field to `Contract`, `ContractVersion`, and `ContractAcceptance` models.
+  - Added `content_hash` field to `Contract`, `ContractVersion` and `ContractAcceptance` models.
   - Implemented deterministic SHA-256 hash generator across canonical JSON statement of work fields.
   - Contract updating automatically increments version number and resets mutual acceptances to `PENDING_ACCEPTANCE`.
   - Frontend renders cryptographic SHA-256 badges in `ContractDetail.tsx` and `ClientContractPage.tsx`.
@@ -496,11 +496,11 @@ This session resolved critical production edge cases encountered during end-to-e
     5. Action Needed & Milestone Deliverable Aging Ledger
   - Enabled cross-filtering on charts to dynamically filter underlying AG Grid rows.
   - Updated `AICopilotFAB.tsx` with 5 pre-scripted operational prompts.
-  - Reconciled lingering escrow terminology across client profiles, operations, and dialogs.
+  - Reconciled lingering escrow terminology across client profiles, operations and dialogs.
 
 ### 5.6 Phase 7: Automated Master Lifecycle Test Suite & Verification Checklist
 - **Accomplishments:**
-  - Created `backend/tests/test_e2e_lifecycle.py` implementing all 10 core automated test cases covering permissions, mutual acceptance, hash resets, newcomer scoring, Tariro 90+ match, capture resilience, payout idempotency, PolicyEngine safeguards, HTTP probe bot resilience, and raster evidence validation.
+  - Created `backend/tests/test_e2e_lifecycle.py` implementing all 10 core automated test cases covering permissions, mutual acceptance, hash resets, newcomer scoring, Tariro 90+ match, capture resilience, payout idempotency, PolicyEngine safeguards, HTTP probe bot resilience and raster evidence validation.
   - Added `backend/tests/conftest.py` with reusable in-memory SQLite database and test fixtures.
   - Added `pytest>=8.0.0` to `backend/requirements.txt`.
   - Created `md_artifacts/TrustBroker_AI_E2E_Test_Checklist.md` detailing step-by-step verification checklists for all 5 projects.
@@ -528,23 +528,23 @@ This session resolved critical production edge cases encountered during end-to-e
 ---
 
 ## 7. Phase 8: Manual Client Verification Overrides & Staged Payment Disbursals
-- **Context:** To address potential edge cases in multimodal AI evaluation (such as complex visual nuances or external approvals), clients required the ability to manually inspect and verify deliverable submissions directly, stage funds freely, and disburse PayPal payouts without friction.
+- **Context:** To address potential edge cases in multimodal AI evaluation (such as complex visual nuances or external approvals), clients required the ability to manually inspect and verify deliverable submissions directly, stage funds freely and disburse PayPal payouts without friction.
 - **Key Enhancements:**
   - **Manual Verification Controls:** Implemented client review actions that complement automated AI verification, allowing manual sign-off and revision requests.
   - **Staged Payment Disbursal Panel:** Added an interactive management interface for clients to stage milestone funds and trigger idempotent PayPal Payouts with real-time toast confirmations.
-  - **Official Brand Logos Integration:** Embedded official TrustBroker AI portal and public site logo assets into `Logo.tsx`, navbar headers, and landing layouts.
+  - **Official Brand Logos Integration:** Embedded official TrustBroker AI portal and public site logo assets into `Logo.tsx`, navbar headers and landing layouts.
   - **Database Auto-Migration:** Implemented `run_auto_migrations(engine)` in the FastAPI startup lifecycle (`app/main.py`) and `backend/apply_migrations.py` to automatically reconcile schema differences (`content_hash`, `ip_address`, `user_agent`) in Supabase PostgreSQL without manual intervention.
 
 ---
 
 ## 8. Phase 9: Guarded CRUD Architecture & Legal/Financial Immutability
-- **Context:** Added complete Create, Read, Update, and Delete operations across the platform while strictly maintaining auditability and legal/financial non-repudiation.
+- **Context:** Added complete Create, Read, Update and Delete operations across the platform while strictly maintaining auditability and legal/financial non-repudiation.
 - **Safety Rules Enforced:**
   - **Active/Completed/Cancelled Contracts:** Immutable. Deletion or structural updates are strictly prohibited (`403 Forbidden`).
   - **Funded Milestones:** Any milestone with `payment_status != not_started` cannot be deleted or mutated (`409 Conflict`).
-  - **Financial Records:** `payment_attempts`, `payouts`, `audit_events`, `contract_versions`, `contract_acceptances`, `deliveries`, and `verification_reports` are permanently preserved.
+  - **Financial Records:** `payment_attempts`, `payouts`, `audit_events`, `contract_versions`, `contract_acceptances`, `deliveries` and `verification_reports` are permanently preserved.
 - **Backend Implementations:**
-  - `DELETE /api/v1/contracts/{id}`: Soft/cascade delete for `draft` contracts only, clearing uncommitted milestones, criteria, versions, and recording an audit trail.
+  - `DELETE /api/v1/contracts/{id}`: Soft/cascade delete for `draft` contracts only, clearing uncommitted milestones, criteria, versions and recording an audit trail.
   - `PATCH /api/v1/contracts/{id}/milestones/{milestone_id}`: Partial milestone updates for draft contracts; automatically recalculates contract total amount and updates the deterministic SHA-256 `content_hash`.
   - `DELETE /api/v1/contracts/{id}/milestones/{milestone_id}`: Removes unstarted draft milestones (enforcing a minimum of 1 milestone).
   - `PATCH / DELETE /api/v1/contracts/{id}/milestones/{milestone_id}/criteria/{criterion_id}`: Fine-grained criterion updates and deletion.
@@ -563,12 +563,12 @@ This session resolved critical production edge cases encountered during end-to-e
 ## 9. Phase 10: Contract Creation Web Development Category & Studio AI Copilot Ergonomics
 - **Contract Creation Categories:**
   - Added **"Web Development"** (`value: 'web'`) as a top-level category option in `CreateProject.tsx`.
-  - Expanded quick-select chips to include Web Development right alongside Software Development, UI/UX Design, and AI/ML.
+  - Expanded quick-select chips to include Web Development right alongside Software Development, UI/UX Design and AI/ML.
 - **Studio AI Copilot Ergonomics (`AICopilotFAB.tsx`):**
   - Expanded modal dimensions to `w-[94vw] sm:w-[480px] md:w-[540px] h-[82vh] sm:h-[700px] max-h-[88vh]`, providing vastly increased vertical reading space.
   - Removed artificial scroll clamping (`max-h-[400px]`), allowing the message list to use full vertical flex height.
-  - Improved message typography, line height (`leading-relaxed`), and bubble contrast for both user and AI responses.
-  - Redesigned suggested query chips with larger tap targets, clearer fonts, and enhanced hover highlights.
+  - Improved message typography, line height (`leading-relaxed`) and bubble contrast for both user and AI responses.
+  - Redesigned suggested query chips with larger tap targets, clearer fonts and enhanced hover highlights.
   - Upgraded input field to `h-10` with refined focus states and responsive styling.
 
 **Final Verification:** Full TypeScript compilation and production build verified (`tsc -b && vite build` built in 9.99s with zero errors). All changes synced and committed to `main`.
@@ -589,13 +589,13 @@ This session resolved critical production edge cases encountered during end-to-e
 - **Contracts Ledger Table Budget Column Fix:**
   - In `ClientContracts.tsx`, the Budget column was showing `$0` for contracts even though the modal dialog showed the accurate budget (e.g. `$700`).
   - Root cause: AG Grid column definition used `field: 'budget'`, but backend transformer only populated `totalAmount`.
-  - Solution: Added `budget` and `category` to `Contract` type, populated `budget: computedTotal` and `category` fallback in `transformers.ts`, and updated AG Grid column with a resilient `valueGetter` checking `c.totalAmount ?? c.budget ?? c.total_amount` with milestone sum fallback.
+  - Solution: Added `budget` and `category` to `Contract` type, populated `budget: computedTotal` and `category` fallback in `transformers.ts` and updated AG Grid column with a resilient `valueGetter` checking `c.totalAmount ?? c.budget ?? c.total_amount` with milestone sum fallback.
 - **Payment Management KPI Cards Telemetry Fix:**
   - In `ClientPayoutsPage.tsx`, the **Captured** KPI card showed `$0` despite `$5,500` staged and `$750` released.
   - Root cause: Metric calculation filtered `ledger.payment_attempts` with `['captured', 'completed', 'success'].includes(a.status)`. In SQLModel, `PaymentAttempt.status` is a `PaymentStatus` enum (`staged_in_sandbox`, `release_authorized`, `released`), while PayPal capture state is stored in `paypal_status`.
   - Solution: Updated captured metric calculation to check both `status` (`staged_in_sandbox`, `release_authorized`, `released`) and `paypal_status` (`completed`, `captured`), computing `totalCaptured = Math.max(paymentAttemptsCaptured, totalStaged + totalReleased)`. The Captured card now accurately displays `$6,250` ($5,500 staged + $750 released).
 - **Universal Dialog Viewport Ergonomics:**
-  - Added `max-h-[calc(100dvh-2.5rem)] overflow-y-auto` across dialog components (`dialog.tsx`, `ContractDetailDialog.tsx`, `MilestoneDetailDialog.tsx`, and `DeliveryVerification.tsx` modals) to eliminate viewport overflow and clipping across all screen sizes.
+  - Added `max-h-[calc(100dvh-2.5rem)] overflow-y-auto` across dialog components (`dialog.tsx`, `ContractDetailDialog.tsx`, `MilestoneDetailDialog.tsx` and `DeliveryVerification.tsx` modals) to eliminate viewport overflow and clipping across all screen sizes.
 
 **Final Verification:** Full TypeScript compilation and production build verified (`tsc -b && vite build` built in 10.88s with zero errors). All 35 backend tests passed (`pytest -q` in 23.11s).
 
@@ -643,7 +643,7 @@ const isVerified = (assessment?.passed || status === 'verified' || paymentStatus
 3. Sets `milestone.payment_status = PaymentStatus.CANCELLED`.
 4. Sets `milestone.status = MilestoneStatus.PENDING` (unfunds the milestone, allows re-funding after resubmission).
 5. Deducts from `contract.staged_amount`.
-6. Logs immutable `AuditEvent` with actor, reason, and timestamp.
+6. Logs immutable `AuditEvent` with actor, reason and timestamp.
 7. Creates in-app `Notification` to the freelancer: "Client has reclaimed staged escrow for milestone X — revision was not addressed within 7 days."
 8. Returns updated contract and milestone.
 
@@ -797,7 +797,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 - **Issue 1:** When clients opened a delivery review link, they were routed to `/dashboard/deliveries/:id` or `/app/freelancer/work/:id/deliver` where the breadcrumbs displayed "Dashboard / Submit Delivery" as if they were a freelancer submitting work.
 - **Issue 2:** Column 1 ("Deliverable Artifacts & Evidence") displayed an empty upload form (repository URL, live preview input, notes, file dropzone) instead of the actual work previously submitted by the freelancer.
 - **Issue 3:** Column 2 ("AI Verification Assessment") and Column 3 ("Client Manual Review") relied solely on local in-memory Zustand store state (`selectedMilestone.submittedEvidence`), which was empty upon fresh page visits or browser refreshes across different sessions.
-- **Issue 4:** Clients needed clear access to review repository links, live staging deployments, notes, and attached artifacts, with direct manual approval, revision requests, dispute mediation, and escrow protection notices intact.
+- **Issue 4:** Clients needed clear access to review repository links, live staging deployments, notes and attached artifacts, with direct manual approval, revision requests, dispute mediation and escrow protection notices intact.
 
 ### 13.2 Backend Enhancements
 - **`backend/app/schemas/delivery.py`:**
@@ -829,7 +829,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 - **Client Manual Review & Disbursal Actions (`DeliveryVerification.tsx`):**
   - Rendered `effectiveEvidence` inside Column 3 ("Client Manual Review").
   - Added "Disburse Funds via PayPal" action directly into the Manual Review panel once verified.
-  - Kept all revision, dispute mediation, and escrow reclaim workflows intact.
+  - Kept all revision, dispute mediation and escrow reclaim workflows intact.
 
 ### 13.4 Verification
 - **Backend Tests:** 36/36 tests passed (`backend/.venv/Scripts/python.exe -m pytest -q` in 11.61s).
@@ -841,17 +841,17 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 
 ### 14.1 Route & Breadcrumb Audit
 - **Legacy Route Modernization:**
-  - Audited all `<Link>`, `navigate()`, and string literals across client and freelancer portals.
+  - Audited all `<Link>`, `navigate()` and string literals across client and freelancer portals.
   - Replaced legacy `/dashboard/...` hardcoded targets with canonical role-aware routes (`/app/client/...` and `/app/freelancer/...`).
   - Converted legacy routes (`/dashboard/create-project`, `/dashboard/contracts`, `/dashboard/contracts/:id`, `/dashboard/deliveries/:id`, `/dashboard/payouts`, `/dashboard/operations`, `/dashboard/activity/:id`) in `routes.tsx` into explicit, backwards-compatible `<Navigate replace />` redirects.
   - Migrated `ROUTES.ACTIVITY_HISTORY` from `/dashboard/activity/:id` to `/app/activity/:id` with legacy redirection.
   - Added `ROUTES.NOTIFICATIONS` (`/app/notifications`) and `ROUTES.CLIENT_PROFILE_PUBLIC` (`/app/client/profile/:clientId`) constants.
-  - Replaced literal paths across `routes.tsx`, `Sidebar.tsx`, `ListingDetail.tsx`, `ClientOperations.tsx`, and `FreelancerOperations.tsx` with canonical `ROUTES.*` constants.
-  - Mounted `<ContractDetail />` at both `ROUTES.CONTRACT_DETAIL(':id')` and `ROUTES.CONTRACT_APPLICANTS(':id')` ensuring full escrow, milestone, and PayPal payment functionality is active.
+  - Replaced literal paths across `routes.tsx`, `Sidebar.tsx`, `ListingDetail.tsx`, `ClientOperations.tsx` and `FreelancerOperations.tsx` with canonical `ROUTES.*` constants.
+  - Mounted `<ContractDetail />` at both `ROUTES.CONTRACT_DETAIL(':id')` and `ROUTES.CONTRACT_APPLICANTS(':id')` ensuring full escrow, milestone and PayPal payment functionality is active.
 - **Breadcrumb Alignment (`DashboardLayout.tsx`):**
   - Updated breadcrumb builder to be completely role-aware (`Dashboard` for client, `Home` for freelancer).
   - Fixed `/deliver` and `/review` paths so clients see `My Contracts / Review Delivery` and freelancers see `Active Work / Submit Delivery`.
-  - Added dedicated breadcrumb handlers for all client and freelancer tabs including profile, applications, operations, studio, and notifications.
+  - Added dedicated breadcrumb handlers for all client and freelancer tabs including profile, applications, operations, studio and notifications.
 
 ### 14.2 Delivery Verification Button Ergonomics (`DeliveryVerification.tsx`)
 - **Eliminated Button Duplication Across Columns:**
@@ -861,7 +861,7 @@ Clicking "Initiate AI Mediation" triggers an in-app notification to both parties
 - **Resolved Button Squashing, Text Truncation & Layout Balance:**
   - Expanded container maximum width from `max-w-5xl` (1024px) to `max-w-7xl` (1280px) and balanced grid column widths to an equal `lg:col-span-4` (4 / 4 / 4) split, increasing Column 3 width by 33%.
   - Added `pb-28` bottom padding to the view container, ensuring floating widgets (such as the `Ask AI` FAB in the lower-right corner) never obscure action buttons.
-  - Styled secondary action buttons with subtle fintech color tints (`border-amber-500/40 bg-amber-500/10 text-amber-300` for Request Revision, `border-blue-500/40 bg-blue-500/10 text-blue-300` for AI Dispute, and `border-rose-500/40 bg-rose-500/10 text-rose-300` for Escrow Reclamation).
+  - Styled secondary action buttons with subtle fintech color tints (`border-amber-500/40 bg-amber-500/10 text-amber-300` for Request Revision, `border-blue-500/40 bg-blue-500/10 text-blue-300` for AI Dispute and `border-rose-500/40 bg-rose-500/10 text-rose-300` for Escrow Reclamation).
 - **Client Manual Review Panel Action Parity:**
   - Handled all lifecycle review states distinctly in Column 3:
     1. **Verified (`isVerified`):** Primary `Authorize PayPal Payout ($X)` (`h-10`, bold, shadow) + 2-col secondary grid (`Request Revision` and `AI Dispute`).
@@ -886,7 +886,7 @@ Fully resolved all 28 audit findings across 14 dedicated engineering workstreams
 
 ### 15.1 Authentication & Security Integrity (Workstreams A & M)
 - **Restricted Dev Tokens (Workstream A):** Gated synthetic developer tokens behind `is_dev_auth_allowed` (`False` in production). Invalid tokens raise standard HTTP 401 and trigger immediate client logout.
-- **SSRF Protection (Workstream M):** Implemented `validate_url_for_ssrf()` checking resolved IP addresses against loopback (`127.0.0.1`, `localhost`), link-local / cloud metadata (`169.254.169.254`, `fd00:ec2::254`), private RFC1918 networks, non-standard ports, and embedded credentials before any HTTP probe runs. Edge rate limits (429/403) flag `needs_review: True` instead of false passes.
+- **SSRF Protection (Workstream M):** Implemented `validate_url_for_ssrf()` checking resolved IP addresses against loopback (`127.0.0.1`, `localhost`), link-local / cloud metadata (`169.254.169.254`, `fd00:ec2::254`), private RFC1918 networks, non-standard ports and embedded credentials before any HTTP probe runs. Edge rate limits (429/403) flag `needs_review: True` instead of false passes.
 
 ### 15.2 PayPal Orders v2 & Payouts Truthfulness (Workstreams B, C, D, L)
 - **Zero Fabricated Identifiers:** Completely removed synthetic fallback IDs (`SANDBOX-CAP-*`, `SANDBOX-BATCH-*`, `SANDBOX-ITEM-*`). Captures and payouts report authentic provider responses.
@@ -923,7 +923,7 @@ Fully resolved all 28 audit findings across 14 dedicated engineering workstreams
 **Execution Date:** 10 November 2026  
 **Reference Document:** `md_artifacts/TrustBroker_AI_Remaining_Issues_and_Coding_Agent_Work_Order.md` & `final_submission_plan.md`
 
-Systematically resolved all audit findings and completed the full 9-phase remediation plan across backend services, adapters, models, and frontend state machines:
+Systematically resolved all audit findings and completed the full 9-phase remediation plan across backend services, adapters, models and frontend state machines:
 
 ### 16.1 Phase 1 — Verification False Positives (P0)
 - **Vision Adapter (`adapters/vision.py`):** Eliminated heuristic PASS fallback (`vision_heuristic_fallback`). Image format errors, API failures, or missing credentials safely return `NEEDS_REVIEW` (score 50, requires human review). Removed hardcoded model names when no model ran.
@@ -934,7 +934,7 @@ Systematically resolved all audit findings and completed the full 9-phase remedi
 
 ### 16.2 Phase 2 — CORS Exception Handler Reflection (P0)
 - **Global Exception Handler (`main.py`):** Removed dynamic origin reflection (`request.headers.get("origin") or "*"`) and manual `Access-Control-Allow-Origin` injection in 500 error responses. Standard CORS middleware handles response headers.
-- **Masked Internal Exceptions:** Replaced internal exception stack traces, paths, and SQL errors with a generic error message and unique correlation ID in production.
+- **Masked Internal Exceptions:** Replaced internal exception stack traces, paths and SQL errors with a generic error message and unique correlation ID in production.
 - **Added 5 Tests (`test_cors_security.py`):** Validated unapproved origins receive no reflected CORS credentials.
 
 ### 16.3 Phase 3 — Startup Migration Stamping (P0)
@@ -955,7 +955,7 @@ Systematically resolved all audit findings and completed the full 9-phase remedi
 - **Reconciliation State (`models/marketplace.py`):** Added `RECONCILIATION_REQUIRED = "reconciliation_required"` to `PayoutStatus`.
 - **Truthful Status Mapping (`payment_service.py`):** Separates network timeouts (`RECONCILIATION_REQUIRED`, HTTP 504) from confirmed failure. Disbursal responses accurately reflect requested vs released amounts.
 - **Truthful Notifications:** In-app notification updated to "Payout submitted to PayPal" until webhook confirmation.
-- **UI Status Badges:** Updated `ClientPayoutsPage.tsx` and `FreelancerPayouts.tsx` with distinct status pills for `submitted`, `release_authorized`, `returned`, and `reconciliation_required`.
+- **UI Status Badges:** Updated `ClientPayoutsPage.tsx` and `FreelancerPayouts.tsx` with distinct status pills for `submitted`, `release_authorized`, `returned` and `reconciliation_required`.
 
 ### 16.7 Phase 7 — Verification Job Terminal State (P1)
 - **Age-Based Detection (`routers/deliveries.py`):** Background jobs without reports are flagged as `interrupted` if older than 90s (service restart detection) or `needs_review` if older than 45s, preventing infinite hangs.
@@ -966,8 +966,8 @@ Systematically resolved all audit findings and completed the full 9-phase remedi
 - **Truthful Seed Notifications:** Freelancer notification phrasing updated to "Payout Submitted to PayPal".
 
 ### 16.9 Phase 9 — Documentation & Demo Walkthrough Accuracy (P1)
-- **Judge Walkthrough (`docs/JUDGE_DEMO.md`):** Replaced "Vision Heuristic" with "Vision AI", removed exaggerated latency claims, added accurate payout lifecycle notes, and documented Section 7 Known Limitations (sandbox scope, in-process workers, cloud storage fallback).
-- **Devpost Guide (`md_artifacts/DEVPOST_SUBMISSION.md`):** Updated capabilities, removed "instant payout" language, and detailed the OpenRouter fallback chain.
+- **Judge Walkthrough (`docs/JUDGE_DEMO.md`):** Replaced "Vision Heuristic" with "Vision AI", removed exaggerated latency claims, added accurate payout lifecycle notes and documented Section 7 Known Limitations (sandbox scope, in-process workers, cloud storage fallback).
+- **Devpost Guide (`md_artifacts/DEVPOST_SUBMISSION.md`):** Updated capabilities, removed "instant payout" language and detailed the OpenRouter fallback chain.
 - **Video Script (`md_artifacts/video_script.md`):** Prepared complete 3-minute hackathon demo video script covering all 8 scenes with timing and recording checklist.
 
 ### 16.10 Verification & Test Metrics

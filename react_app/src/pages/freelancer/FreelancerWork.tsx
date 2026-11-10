@@ -476,7 +476,7 @@ export const FreelancerWork: React.FC = () => {
                     </div>
                   </div>
                   <div className="bg-[#06120E] p-3 rounded-lg border border-amber-900/40">
-                    <span className="text-[10px] text-amber-500 uppercase">Staged Escrow</span>
+                    <span className="text-[10px] text-amber-500 uppercase">Staged Payment</span>
                     <div className="font-mono font-bold text-base text-amber-300 mt-0.5">
                       {formatCurrency(selectedContract.stagedAmount || 0, selectedContract.currency)}
                     </div>

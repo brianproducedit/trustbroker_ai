@@ -1,4 +1,4 @@
-"""
+﻿"""
 Scoring and Decision Engine for Multimodal Milestone Verification.
 Enforces the strict judging rules defined in §7.2 of the TrustBroker AI Roadmap:
 - Pass: Evidence directly supports the criterion (factual verification).
@@ -156,19 +156,21 @@ def score_criterion_result(
                 "requires_review": is_review,
             }
 
-    # Pure adapter evaluation
+    # Pure adapter evaluation (no AI evaluation available)
+    # Adapter facts are EVIDENCE CONTEXT only — not criterion pass proof.
+    # Without AI evaluation, we cannot automatically PASS any criterion.
     if adapter_passed:
         return {
             "criterion_id": criterion_id,
             "title": title,
-            "status": CriterionStatus.PASS,
-            "passed": True,
-            "score": 90,
-            "confidence": 0.88,
-            "explanation": f"Objective evidence validated via {adapter_name}.",
+            "status": CriterionStatus.NEEDS_REVIEW,
+            "passed": False,
+            "score": 50,
+            "confidence": 0.60,
+            "explanation": f"Objective evidence validated via {adapter_name}, but AI evaluation unavailable — manual review required before fund release.",
             "evidence_match_snippet": citation,
             "adapter_used": adapter_name,
-            "requires_review": False,
+            "requires_review": True,
         }
     else:
         return {

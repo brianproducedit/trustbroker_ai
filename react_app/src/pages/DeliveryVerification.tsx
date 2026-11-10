@@ -351,15 +351,15 @@ export const DeliveryVerification: React.FC = () => {
     try {
       await reclaimMilestoneEscrow(contract.id, selectedMilestone.id, reclaimReason)
       setReclaimDialogOpen(false)
-      toast.success(`Escrow funds of ${formatCurrency(selectedMilestone.amount)} reclaimed back to your account.`)
+      toast.success(`Staged funds of ${formatCurrency(selectedMilestone.amount)} reclaimed back to your account.`)
       addNotification({
-        title: 'Escrow Funds Reclaimed',
-        description: `Client reclaimed staged escrow for "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount)}). Reason: ${reclaimReason}`,
+        title: 'Staged Funds Reclaimed',
+        description: `Client reclaimed staged funds for "${selectedMilestone.title}" (${formatCurrency(selectedMilestone.amount)}). Reason: ${reclaimReason}`,
         type: 'payment',
         link: ROUTES.CONTRACT_DETAIL(contract.id),
       })
     } catch (err: any) {
-      toast.error(err?.detail || err?.message || 'Failed to reclaim escrow funds.')
+      toast.error(err?.detail || err?.message || 'Failed to reclaim staged funds.')
     } finally {
       setIsReclaiming(false)
     }
@@ -378,28 +378,28 @@ export const DeliveryVerification: React.FC = () => {
 
   const effectiveEvidence: EffectiveEvidence | null = latestDelivery
     ? {
-        repoUrl: latestDelivery.repo_url || '',
-        liveUrl: latestDelivery.live_url || '',
-        description: latestDelivery.description || '',
-        fileAttachments: (latestDelivery.files || []).map((f: any) => ({
-          name: f.file_name,
-          url: f.storage_path,
-          sizeBytes: f.size_bytes || 0,
-          mimeType: f.mime_type || 'application/octet-stream',
-        })),
-        submittedAt: latestDelivery.submitted_at,
-        version: latestDelivery.version || 1,
-      }
+      repoUrl: latestDelivery.repo_url || '',
+      liveUrl: latestDelivery.live_url || '',
+      description: latestDelivery.description || '',
+      fileAttachments: (latestDelivery.files || []).map((f: any) => ({
+        name: f.file_name,
+        url: f.storage_path,
+        sizeBytes: f.size_bytes || 0,
+        mimeType: f.mime_type || 'application/octet-stream',
+      })),
+      submittedAt: latestDelivery.submitted_at,
+      version: latestDelivery.version || 1,
+    }
     : (selectedMilestone.submittedEvidence
-        ? {
-            repoUrl: selectedMilestone.submittedEvidence.repoUrl,
-            liveUrl: selectedMilestone.submittedEvidence.liveUrl,
-            description: selectedMilestone.submittedEvidence.description,
-            fileAttachments: selectedMilestone.submittedEvidence.fileAttachments,
-            submittedAt: selectedMilestone.submittedEvidence.submittedAt,
-            version: (selectedMilestone.submittedEvidence as any).version || 1,
-          }
-        : null)
+      ? {
+        repoUrl: selectedMilestone.submittedEvidence.repoUrl,
+        liveUrl: selectedMilestone.submittedEvidence.liveUrl,
+        description: selectedMilestone.submittedEvidence.description,
+        fileAttachments: selectedMilestone.submittedEvidence.fileAttachments,
+        submittedAt: selectedMilestone.submittedEvidence.submittedAt,
+        version: (selectedMilestone.submittedEvidence as any).version || 1,
+      }
+      : null)
 
   const backendReport = latestDelivery?.verification_report
   const assessment = selectedMilestone?.assessment || (backendReport ? {
@@ -480,11 +480,10 @@ export const DeliveryVerification: React.FC = () => {
                 <button
                   key={m.id}
                   onClick={() => setSelectedMilestoneId(m.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    selectedMilestoneId === m.id
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${selectedMilestoneId === m.id
                       ? 'bg-blue-600 text-white font-semibold shadow-xs'
                       : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
-                  }`}
+                    }`}
                 >
                   {mFunded ? (
                     <Unlock className="w-3 h-3 text-emerald-400" />
@@ -511,13 +510,12 @@ export const DeliveryVerification: React.FC = () => {
                 <span className="font-bold text-sm text-white">{selectedMilestone.title}</span>
                 <StatusBadge status={selectedMilestone.status} />
                 <Badge
-                  className={`text-[10px] font-mono uppercase ${
-                    isReleased
+                  className={`text-[10px] font-mono uppercase ${isReleased
                       ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
                       : isFunded
-                      ? 'bg-blue-950 text-blue-300 border-blue-800'
-                      : 'bg-amber-950 text-amber-300 border-amber-800'
-                  }`}
+                        ? 'bg-blue-950 text-blue-300 border-blue-800'
+                        : 'bg-amber-950 text-amber-300 border-amber-800'
+                    }`}
                 >
                   {isReleased ? 'Paid via PayPal' : isFunded ? 'PayPal Staged (Unlocked)' : 'Locked (Unfunded)'}
                 </Badge>
@@ -546,7 +544,7 @@ export const DeliveryVerification: React.FC = () => {
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
                   {activeRole === 'client'
-                    ? "Inspect the freelancer's submitted repositories, live preview URL, and attached deliverables."
+                    ? "Inspect the freelancer's submitted repositories, live preview URL and attached deliverables."
                     : 'Provide evidence matching the agreed milestone acceptance criteria for AI inspection.'}
                 </CardDescription>
               </CardHeader>
@@ -721,10 +719,10 @@ export const DeliveryVerification: React.FC = () => {
                                   const badgeColor = isImg
                                     ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                                     : isPdf
-                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                                    : isZip
-                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                    : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                      : isZip
+                                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                        : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
                                   return (
                                     <div
                                       key={idx}
@@ -788,7 +786,7 @@ export const DeliveryVerification: React.FC = () => {
                         <div className="space-y-1">
                           <p className="text-xs font-semibold text-slate-300">Awaiting Freelancer Submission</p>
                           <p className="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">
-                            The freelancer has not submitted deliverables for this milestone yet. Once submitted, their repository URL, live preview link, and evidence files will appear here for review.
+                            The freelancer has not submitted deliverables for this milestone yet. Once submitted, their repository URL, live preview link and evidence files will appear here for review.
                           </p>
                         </div>
                       </div>
@@ -871,10 +869,10 @@ export const DeliveryVerification: React.FC = () => {
                             const badgeColor = isImg
                               ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                               : isPdf
-                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                              : isZip
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                              : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                : isZip
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                  : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
                             return (
                               <div
                                 key={idx}
@@ -912,11 +910,10 @@ export const DeliveryVerification: React.FC = () => {
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${
-                          isDragging
+                        className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${isDragging
                             ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
                             : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
-                        }`}
+                          }`}
                       >
                         <input
                           ref={fileInputRef}
@@ -988,11 +985,10 @@ export const DeliveryVerification: React.FC = () => {
                     <Button
                       type="submit"
                       disabled={isEvaluating || isUploadingFile || isSettled || isLocked}
-                      className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${
-                        isLocked
+                      className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${isLocked
                           ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
                           : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
+                        }`}
                     >
                       {isLocked ? (
                         <>
@@ -1072,14 +1068,12 @@ export const DeliveryVerification: React.FC = () => {
 
                     {/* Human Review Banner if triggered */}
                     {assessment.requiresHumanReview && (
-                      <div className={`p-3 rounded-lg border space-y-1.5 text-xs ${
-                        assessment.modelUsed?.includes('Offline')
+                      <div className={`p-3 rounded-lg border space-y-1.5 text-xs ${assessment.modelUsed?.includes('Offline')
                           ? 'bg-rose-950/30 border-rose-800/40 animate-pulse'
                           : 'bg-amber-950/30 border-amber-800/40'
-                      }`}>
-                        <div className={`flex items-center gap-1.5 font-semibold ${
-                          assessment.modelUsed?.includes('Offline') ? 'text-rose-300' : 'text-amber-300'
                         }`}>
+                        <div className={`flex items-center gap-1.5 font-semibold ${assessment.modelUsed?.includes('Offline') ? 'text-rose-300' : 'text-amber-300'
+                          }`}>
                           <AlertCircle className={`w-4 h-4 ${assessment.modelUsed?.includes('Offline') ? 'text-rose-400' : 'text-amber-400'}`} />
                           <span>
                             {assessment.modelUsed?.includes('Offline')
@@ -1119,10 +1113,10 @@ export const DeliveryVerification: React.FC = () => {
                               <Badge
                                 variant="outline"
                                 className={`text-[10px] font-mono uppercase ${isPass
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                    : isFail
-                                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                  : isFail
+                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                                   }`}
                               >
                                 {c.status ? c.status.toUpperCase() : 'PENDING'}
@@ -1182,7 +1176,7 @@ export const DeliveryVerification: React.FC = () => {
                                 <span>Buyer Protection: 7-Day Inactivity Guarantee</span>
                               </div>
                               <p className="text-slate-400 text-[10px] leading-relaxed">
-                                Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded in PayPal Sandbox escrow. Manage settlement or reclamation in the <strong>Client Manual Review</strong> panel on the right.
+                                Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded in the PayPal Sandbox. Manage settlement or reclamation in the <strong>Client Manual Review</strong> panel on the right.
                               </p>
                             </div>
                           </div>
@@ -1231,7 +1225,7 @@ export const DeliveryVerification: React.FC = () => {
                             </div>
 
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              The client ({contract.client?.name || 'Client'}) has reviewed your deliverable and requested adjustments. While in revision status, the 7-day auto-disbursal clock is strictly suspended. Escrow funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) remain securely held in PayPal sandbox.
+                              The client ({contract.client?.name || 'Client'}) has reviewed your deliverable and requested adjustments. While in revision status, the 7-day auto-disbursal clock is strictly suspended. Staged funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) remain securely held in PayPal sandbox.
                             </p>
 
                             {selectedMilestone.revisionNotes && (
@@ -1297,7 +1291,7 @@ export const DeliveryVerification: React.FC = () => {
                                 <span>TrustBroker Buyer &amp; Seller Protection Active</span>
                               </div>
                               <p className="text-slate-400 text-[10px] leading-relaxed">
-                                Clients have a standard 7-day review window following AI verification to inspect deliverables and release escrow funds. If the client requests revisions, the timer freezes. If the client takes no action within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
+                                Clients have a standard 7-day review window following AI verification to inspect deliverables and release staged funds. If the client requests revisions, the timer freezes. If the client takes no action within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
                               </p>
                             </div>
 
@@ -1305,11 +1299,10 @@ export const DeliveryVerification: React.FC = () => {
                               <Button
                                 onClick={handleNudgeClient}
                                 disabled={isNudged}
-                                className={`w-full text-xs gap-1.5 h-9 font-semibold transition-all cursor-pointer ${
-                                  isNudged
+                                className={`w-full text-xs gap-1.5 h-9 font-semibold transition-all cursor-pointer ${isNudged
                                     ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
                                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
-                                }`}
+                                  }`}
                               >
                                 {isNudged ? (
                                   <>
@@ -1339,7 +1332,7 @@ export const DeliveryVerification: React.FC = () => {
                               <span>Verification Score Below Threshold ({assessment.overallScore}/100)</span>
                             </div>
                             <p className="text-slate-300 text-[11px] leading-relaxed">
-                              Some criteria require adjustments. Review the itemized criterion feedback above, make the necessary corrections, and re-run verification.
+                              Some criteria require adjustments. Review the itemized criterion feedback above, make the necessary corrections and re-run verification.
                             </p>
                           </div>
                         )}
@@ -1489,7 +1482,7 @@ export const DeliveryVerification: React.FC = () => {
                               className="w-full border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
                             >
                               <Undo2 className="w-3.5 h-3.5 shrink-0" />
-                              <span>Reclaim Escrow</span>
+                              <span>Reclaim Staged Funds</span>
                             </Button>
                             <Button
                               variant="outline"
@@ -1730,13 +1723,13 @@ export const DeliveryVerification: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Escrow Reclaim Dialog (Buyer Protection) */}
+        {/* Staged Funds Reclaim Dialog (Buyer Protection) */}
         <Dialog open={reclaimDialogOpen} onOpenChange={setReclaimDialogOpen}>
           <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 <Undo2 className="w-4 h-4 text-rose-400" />
-                Reclaim Staged Escrow — Buyer Protection
+                Reclaim Staged Funds — Buyer Protection
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
                 You are reclaiming your staged milestone funds due to freelancer inactivity or failure to address revision feedback. This action is permanently logged in the contract audit trail.
@@ -1784,7 +1777,7 @@ export const DeliveryVerification: React.FC = () => {
                 {isReclaiming ? (
                   <><Loader2 className="w-3.5 h-3.5 animate-spin" />Reclaiming…</>
                 ) : (
-                  <><Undo2 className="w-3.5 h-3.5" />Confirm Escrow Reclaim</>
+                  <><Undo2 className="w-3.5 h-3.5" />Confirm Reclaim</>
                 )}
               </Button>
             </DialogFooter>
@@ -1800,7 +1793,7 @@ export const DeliveryVerification: React.FC = () => {
                 AI Dispute Mediation
               </DialogTitle>
               <DialogDescription className="text-slate-400 text-xs">
-                TrustBroker provides impartial AI-assisted dispute resolution based on contract SOW, acceptance criteria, and submitted evidence.
+                TrustBroker provides impartial AI-assisted dispute resolution based on contract SOW, acceptance criteria and submitted evidence.
               </DialogDescription>
             </DialogHeader>
 
@@ -1812,7 +1805,7 @@ export const DeliveryVerification: React.FC = () => {
                   <span>TrustBroker Dispute Mediation Protocol</span>
                 </div>
                 <p className="text-slate-300 text-[11px] leading-relaxed">
-                  When a revision request is disputed, TrustBroker AI conducts an independent evidence audit: re-evaluating the original SOW acceptance criteria, submitted deliverables, the client's revision notes, and the freelancer's response — rendering an impartial recommendation.
+                  When a revision request is disputed, TrustBroker AI conducts an independent evidence audit: re-evaluating the original SOW acceptance criteria, submitted deliverables, the client's revision notes and the freelancer's response — rendering an impartial recommendation.
                 </p>
                 <div className="space-y-1.5">
                   <div className="flex items-start gap-2 text-[11px] text-slate-300">
@@ -1821,7 +1814,7 @@ export const DeliveryVerification: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-2 text-[11px] text-slate-300">
                     <span className="text-blue-400 font-bold mt-0.5">2.</span>
-                    <span><strong className="text-white">Revision Notes Assessment:</strong> AI evaluates whether the client's revision request is specific, within-scope of the original SOW, and reasonable.</span>
+                    <span><strong className="text-white">Revision Notes Assessment:</strong> AI evaluates whether the client's revision request is specific, within-scope of the original SOW and reasonable.</span>
                   </div>
                   <div className="flex items-start gap-2 text-[11px] text-slate-300">
                     <span className="text-blue-400 font-bold mt-0.5">3.</span>

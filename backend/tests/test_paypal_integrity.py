@@ -601,3 +601,99 @@ def test_apply_payout_status_unknown_status_maps_to_reconciliation_required(sess
     assert payout.status == PayoutStatus.RECONCILIATION_REQUIRED.value
 
 
+@pytest.mark.asyncio
+async def test_webhook_checkout_order_completed_reconciles_amount(session: Session, client_user: UserProfile):
+    """CHECKOUT.ORDER.COMPLETED webhook must reconcile capture amount against expected attempt amount.
+    Mismatched amount must NOT fund milestone and must require reconciliation."""
+    from app.services.payment_service import process_paypal_webhook, create_milestone_escrow_order
+    from app.models.contract import Contract
+    from app.models.milestone import Milestone
+    from app.models.payment import PaymentStatus
+
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-WH-001",
+        title="Webhook Test Contract",
+        client_id=client_user.id,
+        status="active",
+        total_amount=Decimal("300.00"),
+        staged_amount=Decimal("0.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="M1 Test",
+        amount=Decimal("300.00"),
+        order_index=1,
+        status="pending",
+        payment_status="not_started",
+    )
+    session.add(contract)
+    session.add(milestone)
+    session.commit()
+
+    with patch("app.utils.paypal_client.create_paypal_order", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = {"id": "ORDER-WH-TEST", "status": "CREATED", "links": []}
+        await create_milestone_escrow_order(session, contract.id, milestone.id, client_user)
+
+    with patch("app.services.payment_service.paypal_client.verify_webhook_signature", return_value=True):
+        # 1. Send webhook with mismatched amount ($150 instead of $300)
+        mismatched_payload = {
+            "id": f"WH-EVT-{uuid.uuid4().hex[:8]}",
+            "event_type": "CHECKOUT.ORDER.COMPLETED",
+            "resource_type": "checkout-order",
+            "resource": {
+                "id": "ORDER-WH-TEST",
+                "purchase_units": [
+                    {
+                        "payments": {
+                            "captures": [
+                                {
+                                    "id": "CAP-WH-WRONG",
+                                    "status": "COMPLETED",
+                                    "amount": {"value": "150.00", "currency_code": "USD"},
+                                }
+                            ]
+                        }
+                    }
+                ],
+            },
+        }
+        res = await process_paypal_webhook(session, {}, mismatched_payload)
+        assert res["status"] == "reconciliation_required"
+
+        session.refresh(milestone)
+        assert milestone.payment_status != PaymentStatus.STAGED_IN_SANDBOX
+        assert milestone.payment_status == PaymentStatus.CHECKOUT_CREATED
+
+        # 2. Send webhook with matching amount ($300.00 USD)
+        matching_payload = {
+            "id": f"WH-EVT-{uuid.uuid4().hex[:8]}",
+            "event_type": "CHECKOUT.ORDER.COMPLETED",
+            "resource_type": "checkout-order",
+            "resource": {
+                "id": "ORDER-WH-TEST",
+                "purchase_units": [
+                    {
+                        "payments": {
+                            "captures": [
+                                {
+                                    "id": "CAP-WH-MATCH",
+                                    "status": "COMPLETED",
+                                    "amount": {"value": "300.00", "currency_code": "USD"},
+                                }
+                            ]
+                        }
+                    }
+                ],
+            },
+        }
+        res_match = await process_paypal_webhook(session, {}, matching_payload)
+        assert res_match["status"] == "processed"
+
+        session.refresh(milestone)
+        assert milestone.payment_status == PaymentStatus.STAGED_IN_SANDBOX
+
+
+

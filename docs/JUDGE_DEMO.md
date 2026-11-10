@@ -121,7 +121,7 @@ Follow this path to verify every stage of the contract and payment lifecycle.
 #### Option B — Create a New Contract with AI SOW Generator
 1. Click **New Contract** → `/app/client/contracts/new`
 2. Fill in the project title and category
-3. Click **Generate SOW with AI** — Groq LPU drafts structured milestones, acceptance criteria, and exclusions in under a second
+3. Click **Generate SOW with AI** — Groq LPU drafts structured milestones, acceptance criteria and exclusions in under a second
 4. Review the generated content, set a milestone value (e.g., $400), then **Publish to Marketplace**
 
 ---
@@ -137,7 +137,7 @@ Follow this path to verify every stage of the contract and payment lifecycle.
 5. Upon approval:
    - Backend executes `POST /api/v1/payments/capture-order` and validates status `COMPLETED`
    - Milestone status updates to `funded` (`staged_in_sandbox`)
-   - The **PayPal Orders & Captures** ledger records the **PayPal Order ID**, **Capture ID**, amount, and timestamp
+   - The **PayPal Orders & Captures** ledger records the **PayPal Order ID**, **Capture ID**, amount and timestamp
    - Audit trail registers `payment_capture_completed`
 
 > [!IMPORTANT]
@@ -205,7 +205,7 @@ The **criterion assessment matrix** shows:
 
 **When milestone is `revision_requested`:**
 - Override approve option available
-- 🔴 **Reclaim Escrow** and 🔵 **AI Dispute** in secondary grid
+- 🔴 **Reclaim Staged Funds** and 🔵 **AI Dispute** in secondary grid
 
 **When milestone is `pending` (manual review):**
 - **Manual Approve** as primary
@@ -320,7 +320,7 @@ To independently confirm money movement in your sandbox:
 3. Log into the Sandbox Business / Personal accounts at [sandbox.paypal.com](https://www.sandbox.paypal.com):
    - **Platform Business Account:** Shows incoming Capture for the milestone and outgoing Payout
    - **Freelancer Personal Account:** Shows payment received with note: *"TrustBroker payout for {contract_code} — {milestone_title}"*
-4. Match the **Order ID**, **Capture ID**, and **Payout Batch ID** from TrustBroker's UI with the PayPal dashboard entries
+4. Match the **Order ID**, **Capture ID** and **Payout Batch ID** from TrustBroker's UI with the PayPal dashboard entries
 
 ---
 
@@ -344,8 +344,8 @@ To independently confirm money movement in your sandbox:
 | **Idempotency** | Every payout carries `PayPal-Request-Id: payout:{milestone_id}`. Re-clicking cannot double-disburse. |
 | **Strict Capture Validation** | Milestone only becomes `funded` when PayPal responds with `COMPLETED`. Cancelling the popup leaves it unfunded. |
 | **PolicyEngine Gating** | 4 non-negotiable conditions must pass before any payout executes (see Step 7 above). |
-| **Provider Truthfulness** | Zero synthetic IDs (`SANDBOX-CAP-*`, `SANDBOX-BATCH-*`). All captures, payouts, and webhooks reflect authentic PayPal provider state. |
-| **SSRF & Boundary Safety** | `validate_url_for_ssrf` blocks loopback, private RFC1918 subnets, cloud metadata (`169.254.169.254`), non-standard ports, and embedded credentials before any HTTP probe runs. |
+| **Provider Truthfulness** | Zero synthetic IDs (`SANDBOX-CAP-*`, `SANDBOX-BATCH-*`). All captures, payouts and webhooks reflect authentic PayPal provider state. |
+| **SSRF & Boundary Safety** | `validate_url_for_ssrf` blocks loopback, private RFC1918 subnets, cloud metadata (`169.254.169.254`), non-standard ports and embedded credentials before any HTTP probe runs. |
 | **Server-Side Evidence Storage** | Deliverables upload file bytes directly to private Supabase Storage (`delivery-evidence`) or server disk fallback. Client-side `blob:` URLs are strictly rejected. |
 | **AI Verification Truthfulness** | If AI inference is unavailable or rate-limited, verification returns `NEEDS_REVIEW` (score 50, human review required). No synthetic 88/100 pass. |
 | **Role Enforcement** | Client routes (`/app/client/...`) reject freelancer sessions; freelancer routes reject client sessions. |

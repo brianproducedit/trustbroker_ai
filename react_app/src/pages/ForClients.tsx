@@ -24,7 +24,7 @@ export const ForClients: React.FC = () => {
     },
     {
       title: 'PayPal-Secured Milestone Payments',
-      desc: 'Fund milestones one at a time through PayPal Orders v2. Capital stays in sandbox escrow until deliverables pass objective AI inspection against your criteria.',
+      desc: 'Fund milestones one at a time through PayPal Orders v2. Funds are staged in the PayPal sandbox until deliverables pass objective AI inspection against your criteria.',
       icon: Lock,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200',
     },
@@ -66,7 +66,7 @@ export const ForClients: React.FC = () => {
             <h1 className="text-4xl sm:text-5xl font-extrabold text-[#0B1B33] tracking-tight leading-tight">
               Hire global talent with <br className="hidden sm:inline" />
               <span className="text-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                verifiable confidence and transparent escrow.
+                verifiable confidence and transparent PayPal payment coordination.
               </span>
             </h1>
 

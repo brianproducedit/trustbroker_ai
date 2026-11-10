@@ -16,7 +16,7 @@ def probe_live_url(url: str, timeout: float = 8.0) -> Dict[str, Any]:
     """Execute live HTTP check against target staging URL.
     
     Verifies:
-    1. SSRF safety: blocks private, loopback, link-local, and cloud metadata targets
+    1. SSRF safety: blocks private, loopback, link-local and cloud metadata targets
     2. Host reachability and DNS resolution
     3. TLS / HTTPS protocol
     4. HTTP status code (200 OK vs 404, 500, edge challenge)

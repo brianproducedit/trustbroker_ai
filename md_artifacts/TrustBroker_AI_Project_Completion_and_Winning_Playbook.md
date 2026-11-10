@@ -1,6 +1,6 @@
 # TrustBroker AI — Project Completion & Winning Playbook
 
-**Purpose:** A practical working document for finishing TrustBroker AI, tightening its product positioning, strengthening the marketplace and AG Studio experience, validating the technical implementation, and preparing a persuasive PayPal AI Hackathon submission.
+**Purpose:** A practical working document for finishing TrustBroker AI, tightening its product positioning, strengthening the marketplace and AG Studio experience, validating the technical implementation and preparing a persuasive PayPal AI Hackathon submission.
 
 **Prepared:** 2 November 2026  
 **Repository:** [github.com/brianproducedit/trustbroker_ai](https://github.com/brianproducedit/trustbroker_ai)  
@@ -11,7 +11,7 @@
 
 ## Important note about the repository review
 
-This playbook consolidates the findings from the previous public-repository review and the product decisions discussed in this project. The repository inspection previously established a React frontend, a FastAPI backend direction, marketplace and contract workflows in the README, AI provider configuration, PayPal integration plans, AG Grid/AG Studio work, and supporting documentation.
+This playbook consolidates the findings from the previous public-repository review and the product decisions discussed in this project. The repository inspection previously established a React frontend, a FastAPI backend direction, marketplace and contract workflows in the README, AI provider configuration, PayPal integration plans, AG Grid/AG Studio work and supporting documentation.
 
 **I could not retrieve the newest GitHub README and source tree again during preparation of this file.** You have made further changes since the earlier review, so repository-specific observations below should be treated as the last inspected baseline, not a certification of the current `main` branch. In particular, re-check all environment variables, deployment URLs, implemented routes, AI provider settings and payment code against the latest commit before acting on an item marked “previously observed.”
 
@@ -39,7 +39,7 @@ The product should not try to become a general-purpose Upwork competitor before 
 6. Deterministic backend rules decide which next actions are permitted.
 7. Both parties can inspect the contract, evidence, payment events and activity history.
 
-**The product's central promise:** make expectations explicit before work begins, make delivery assessable against those expectations, and make the transaction history transparent.
+**The product's central promise:** make expectations explicit before work begins, make delivery assessable against those expectations and make the transaction history transparent.
 
 ## Overall evaluation
 
@@ -126,11 +126,11 @@ These were identified during the earlier review and should be rechecked against 
 
 **Recommended one-sentence positioning:**
 
-> TrustBroker AI turns digital-service project briefs into mutually accepted, measurable agreements, assesses submitted work against those agreed requirements, and coordinates the related transaction workflow with transparent records.
+> TrustBroker AI turns digital-service project briefs into mutually accepted, measurable agreements, assesses submitted work against those agreed requirements and coordinates the related transaction workflow with transparent records.
 
 **Short pitch:**
 
-> Freelance projects often begin with informal briefs and unclear definitions of completion. TrustBroker AI helps clients and freelancers agree on measurable deliverables before work begins, assess delivery evidence against those requirements, and coordinate payment steps using a transparent, auditable workflow.
+> Freelance projects often begin with informal briefs and unclear definitions of completion. TrustBroker AI helps clients and freelancers agree on measurable deliverables before work begins, assess delivery evidence against those requirements and coordinate payment steps using a transparent, auditable workflow.
 
 **Suggested tagline:**
 
@@ -347,7 +347,7 @@ For each criterion, store:
 - Material changes create a new version and invalidate prior acceptance for the changed terms.
 - The project cannot progress to the appropriate next state until the required acceptances exist.
 
-The audit history should make it easy to answer: **who accepted which exact terms, and when?**
+The audit history should make it easy to answer: **who accepted which exact terms and when?**
 
 ---
 
@@ -502,7 +502,7 @@ Do not show “funds held in escrow” after an ordinary order capture. Do not m
 
 PayPal's current developer documentation says delayed disbursement requires approved partner status and seller onboarding with the `DELAY_FUNDS_DISBURSEMENT` feature. It also says funds are automatically disbursed to the seller after 28 days. This is not a general-purpose escrow feature available to every integration.
 
-PayPal's seller-onboarding eligibility page marks Zimbabwe as **Send only** for the relevant seller onboarding use case, and the current Payouts supported-country list does not list Zimbabwe. This is a material limitation for a Zimbabwe-based freelancer marketplace.
+PayPal's seller-onboarding eligibility page marks Zimbabwe as **Send only** for the relevant seller onboarding use case and the current Payouts supported-country list does not list Zimbabwe. This is a material limitation for a Zimbabwe-based freelancer marketplace.
 
 Therefore:
 
@@ -536,7 +536,7 @@ References:
 
 ## 8.1 Recommended feature: TrustBroker Operations Studio
 
-Build an operations/oversight workspace for platform operators or reviewers. It should answer: **Where are projects getting stuck, which submissions need review, and which payment states need attention?**
+Build an operations/oversight workspace for platform operators or reviewers. It should answer: **Where are projects getting stuck, which submissions need review and which payment states need attention?**
 
 Suggested dashboard layout:
 
@@ -789,7 +789,7 @@ If the marketplace selection flow consumes too much time, show a prepared projec
 >
 > A client describes the project in natural language. Our AI turns that brief into a structured agreement, including deliverables, milestones and measurable acceptance criteria.
 >
-> The freelancer reviews the agreement, and both parties accept the same contract version.
+> The freelancer reviews the agreement and both parties accept the same contract version.
 >
 > TrustBroker integrates PayPal sandbox checkout into this workflow and records payment status confirmed by the backend.
 >
@@ -992,7 +992,7 @@ After the planned feature freeze, only fix defects that block the demo, create s
 
 ## Short description
 
-AI turns digital-service project briefs into measurable, mutually accepted agreements, assesses submitted work against agreed requirements, and coordinates PayPal-powered transaction workflows with transparent records.
+AI turns digital-service project briefs into measurable, mutually accepted agreements, assesses submitted work against agreed requirements and coordinates PayPal-powered transaction workflows with transparent records.
 
 ## Problem
 

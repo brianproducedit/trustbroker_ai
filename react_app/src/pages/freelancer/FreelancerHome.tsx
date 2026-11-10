@@ -198,7 +198,7 @@ export const FreelancerHome: React.FC = () => {
                 Recommended Open Contracts in Marketplace
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Contracts currently accepting proposals with client PayPal escrow pre-commitment.
+                Contracts currently accepting proposals with client PayPal milestone funding committed.
               </p>
             </div>
             <Link

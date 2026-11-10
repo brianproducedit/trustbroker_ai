@@ -243,7 +243,7 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         proposal = (
             "I have delivered 12+ production Next.js and React applications with zero TypeScript errors. "
             "My portfolio includes the React Admin Dashboard (Eliasuarez04) and Next.js SaaS Starter. "
-            "I will implement strict ESLint rules, automated Lighthouse audits scoring >95, and modular components."
+            "I will implement strict ESLint rules, automated Lighthouse audits scoring >95 and modular components."
         )
         res = _deterministic_vet(
             self.freelancer,
@@ -327,7 +327,7 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
 
     # 8. test_policy_engine_release_safeguards
     def test_policy_engine_release_safeguards(self):
-        """Rule: Payout release requires verified milestone, staged funds, and valid freelancer PayPal email."""
+        """Rule: Payout release requires verified milestone, staged funds and valid freelancer PayPal email."""
         contract = Contract(
             id=uuid.uuid4(),
             client_id=self.client.id,

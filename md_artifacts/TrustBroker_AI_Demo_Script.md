@@ -35,9 +35,9 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 ## SECTION 1 — Opening Hook (0:00–0:45)
 
 ### 🎙️ What to Say
-> *"Every year, freelancers lose billions of dollars to unpaid invoices. And every year, clients waste money on work that never gets finished — or never gets delivered at all. The fundamental problem? There's no trusted intermediary that can objectively verify whether work is done, enforce milestone payments, and move money automatically when it is.*
+> *"Every year, freelancers lose billions of dollars to unpaid invoices. And every year, clients waste money on work that never gets finished — or never gets delivered at all. The fundamental problem? There's no trusted intermediary that can objectively verify whether work is done, enforce milestone payments and move money automatically when it is.*
 >
-> *TrustBroker AI solves that — with real PayPal money movement, autonomous AI verification, and a policy engine that guarantees funds only move when work is actually verified.*
+> *TrustBroker AI solves that — with real PayPal money movement, autonomous AI verification and a policy engine that guarantees funds only move when work is actually verified.*
 >
 > *Let me show you how it works, end to end, in a live sandbox."*
 
@@ -52,7 +52,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 ### 🎙️ What to Say
 > *"TrustBroker AI is built on three pillars:"*
 >
-> *"First — **PayPal as the financial backbone**. Every milestone payment uses PayPal Orders v2 for capture, and PayPal Payouts API for disbursement. Real sandbox IDs, real API calls, traceable on the PayPal Developer Dashboard."*
+> *"First — **PayPal as the financial backbone**. Every milestone payment uses PayPal Orders v2 for capture and PayPal Payouts API for disbursement. Real sandbox IDs, real API calls, traceable on the PayPal Developer Dashboard."*
 >
 > *"Second — **Agentic AI powered by Groq**. We use Google AG Studio's React agent framework, with Groq LPU inference for sub-second response times. The AI verifies deliverables, generates legal contracts, vets applicants — but it never moves money unilaterally."*
 >
@@ -78,7 +78,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 3. Land on the **Client Dashboard** (`/app/client`) — pause for a beat to let the UI settle.
 
 **🎙️ Say:**
-> *"This is the Client Workspace. Elena sees her active contracts, pending deliveries needing review, and her PayPal sandbox balance — all in one place."*
+> *"This is the Client Workspace. Elena sees her active contracts, pending deliveries needing review and her PayPal sandbox balance — all in one place."*
 
 ---
 
@@ -91,7 +91,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 4. Click the **✨ Generate SOW with AI** button (or similar AI Brief Generator button).
 
 **🎙️ Say (while Groq is generating):**
-> *"Watch this — Groq's LPU processes the brief in under a second. It's not just generating boilerplate. The AI is producing structured milestones, acceptance criteria, exclusions, and a plain-English scope of work — ready to publish to the marketplace."*
+> *"Watch this — Groq's LPU processes the brief in under a second. It's not just generating boilerplate. The AI is producing structured milestones, acceptance criteria, exclusions and a plain-English scope of work — ready to publish to the marketplace."*
 
 **📹 Do (after generation):**
 5. Show the generated SOW in the form — scroll through the milestones, acceptance criteria.
@@ -150,7 +150,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
    - **Kuda Nyamuda** — `new_talent` badge, 78% score (newcomer)
 
 **🎙️ Say:**
-> *"This is one of our fairness innovations. Traditional platforms penalize newcomers because they have fewer completed contracts. TrustBroker's AI vetting agent scores on portfolio code quality, communication signals, and skill alignment — not arbitrary reputation counts. Kuda is a newcomer with a strong portfolio, and the AI sees that. No bias against first-timers."*
+> *"This is one of our fairness innovations. Traditional platforms penalize newcomers because they have fewer completed contracts. TrustBroker's AI vetting agent scores on portfolio code quality, communication signals and skill alignment — not arbitrary reputation counts. Kuda is a newcomer with a strong portfolio and the AI sees that. No bias against first-timers."*
 
 ---
 
@@ -225,7 +225,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 5. Click **Submit Deliverable Evidence**.
 
 **🎙️ Say:**
-> *"The evidence package is submitted — a GitHub repo, a live staging URL, written attestation, and a screenshot. This is everything the AI verifier needs."*
+> *"The evidence package is submitted — a GitHub repo, a live staging URL, written attestation and a screenshot. This is everything the AI verifier needs."*
 
 ---
 
@@ -239,7 +239,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 > *"One — an HTTP probe of the live URL, checking response codes and HTTPS."*
 > *"Two — a vision heuristic analysis of the uploaded screenshot."*
 > *"Three — a document scan of the delivery notes and attestation."*
-> *"Four — a repository inspection checking for TypeScript, package.json, README, and open-source license."*
+> *"Four — a repository inspection checking for TypeScript, package.json, README and open-source license."*
 > *"All four adapters run through Groq's LPU — results come back in under 400 milliseconds."*
 
 ---
@@ -360,7 +360,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 3. Filter by status = `Verified` or `Released`.
 
 **🎙️ Say:**
-> *"The AG Grid ledger gives Elena full tabular control over every milestone in her portfolio. She can sort, filter, and export. This is AG Grid's enterprise data grid running against real Supabase queries."*
+> *"The AG Grid ledger gives Elena full tabular control over every milestone in her portfolio. She can sort, filter and export. This is AG Grid's enterprise data grid running against real Supabase queries."*
 
 ---
 
@@ -372,7 +372,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 3. Wait for the agent response.
 
 **🎙️ Say:**
-> *"This is the AG Studio React agent — not a chatbot. It's an agentic system with tool access to the live ledger. It can query, aggregate, and reason over financial data in real time. Watch how it answers with specific numbers drawn from the actual database."*
+> *"This is the AG Studio React agent — not a chatbot. It's an agentic system with tool access to the live ledger. It can query, aggregate and reason over financial data in real time. Watch how it answers with specific numbers drawn from the actual database."*
 
 **📹 Do:**
 4. Ask a follow-up: *"Which submissions have been waiting the longest?"*
@@ -407,20 +407,20 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 3. If time allows, show `backend/app/services/policy_engine.py` briefly in IDE.
 
 **🎙️ Say:**
-> *"The PolicyEngine enforces four non-negotiable rules before any payout can release: the caller must be the verified contract client, the milestone must pass AI verification, the milestone must have a PayPal capture on record, and the freelancer must have a registered payout email. If any of these fail, the transaction is blocked — full stop. AI never bypasses this."*
+> *"The PolicyEngine enforces four non-negotiable rules before any payout can release: the caller must be the verified contract client, the milestone must pass AI verification, the milestone must have a PayPal capture on record and the freelancer must have a registered payout email. If any of these fail, the transaction is blocked — full stop. AI never bypasses this."*
 
 ---
 
 ## SECTION 11 — Closing & Prize Summary (11:30–12:00)
 
 **🎙️ Say:**
-> *"TrustBroker AI demonstrates what's possible when real PayPal infrastructure, agentic AI, and policy-driven governance come together."*
+> *"TrustBroker AI demonstrates what's possible when real PayPal infrastructure, agentic AI and policy-driven governance come together."*
 >
 > *"For the **Best Use of PayPal** prize: real Orders v2 captures, real Payouts API disbursements, traceable sandbox IDs — the complete money loop."*
 >
 > *"For the **Agentic AI** prize: an AG Studio React agent with live tool access, Groq LPU inference, multimodal delivery verification across four adapter types."*
 >
-> *"For the **AG Studio / AG Grid** prize: enterprise data grids, cross-filtering KPI dashboards, and an AI copilot that reasons over live financial data — in both the client and freelancer portals."*
+> *"For the **AG Studio / AG Grid** prize: enterprise data grids, cross-filtering KPI dashboards and an AI copilot that reasons over live financial data — in both the client and freelancer portals."*
 >
 > *"And for the **developer experience** prize: fully typed TypeScript, clean role-based routing, a PolicyEngine that makes the codebase auditable and extensible."*
 >

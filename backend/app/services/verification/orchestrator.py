@@ -1,4 +1,4 @@
-"""
+﻿"""
 Multimodal Verification Orchestrator for TrustBroker AI.
 Dispatches evidence to specialized adapters by evidence_type:
 - live_url -> http_probe + vision
@@ -23,6 +23,7 @@ from app.services.audit_service import log_audit_event
 from app.services.notification_service import queue_notification
 from app.services.verification.adapters import http_probe, vision, document, repo_meta, zip_listing
 from app.services.verification import scoring
+from app.services.verification import evidence_loader
 from app.services import ai_provider
 
 logger = logging.getLogger("trustbroker.verification.orchestrator")
@@ -100,11 +101,13 @@ def run_verification_orchestration(
 
                 # §7.2: Live URL requires an accompanying screenshot evaluated via vision
                 if image_files:
+                    _img_bytes = evidence_loader.load_evidence_bytes(image_files[0].storage_path or "")
                     img_fact = vision.inspect_screenshot_with_vision(
                         image_source=image_files[0].storage_path or image_files[0].file_name,
                         criterion_title=c.title,
                         criterion_description=c.description,
                         mime_type=image_files[0].mime_type,
+                        local_file_bytes=_img_bytes,
                     )
                     if img_fact.get("model_used"):
                         models_used.append(img_fact["model_used"])
@@ -122,11 +125,13 @@ def run_verification_orchestration(
             elif etype in ["screenshot", "design_file", "image"]:
                 img_file = image_files[0] if image_files else None
                 img_path = img_file.storage_path if img_file else (delivery.live_url or "")
+                _img_bytes = evidence_loader.load_evidence_bytes(img_file.storage_path or "") if img_file else None
                 facts = vision.inspect_screenshot_with_vision(
                     image_source=img_path,
                     criterion_title=c.title,
                     criterion_description=c.description,
                     mime_type=img_file.mime_type if img_file else "image/png",
+                    local_file_bytes=_img_bytes,
                 )
                 if facts.get("model_used"):
                     models_used.append(facts["model_used"])
@@ -135,20 +140,24 @@ def run_verification_orchestration(
             elif etype in ["document", "pdf", "file"]:
                 if doc_files:
                     doc_file = doc_files[0]
+                    _doc_bytes = evidence_loader.load_evidence_bytes(doc_file.storage_path or "")
                     facts = document.inspect_document(
                         file_name=doc_file.file_name,
                         criterion_title=c.title,
                         criterion_description=c.description,
-                        file_path=doc_file.storage_path,
+                        file_path=doc_file.storage_path if not _doc_bytes else None,
+                        file_bytes=_doc_bytes,
                     )
                 elif image_files:
                     # Freelancer provided an image diagram/screenshot for this file criterion
                     img_file = image_files[0]
+                    _img_bytes = evidence_loader.load_evidence_bytes(img_file.storage_path or "")
                     facts = vision.inspect_screenshot_with_vision(
                         image_source=img_file.storage_path or img_file.file_name,
                         criterion_title=c.title,
                         criterion_description=c.description,
                         mime_type=img_file.mime_type or "image/png",
+                        local_file_bytes=_img_bytes,
                     )
                 else:
                     facts = document.inspect_document(
@@ -163,9 +172,11 @@ def run_verification_orchestration(
             # 5. SOURCE ARCHIVE / ZIP
             elif etype in ["source_archive", "zip", "code_archive"]:
                 z_file = zip_files[0] if zip_files else None
+                _zip_bytes = evidence_loader.load_evidence_bytes(z_file.storage_path or "") if z_file else None
                 facts = zip_listing.inspect_zip_archive(
                     file_name=z_file.file_name if z_file else "archive.zip",
                     file_path=z_file.storage_path if z_file else None,
+                    file_bytes=_zip_bytes,
                 )
 
             # 6. REPOSITORY / CODE LINK (explicit etype)
@@ -235,18 +246,60 @@ def run_verification_orchestration(
                 raw_passed = ae.get("passed")
                 raw_score = ae.get("score", 50)
                 try:
-                    validated_passed = bool(raw_passed)
+                    # Strict boolean coercion: reject truthy strings like "false"
+                    if raw_passed is True:
+                        validated_passed = True
+                    elif raw_passed is False:
+                        validated_passed = False
+                    elif isinstance(raw_passed, str) and raw_passed.lower() == "true":
+                        validated_passed = True
+                    else:
+                        validated_passed = False
                     validated_score = max(0, min(100, int(raw_score)))
                 except (TypeError, ValueError):
                     logger.warning(f"AI evaluator returned invalid passed/score for criterion {cid} — using NEEDS_REVIEW")
                     validated_passed = False
                     validated_score = 50
-                ai_eval_by_id[cid] = {
-                    "passed": validated_passed,
-                    "score": validated_score,
-                    "confidence": float(ae.get("confidence", 0.5)),
-                    "explanation": str(ae.get("explanation", "")),
-                    "cited_snippet": str(ae.get("evidence_match_snippet", "")),
+                # Detect duplicate criterion IDs from AI response
+                if cid in ai_eval_by_id:
+                    logger.warning(
+                        f"AI evaluator returned duplicate evaluation for criterion {cid} — marking NEEDS_REVIEW"
+                    )
+                    ai_eval_by_id[cid] = {
+                        "passed": False,
+                        "score": 50,
+                        "confidence": 0.0,
+                        "explanation": "AI evaluator returned duplicate evaluations for this criterion — manual review required.",
+                        "cited_snippet": "",
+                        "needs_review": True,
+                    }
+                else:
+                    ai_eval_by_id[cid] = {
+                        "passed": validated_passed,
+                        "score": validated_score,
+                        "confidence": float(ae.get("confidence", 0.5)),
+                        "explanation": str(ae.get("explanation", "")),
+                        "cited_snippet": str(ae.get("evidence_match_snippet", "")),
+                    }
+
+        # Enforce: every criterion must have exactly one AI evaluation.
+        # Any criterion missing from AI response is flagged NEEDS_REVIEW here
+        # so scoring.py never sees None as "optional".
+        criteria_ids_expected = {str(c.id) for c in criteria}
+        criteria_ids_got = set(ai_eval_by_id.keys())
+        missing_ids = criteria_ids_expected - criteria_ids_got
+        if missing_ids:
+            logger.warning(
+                f"AI evaluator did not return evaluations for criteria: {missing_ids} — marking NEEDS_REVIEW"
+            )
+            for mid in missing_ids:
+                ai_eval_by_id[mid] = {
+                    "passed": False,
+                    "score": 50,
+                    "confidence": 0.0,
+                    "explanation": "AI evaluator did not return an assessment for this criterion — manual review required.",
+                    "cited_snippet": "",
+                    "needs_review": True,
                 }
 
         # Score each criterion combining adapter facts + AI evaluation

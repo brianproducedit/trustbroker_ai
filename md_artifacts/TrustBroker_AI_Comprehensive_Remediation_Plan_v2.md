@@ -9,7 +9,7 @@
 
 ## 0. Executive conclusion
 
-The previous P0 workplan covered the eight main engineering areas from the audit: authentication, PayPal capture, webhooks, payouts/policy, verification, file uploads, refund/reclaim, and CI. It was a strong starting point, but it was **not complete enough to serve as the single final remediation specification**.
+The previous P0 workplan covered the eight main engineering areas from the audit: authentication, PayPal capture, webhooks, payouts/policy, verification, file uploads, refund/reclaim and CI. It was a strong starting point, but it was **not complete enough to serve as the single final remediation specification**.
 
 This v2 adds missing tasks for:
 
@@ -158,7 +158,7 @@ The Render blueprint sets `ENVIRONMENT=production`, but that does not currently 
    - the capture has not already been applied to another attempt or milestone.
 3. Add `GET /v2/checkout/orders/{order_id}` to `paypal_client.py` for reconciliation. If capture reports already captured or a state conflict, fetch the real order and inspect its actual purchase unit/capture. Do not synthesize an ID.
 4. Treat not-approved, declined, pending, cancelled, unknown and ambiguous outcomes as not-funded. Persist the provider status and a safe error code for support/debugging.
-5. Introduce an idempotent create-order key for each milestone funding attempt. Use PayPal `PayPal-Request-Id` support where appropriate, and persist the key before or atomically with the request workflow.
+5. Introduce an idempotent create-order key for each milestone funding attempt. Use PayPal `PayPal-Request-Id` support where appropriate and persist the key before or atomically with the request workflow.
 6. Serialize order creation per milestone. Use a database transaction and row lock/advisory lock or an equivalent concurrency-safe mechanism. Add a uniqueness rule for one nonterminal funding attempt per milestone if the schema can support it. Do not rely only on a frontend disabled button.
 7. If an existing nonexpired `CHECKOUT_CREATED` attempt exists, return/reconcile it rather than creating another order. Define when it expires and how the previous PayPal order is voided or reconciled before replacement.
 8. Handle the case where PayPal creates an order but the database commit fails. Use the idempotency key to recover the existing provider order or mark the attempt for reconciliation; do not silently create an untracked second order.
@@ -204,7 +204,7 @@ The Render blueprint sets `ENVIRONMENT=production`, but that does not currently 
 4. Process `PAYMENT.CAPTURE.COMPLETED` only after confirming the capture resource is actually `COMPLETED` and matches an existing attempt.
 5. For `CHECKOUT.ORDER.COMPLETED`, retrieve the order/capture and reconcile it; do not store the order resource ID as though it were necessarily a capture ID.
 6. Treat capture denied, reversed, refunded and voided events according to their actual event resource and current local state. Do not turn an unrelated resource into a cancellation/refund of the found attempt.
-7. For payout events, reconcile the batch/item IDs and `sender_item_id` against the stored payout, and map provider statuses explicitly. Unknown/unexpected status must be nonterminal or flagged for review, never treated as success by string passthrough.
+7. For payout events, reconcile the batch/item IDs and `sender_item_id` against the stored payout and map provider statuses explicitly. Unknown/unexpected status must be nonterminal or flagged for review, never treated as success by string passthrough.
 8. Keep `ProviderEvent.event_id` idempotency, but make the processing transaction robust: a valid event should be recorded as received, then processed exactly once; failed processing should remain retryable and visible, not permanently marked complete.
 9. Store valid unknown events for audit without applying financial state changes.
 10. Add structured logs without exposing secrets, full card details, webhook signing material or sensitive personal information.
@@ -399,7 +399,7 @@ An adapter exception, missing evidence object or absent result must never defaul
 8. Backend verification adapters must fetch bytes from private storage through a server-side helper. The service-role key must never be sent to the browser.
 9. Clients and assigned freelancers can receive short-lived signed download URLs only after contract-party authorization. Unrelated users cannot enumerate or read the objects.
 10. Ensure evidence object paths and metadata are immutable once attached to a submitted delivery. A resubmission should create a new delivery/evidence version, not silently replace evidence from an earlier assessment.
-11. Add safe file handling: no executing uploaded code, no opening archives with path traversal, enforce decompression limits, and consider malware scanning if a suitable no-cost mechanism is available. Do not claim antivirus scanning if none exists.
+11. Add safe file handling: no executing uploaded code, no opening archives with path traversal, enforce decompression limits and consider malware scanning if a suitable no-cost mechanism is available. Do not claim antivirus scanning if none exists.
 
 ### Acceptance tests
 
@@ -411,7 +411,7 @@ An adapter exception, missing evidence object or absent result must never defaul
 - Verification adapter receives actual stored bytes and correctly processes a known fixture.
 - A new delivery submission preserves the earlier submission and report for audit history.
 
-**Completion gate:** a judge can submit a genuine file, refresh the browser, and the backend can retrieve and assess the same file securely.
+**Completion gate:** a judge can submit a genuine file, refresh the browser and the backend can retrieve and assess the same file securely.
 
 ---
 
@@ -584,7 +584,7 @@ The current GitHub Actions workflow runs frontend TypeScript checks and build on
 
 1. Add a backend CI job using the supported Python version from the repository. Install `backend/requirements.txt` and run `pytest` from `backend/`.
 2. Use a disposable test database or SQLite-compatible fixtures where possible. Mock Supabase, PayPal, Groq/OpenRouter and GitHub/HTTP dependencies for unit tests. No real secrets in CI.
-3. Add migration tests: fresh DB upgrade, current DB upgrade, and failure must stop startup.
+3. Add migration tests: fresh DB upgrade, current DB upgrade and failure must stop startup.
 4. Add the regression tests specified in Workstreams A–I, including concurrency/idempotency and unauthorized resource access.
 5. Keep the existing frontend job with Node 20, TypeScript check and production build.
 6. Make CI fail if backend or frontend tests fail. Do not make tests optional or use `continue-on-error` for critical checks.
@@ -627,7 +627,7 @@ The current GitHub Actions workflow runs frontend TypeScript checks and build on
 - `docs/JUDGE_DEMO.md` and `md_artifacts/TrustBroker_AI_Demo_Script.md` refer to `/app/client/new-contract`; the current canonical route is `/app/client/contracts/new`.
 - Root README says Node 18+ while root `package.json` declares Node `>=20`.
 - Public README contains “Zero Mock Fallbacks on Payouts” despite the synthetic sandbox fallback code.
-- README and judge instructions use “escrow”, “instant payout”, “funds secured”, and “PayPal-secured” as if the integrated Orders + Payouts flow were a formal escrow product.
+- README and judge instructions use “escrow”, “instant payout”, “funds secured” and “PayPal-secured” as if the integrated Orders + Payouts flow were a formal escrow product.
 - Demo material claims real PayPal batch/item IDs and successful verification in all paths, which must not be claimed unless the actual provider and evidence records demonstrate it.
 - Documentation has stale/broken relative references between `docs/` and `md_artifacts/`.
 
@@ -724,7 +724,7 @@ The verification orchestrator sets `milestone.payment_status = RELEASE_AUTHORIZE
 
 ### Current defect
 
-The HTTP probe accepts user-submitted URLs and performs a server-side GET with redirects enabled. There is no visible resolution check/block for loopback, private, link-local, reserved or cloud metadata addresses, and redirect destinations are not explicitly revalidated. A malicious freelancer could use the URL as a server-side request forgery attempt against internal services or cloud metadata endpoints.
+The HTTP probe accepts user-submitted URLs and performs a server-side GET with redirects enabled. There is no visible resolution check/block for loopback, private, link-local, reserved or cloud metadata addresses and redirect destinations are not explicitly revalidated. A malicious freelancer could use the URL as a server-side request forgery attempt against internal services or cloud metadata endpoints.
 
 ### Required implementation
 
@@ -767,9 +767,9 @@ The HTTP probe accepts user-submitted URLs and performs a server-side GET with r
 ### Required implementation and checks
 
 1. Confirm Render service names, frontend URL, API URL, `VITE_API_BASE_URL`, `FRONTEND_URL`, CORS origins and Supabase redirect URLs all match the actual deployed services.
-2. Make required variables explicit in production: `ENVIRONMENT=production`, Supabase URL/JWT configuration, `PAYPAL_MODE=sandbox` for the demo, PayPal credentials and webhook ID (if webhook functionality is demonstrated), AI provider keys, private storage configuration, and allowed origins.
+2. Make required variables explicit in production: `ENVIRONMENT=production`, Supabase URL/JWT configuration, `PAYPAL_MODE=sandbox` for the demo, PayPal credentials and webhook ID (if webhook functionality is demonstrated), AI provider keys, private storage configuration and allowed origins.
 3. Remove all credentials/secrets from tracked files, images, Markdown, demo snippets and build artifacts. Rotate any secret that was ever committed.
-4. Confirm all judge accounts exist in Supabase Auth, their Auth IDs match seeded `profiles` IDs, and their passwords work through normal Supabase login in a private/incognito browser.
+4. Confirm all judge accounts exist in Supabase Auth, their Auth IDs match seeded `profiles` IDs and their passwords work through normal Supabase login in a private/incognito browser.
 5. The frontend must not create a local demo session after remote auth fails. A profile row alone is not a functioning judge login.
 6. Payout receiver email must be a real, configured PayPal sandbox personal account email for the sandbox demo. Do not create it automatically from a placeholder.
 7. Do not promise live payout availability for Zimbabwean freelancers until PayPal's current live product eligibility and the receiving account's country/type are verified. A PayPal sandbox payout demonstration is not proof of live local payout support.

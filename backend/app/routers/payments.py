@@ -64,7 +64,7 @@ async def release_payout(
     )
 
 
-@router.post("/{contract_id}/{milestone_id}/refund", summary="Client reclaims staged escrow due to freelancer inactivity or unaddressed revisions")
+@router.post("/{contract_id}/{milestone_id}/refund", summary="Client reclaims staged milestone funds due to freelancer inactivity or unaddressed revisions")
 def refund_staged_escrow(
     contract_id: uuid.UUID,
     milestone_id: uuid.UUID,
@@ -72,7 +72,7 @@ def refund_staged_escrow(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Buyer Protection: Client reclaims staged milestone escrow funds."""
+    """Buyer Protection: Client reclaims staged milestone funds."""
     return payment_service.refund_milestone_escrow(
         session=session,
         contract_id=contract_id,
@@ -98,7 +98,7 @@ def get_client_ledger(
     current_user: UserProfile = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Full escrow and payout ledger for the signed-in client."""
+    """Full payment staging and payout ledger for the signed-in client."""
     return payment_service.list_client_ledger(session, current_user)
 
 

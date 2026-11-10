@@ -45,7 +45,7 @@ export const Landing: React.FC = () => {
   const faqs = [
     {
       q: 'How does PayPal milestone funding protect both sides?',
-      a: 'The client funds only the upcoming milestone into TrustBroker via PayPal Orders v2 before work begins. Funds remain staged in sandbox escrow until the freelancer delivers evidence and the AI verification engine validates the agreed acceptance criteria.'
+      a: 'The client funds only the upcoming milestone into TrustBroker via PayPal Orders v2 before work begins. Funds remain staged in the PayPal sandbox until the freelancer delivers evidence and the AI verification engine validates the agreed acceptance criteria.'
     },
     {
       q: 'What deliverables can the AI verification engine inspect?',
@@ -88,7 +88,7 @@ export const Landing: React.FC = () => {
               className="px-3.5 py-1 rounded-full bg-white/80 border-blue-200/80 text-blue-700 text-xs font-semibold gap-2 shadow-xs backdrop-blur-xs"
             >
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-              <span>AI Milestone Contracts · PayPal-Secured Escrow</span>
+              <span>AI Milestone Contracts · PayPal-Secured Payments</span>
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#0B1B33] leading-[1.12]">
@@ -128,7 +128,7 @@ export const Landing: React.FC = () => {
               </span>
               <span className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-blue-600" />
-                Zero Escrow Lock-in Debates
+                Zero Payment Lock-in Debates
               </span>
               <span className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-indigo-600" />
@@ -141,13 +141,13 @@ export const Landing: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-mono text-xs font-bold text-[#0B1B33]">TB-2026-LIVE-ESCROW</span>
+                  <span className="font-mono text-xs font-bold text-[#0B1B33]">TB-2026-LIVE-ORDER</span>
                   <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-mono">
-                    PayPal Escrow Staged
+                    PayPal Payment Staged
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono font-semibold text-slate-700">
-                  <span className="text-slate-400 font-normal">Escrow Staged:</span> $8,500 USD
+                  <span className="text-slate-400 font-normal">Staged:</span> $8,500 USD
                 </div>
               </div>
 
@@ -185,7 +185,7 @@ export const Landing: React.FC = () => {
               The 7-Step Verified Loop
             </h2>
             <p className="text-xs sm:text-sm text-[#475569] mt-2">
-              Every milestone is structured, pre-funded in PayPal escrow, verified on live evidence and settled automatically.
+              Every milestone is structured, pre-funded via PayPal Orders, verified on live evidence and settled automatically.
             </p>
           </div>
 
@@ -270,7 +270,7 @@ export const Landing: React.FC = () => {
                   For Freelancers & Studios
                 </Badge>
                 <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                  Work against funded escrow. <br />
+                  Work with staged PayPal funding. <br />
                   Get paid without invoice chasing.
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md">
@@ -366,12 +366,12 @@ export const Landing: React.FC = () => {
                     {/* Milestone 2 */}
                     <div className="p-3 bg-white rounded-lg border border-blue-200 bg-blue-50/30 flex items-center justify-between gap-3 text-xs">
                       <div className="space-y-0.5">
-                        <div className="font-medium text-slate-800">M2: PayPal Orders v2 & Escrow Hub</div>
+                        <div className="font-medium text-slate-800">M2: PayPal Orders v2 & Payment Hub</div>
                         <div className="text-slate-500 text-[11px]">Due Dec 01 &bull; Under AI Inspection</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] animate-pulse">
-                          Staged in Escrow ($5,500)
+                          Staged via PayPal ($5,500)
                         </Badge>
                       </div>
                     </div>
@@ -402,7 +402,7 @@ export const Landing: React.FC = () => {
               Frequently Asked Questions
             </h2>
             <p className="text-xs sm:text-sm text-[#475569]">
-              Everything you need to know about TrustBroker AI contracts, PayPal milestone escrow and payouts.
+              Everything you need to know about TrustBroker AI contracts, PayPal milestone payments and payouts.
             </p>
           </div>
 

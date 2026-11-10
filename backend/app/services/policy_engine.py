@@ -117,7 +117,7 @@ class PolicyEngine:
 
     @classmethod
     def can_decline_award(cls, user: UserProfile, contract: Contract) -> PolicyResult:
-        """Only the awarded freelancer may decline, and only before the contract is active."""
+        """Only the awarded freelancer may decline and only before the contract is active."""
         if not cls.is_freelancer(user, contract):
             return PolicyResult(False, "Only the awarded freelancer can decline this award.")
         if contract.status not in (ContractStatus.AWARDED, ContractStatus.PENDING_ACCEPTANCE):
@@ -185,7 +185,7 @@ class PolicyEngine:
         contract: Contract,
         milestone: Milestone,
     ) -> PolicyResult:
-        """Freelancer only, contract active or in verification, milestone funded in PayPal sandbox, and not already settled."""
+        """Freelancer only, contract active or in verification, milestone funded in PayPal sandbox and not already settled."""
         if not cls.is_freelancer(user, contract):
             return PolicyResult(False, "Only the assigned freelancer can submit deliverable evidence.")
         if contract.status == ContractStatus.CANCELLED:

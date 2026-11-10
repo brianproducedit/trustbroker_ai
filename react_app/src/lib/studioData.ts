@@ -195,7 +195,7 @@ export function buildStudioData(
   }
 }
 
-/** Operations dashboard layout: overview funnel, verification outcomes, and milestone aging. */
+/** Operations dashboard layout: overview funnel, verification outcomes and milestone aging. */
 export function buildInitialState(workspace: Workspace): AgReportState {
   const stagedCaption = workspace === 'client' ? 'Staged in PayPal Sandbox' : 'Secured by Clients'
   const releasedCaption = workspace === 'client' ? 'Released Disbursements' : 'Earned & Disbursed'

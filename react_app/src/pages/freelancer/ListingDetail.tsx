@@ -92,7 +92,7 @@ export const ListingDetail: React.FC = () => {
                   </Badge>
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">
-                  Sponsor: {listing.client_name || 'Elena Rostova'} · 100% Escrow Funded
+                  Sponsor: {listing.client_name || 'Elena Rostova'} · 100% Milestone Funded
                 </div>
               </div>
             </div>

@@ -3,22 +3,22 @@
 **Date:** 2 November 2026  
 **Competition:** PayPal AI Hackathon 2026 (Devpost)  
 **Deadline:** Thursday 12 November 2026, 12:00 PM PST  
-**Purpose:** Single source of truth for completed features, verified money movements, bug resolutions, and remaining submission requirements.
+**Purpose:** Single source of truth for completed features, verified money movements, bug resolutions and remaining submission requirements.
 
 ---
 
 ## 1. Executive Summary
 
-TrustBroker AI is **100% functionally complete, hardened against edge-case anomalies, and deployed live in production**. 
+TrustBroker AI is **100% functionally complete, hardened against edge-case anomalies and deployed live in production**. 
 
-The entire contract, milestone staging, and disbursement lifecycle is operable end-to-end with **real PayPal Sandbox APIs** (Orders v2 Checkout → Capture into Sandbox Staging → Webhooks → PayPal Payouts API) and a **multimodal AI verification engine** (vision, live HTTP probe, document extraction, GitHub repository metadata, and zip inspection).
+The entire contract, milestone staging and disbursement lifecycle is operable end-to-end with **real PayPal Sandbox APIs** (Orders v2 Checkout → Capture into Sandbox Staging → Webhooks → PayPal Payouts API) and a **multimodal AI verification engine** (vision, live HTTP probe, document extraction, GitHub repository metadata and zip inspection).
 
 All 7 phases of the **Master Implementation & Refactoring Plan** have been successfully executed:
 - **Phase 1: Terminology & Persona Decoupling:** Reconciled copy to eliminate unsupported "licensed escrow" claims; introduced "Staged Funds" and "PayPal Sandbox Staging"; added clear PayPal cross-border onboarding disclosures (e.g. Zimbabwe Send-Only limitations); added interactive workspace switcher.
 - **Phase 2: Cryptographic Contract Versioning:** Implemented deterministic SHA-256 content hashing across canonical SOW JSON; updating contract terms increments version and resets acceptances; displayed transparency badges.
 - **Phase 3: Canonical Vetting Engine (40/25/20/15):** Standardized vetting weights to 40% Skills, 25% Portfolio, 20% Proposal, 15% Track Record; newcomer-fair scoring guaranteed (75%+); Tariro Moyo scores 94/100 (Ranked #1).
 - **Phases 4 & 5: Multimodal Verification & Payment Safeguards:** Broadened payment state checks to accept all sandbox staged status variants; added interactive client revision request flow and push notifications; hardened capture against 422 errors.
-- **Phase 6: AG Studio Telemetry Visualizations:** Enriched studio data model with Lifecycle Funnel, Category Distribution, Verification Outcomes, and Milestone Aging ledgers; enabled cross-filtering; updated AICopilotFAB with 5 operational prompts.
+- **Phase 6: AG Studio Telemetry Visualizations:** Enriched studio data model with Lifecycle Funnel, Category Distribution, Verification Outcomes and Milestone Aging ledgers; enabled cross-filtering; updated AICopilotFAB with 5 operational prompts.
 - **Phase 7: Automated Master Lifecycle Test Suite:** Created `backend/tests/test_e2e_lifecycle.py` with 10 core automated test cases; provided 5-project manual testing checklist in `TrustBroker_AI_E2E_Test_Checklist.md`.
 
 | Functional Area | Status | Verified Capabilities |
@@ -45,14 +45,14 @@ All 7 phases of the **Master Implementation & Refactoring Plan** have been succe
 - **Sandbox Resilience:** Capture logic gracefully recovers from sandbox desynchronizations (`ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`, `422 Unprocessable Entity`), guaranteeing testing workflows finish smoothly.
 - **Milestone Disbursement:** `POST /api/v1/payments/release` triggers the **PayPal Payouts API** (`/v1/payments/payouts`) with idempotency key `payout:{milestone_id}`, preventing duplicate payouts.
 - **Client & Freelancer Ledgers:**
-  - `GET /api/v1/payments/client-ledger`: Aggregates all contracts, staged amounts, released amounts, and PayPal transaction records.
+  - `GET /api/v1/payments/client-ledger`: Aggregates all contracts, staged amounts, released amounts and PayPal transaction records.
   - `GET /api/v1/payments/earnings`: Role-aware ledger serving freelancer payouts or client disbursements.
 
 ### 2.2 Multimodal AI Verification Engine
-- **HTTP Probe Adapter:** Performs live DNS, TLS, status code, latency, and page title inspection. Transparently detects CDN/edge bot checkpoints (Vercel, Cloudflare, GitHub, Netlify) returning 429/403, preventing false-positive test failures.
+- **HTTP Probe Adapter:** Performs live DNS, TLS, status code, latency and page title inspection. Transparently detects CDN/edge bot checkpoints (Vercel, Cloudflare, GitHub, Netlify) returning 429/403, preventing false-positive test failures.
 - **Vision Adapter:** Inspects UI designs and screenshots using Groq vision inference.
 - **Document Extraction:** Parses PDF and markdown specifications, automatically redirecting image-based architecture diagrams to the vision pipeline.
-- **Repository Metadata:** Verifies GitHub repo structures, commit trees, and READMEs via GitHub API.
+- **Repository Metadata:** Verifies GitHub repo structures, commit trees and READMEs via GitHub API.
 - **Scoring Engine:** Deterministically aggregates evidence; marks edge rate-limiting as `NEEDS_REVIEW` (65/100) instead of a hard fail.
 
 ### 2.3 Client Workspace & Payout Management
@@ -100,7 +100,7 @@ All 7 phases of the **Master Implementation & Refactoring Plan** have been succe
 
 1. **3-Minute Demo Video:**
    - Record walkthrough following the script in `docs/TrustBroker_AI_Hackathon_Roadmap.md`.
-   - Highlight: plain English AI contract creation, newcomer-fair AI vetting, PayPal Orders v2 milestone funding, multimodal AI evidence verification, and instant PayPal Payout disbursement.
+   - Highlight: plain English AI contract creation, newcomer-fair AI vetting, PayPal Orders v2 milestone funding, multimodal AI evidence verification and instant PayPal Payout disbursement.
 2. **Devpost Submission Form:**
-   - Complete story, tools used (PayPal, Groq, AG Studio/AG Grid, Render), demo link, and public GitHub repository link.
+   - Complete story, tools used (PayPal, Groq, AG Studio/AG Grid, Render), demo link and public GitHub repository link.
    - Submit prior to **12 November 2026 at 12:00 PM PST**.

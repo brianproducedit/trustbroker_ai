@@ -271,6 +271,9 @@ class TestPhase5Adapters(unittest.TestCase):
 
 class TestPhase5Scoring(unittest.TestCase):
     def test_factual_criterion_pass(self):
+        """When adapter passes but no AI evaluation is provided, result must be NEEDS_REVIEW.
+        Adapter facts are evidence context only — not criterion pass proof.
+        PASS requires both adapter passing AND a valid AI evaluation."""
         res = scoring.score_criterion_result(
             criterion_id=str(uuid.uuid4()),
             title="TypeScript clean build",
@@ -283,9 +286,11 @@ class TestPhase5Scoring(unittest.TestCase):
                 "error": None,
             },
         )
-        self.assertEqual(res["status"], CriterionStatus.PASS)
-        self.assertTrue(res["passed"])
-        self.assertGreaterEqual(res["score"], 80)
+        # Without AI evaluation, adapter-only pass must yield NEEDS_REVIEW (not PASS).
+        # Phase A.4 fix: removed the unsafe adapter-only PASS path.
+        self.assertEqual(res["status"], CriterionStatus.NEEDS_REVIEW)
+        self.assertFalse(res["passed"])
+        self.assertTrue(res["requires_review"])
 
     def test_hard_fail_criterion(self):
         res = scoring.score_criterion_result(
@@ -520,6 +525,157 @@ class TestPhase5Orchestrator(unittest.TestCase):
 
         self.session.refresh(self.milestone)
         self.assertEqual(self.milestone.status, MilestoneStatus.VERIFIED)
+
+    def test_missing_criterion_in_ai_response_causes_needs_review(self):
+        """If AI evaluator omits one of the criteria, orchestrator must flag it as NEEDS_REVIEW."""
+        mock_incomplete_ai_eval = {
+            "overall_score": 90,
+            "passed": True,
+            "summary_analysis": "Only evaluated criterion 1.",
+            "requires_human_review": False,
+            "provider_used": "groq:openai/gpt-oss-120b",
+            "criterion_evaluations": [
+                {
+                    "criterion_id": str(self.criterion1.id),
+                    "passed": True,
+                    "score": 95,
+                    "confidence": 0.95,
+                    "explanation": "Valid source archive",
+                    "evidence_match_snippet": "Intact ZIP",
+                },
+                # criterion2 is missing from AI response!
+            ],
+        }
+
+        with patch("app.services.ai_provider.evaluate_delivery_against_criteria", return_value=mock_incomplete_ai_eval):
+            result = run_verification_orchestration(
+                session=self.session,
+                contract_id=self.contract.id,
+                milestone_id=self.milestone.id,
+                delivery_id=self.delivery.id,
+                actor=self.freelancer_user,
+            )
+
+        self.assertFalse(result["passed"])
+        self.assertTrue(result["requires_human_review"])
+        evals_by_id = {ce["criterion_id"]: ce for ce in result["criterion_evaluations"]}
+        missing_crit_eval = evals_by_id.get(str(self.criterion2.id))
+        self.assertIsNotNone(missing_crit_eval)
+        self.assertEqual(missing_crit_eval["status"], CriterionStatus.NEEDS_REVIEW)
+        self.assertIn("manual review", missing_crit_eval["explanation"].lower())
+
+    def test_duplicate_criterion_id_in_ai_response_causes_needs_review(self):
+        """Duplicate criterion IDs in AI response must be flagged NEEDS_REVIEW, not overwrite silently."""
+        mock_duplicate_ai_eval = {
+            "overall_score": 90,
+            "passed": True,
+            "summary_analysis": "Duplicate entries.",
+            "requires_human_review": False,
+            "provider_used": "groq:openai/gpt-oss-120b",
+            "criterion_evaluations": [
+                {
+                    "criterion_id": str(self.criterion1.id),
+                    "passed": True,
+                    "score": 95,
+                    "confidence": 0.95,
+                    "explanation": "Entry A",
+                    "evidence_match_snippet": "Intact ZIP",
+                },
+                {
+                    "criterion_id": str(self.criterion1.id),  # duplicate!
+                    "passed": True,
+                    "score": 90,
+                    "confidence": 0.90,
+                    "explanation": "Entry B",
+                    "evidence_match_snippet": "Intact ZIP",
+                },
+                {
+                    "criterion_id": str(self.criterion2.id),
+                    "passed": True,
+                    "score": 90,
+                    "confidence": 0.90,
+                    "explanation": "Valid repo",
+                    "evidence_match_snippet": "GitHub repo",
+                },
+            ],
+        }
+
+        with patch("app.services.ai_provider.evaluate_delivery_against_criteria", return_value=mock_duplicate_ai_eval):
+            result = run_verification_orchestration(
+                session=self.session,
+                contract_id=self.contract.id,
+                milestone_id=self.milestone.id,
+                delivery_id=self.delivery.id,
+                actor=self.freelancer_user,
+            )
+
+        evals_by_id = {ce["criterion_id"]: ce for ce in result["criterion_evaluations"]}
+        dup_eval = evals_by_id.get(str(self.criterion1.id))
+        self.assertIsNotNone(dup_eval)
+        self.assertEqual(dup_eval["status"], CriterionStatus.NEEDS_REVIEW)
+        self.assertIn("duplicate", dup_eval["explanation"].lower())
+
+    def test_strict_boolean_string_false_is_not_passed(self):
+        """String 'false' from AI JSON must strictly evaluate to False, not True."""
+        mock_ai_eval = {
+            "overall_score": 75,
+            "passed": False,
+            "summary_analysis": "One criterion failed.",
+            "requires_human_review": True,
+            "provider_used": "groq:openai/gpt-oss-120b",
+            "criterion_evaluations": [
+                {
+                    "criterion_id": str(self.criterion1.id),
+                    "passed": "false",  # string 'false'!
+                    "score": 40,
+                    "confidence": 0.85,
+                    "explanation": "Incomplete deliverables",
+                    "evidence_match_snippet": "Missing files",
+                },
+                {
+                    "criterion_id": str(self.criterion2.id),
+                    "passed": True,
+                    "score": 90,
+                    "confidence": 0.90,
+                    "explanation": "Valid repo",
+                    "evidence_match_snippet": "GitHub repo",
+                },
+            ],
+        }
+
+        with patch("app.services.ai_provider.evaluate_delivery_against_criteria", return_value=mock_ai_eval):
+            result = run_verification_orchestration(
+                session=self.session,
+                contract_id=self.contract.id,
+                milestone_id=self.milestone.id,
+                delivery_id=self.delivery.id,
+                actor=self.freelancer_user,
+            )
+
+        evals_by_id = {ce["criterion_id"]: ce for ce in result["criterion_evaluations"]}
+        crit1_eval = evals_by_id.get(str(self.criterion1.id))
+        self.assertIsNotNone(crit1_eval)
+        self.assertFalse(crit1_eval["passed"])
+
+    def test_evidence_loader_local_file_and_fallbacks(self):
+        """evidence_loader safely reads local file, returns None for unknown or unconfigured supabase."""
+        from app.services.verification.evidence_loader import load_evidence_bytes
+
+        # 1. Real local file
+        bytes_loaded = load_evidence_bytes(self.test_zip_path)
+        self.assertIsNotNone(bytes_loaded)
+        self.assertGreater(len(bytes_loaded), 0)
+
+        # 2. Empty or None
+        self.assertIsNone(load_evidence_bytes(""))
+        self.assertIsNone(load_evidence_bytes(None))
+
+        # 3. HTTP URL treated safely (not fetched by loader directly)
+        self.assertIsNone(load_evidence_bytes("https://example.com/some_file.png"))
+
+        # 4. Non-existent local file
+        self.assertIsNone(load_evidence_bytes("non_existent_file_path_12345.bin"))
+
 
 
 class TestPhase7TerminalJobState(unittest.TestCase):

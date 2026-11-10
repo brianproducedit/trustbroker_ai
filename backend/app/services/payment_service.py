@@ -603,7 +603,7 @@ def refund_milestone_escrow(
     client: UserProfile,
     reason: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """[SANDBOX DEMO] Resets milestone escrow state in the database. In production, this would call the PayPal v2 Refunds API (POST /v2/payments/captures/{capture_id}/refund) with the capture_id before resetting local state."""
+    """[SANDBOX DEMO] Resets milestone staged-funding state in the database. In production, this would call the PayPal v2 Refunds API (POST /v2/payments/captures/{capture_id}/refund) with the capture_id before resetting local state."""
     logger.info("[DEMO] refund_milestone_escrow: local state reset only. No PayPal Refunds API call made (sandbox scope).")
     contract = session.get(Contract, contract_id)
     if not contract:
@@ -632,7 +632,7 @@ def refund_milestone_escrow(
         status_label = "cancelled"
         mode_label = "checkout_cancelled"
     else:
-        # Funded in sandbox: reset staged escrow
+        # Funded in sandbox: reset staged funds
         reclaimed = float(milestone.amount)
         contract.staged_amount = max(Decimal("0.00"), contract.staged_amount - milestone.amount)
         status_label = "sandbox_reset"
@@ -644,11 +644,11 @@ def refund_milestone_escrow(
     session.add(contract)
     session.add(milestone)
 
-    audit_action = "checkout_cancelled" if was_checkout_created else "escrow_reclaimed"
+    audit_action = "checkout_cancelled" if was_checkout_created else "staged_funds_reclaimed"
     audit_desc = (
         f"Checkout order cancelled for milestone '{milestone.title}'."
         if was_checkout_created
-        else f"Client reclaimed staged sandbox escrow ({reclaimed} {contract.currency}) for milestone '{milestone.title}'. Reason: {reason or 'Freelancer inactivity / unaddressed revision timeout'}."
+        else f"Client reclaimed staged sandbox funds ({reclaimed} {contract.currency}) for milestone '{milestone.title}'. Reason: {reason or 'Freelancer inactivity / unaddressed revision timeout'}."
     )
 
     log_audit_event(
@@ -666,8 +666,8 @@ def refund_milestone_escrow(
             session=session,
             user_id=contract.freelancer_id,
             type="payment",
-            title=f"Escrow Reclaimed: {milestone.title}",
-            body=f"Client reclaimed staged escrow for milestone '{milestone.title}' due to revision timeout or inactivity.",
+            title=f"Staged Funds Reclaimed: {milestone.title}",
+            body=f"Client reclaimed staged milestone funds for '{milestone.title}' due to revision timeout or inactivity.",
             entity_type="contract",
             entity_id=contract.id,
         )
@@ -724,7 +724,7 @@ def list_client_payouts(session: Session, client: UserProfile) -> List[PayoutRea
 
 
 def list_client_ledger(session: Session, client: UserProfile) -> Dict[str, Any]:
-    """Comprehensive client payout management ledger: payouts, payment attempts, and money movements."""
+    """Comprehensive client payout management ledger: payouts, payment attempts and money movements."""
     contracts = list(
         session.exec(select(Contract).where(Contract.client_id == client.id)).all()
     )
@@ -799,6 +799,8 @@ async def process_paypal_webhook(
         session.rollback()
         return {"status": "already_processed", "event_id": event_id}
 
+    reconciliation_required = False
+
     if event_type == "PAYMENT.CAPTURE.COMPLETED":
         order_id = (
             (resource.get("supplementary_data") or {}).get("related_ids") or {}
@@ -825,6 +827,7 @@ async def process_paypal_webhook(
                 logger.warning(
                     f"[WEBHOOK] Event {event_id} missing required amount/currency for capture {capture_id}; reconciliation required"
                 )
+                reconciliation_required = True
             else:
                 try:
                     amount_matches = (Decimal(str(val_str)) == attempt.amount)
@@ -846,8 +849,9 @@ async def process_paypal_webhook(
                 else:
                     logger.warning(
                         f"[WEBHOOK] Event {event_id} capture amount/currency mismatch: "
-                        f"got {val_str} {curr_str}, expected {attempt.amount} {attempt.currency}"
+                        f"got {val_str} {curr_str}, expected {attempt.amount} {attempt.currency} — reconciliation required"
                     )
+                    reconciliation_required = True
     elif event_type == "CHECKOUT.ORDER.COMPLETED":
         order_id = resource.get("id")
         attempt = session.exec(
@@ -859,9 +863,34 @@ async def process_paypal_webhook(
             captures = (p_units[0].get("payments") or {}).get("captures") if p_units else []
             completed_cap = next((c for c in captures if c.get("status") == "COMPLETED"), None)
             if completed_cap:
-                attempt.paypal_capture_id = completed_cap.get("id") or attempt.paypal_capture_id
-                attempt.paypal_status = "COMPLETED"
-                _mark_milestone_funded(session, attempt)
+                # Apply same amount/currency reconciliation as PAYMENT.CAPTURE.COMPLETED.
+                # Both must be present and match the stored attempt — no silent financial update.
+                cap_amount_data = completed_cap.get("amount") or {}
+                cap_val_str = cap_amount_data.get("value")
+                cap_curr_str = cap_amount_data.get("currency_code")
+                if not cap_val_str or not cap_curr_str:
+                    logger.warning(
+                        f"[WEBHOOK] CHECKOUT.ORDER.COMPLETED event {event_id} missing "
+                        f"amount/currency in capture — skipping milestone funding; reconciliation required"
+                    )
+                    reconciliation_required = True
+                else:
+                    try:
+                        cap_amount_matches = (Decimal(str(cap_val_str)) == attempt.amount)
+                    except Exception:
+                        cap_amount_matches = False
+                    cap_curr_matches = (cap_curr_str.upper() == attempt.currency.upper())
+                    if cap_amount_matches and cap_curr_matches:
+                        attempt.paypal_capture_id = completed_cap.get("id") or attempt.paypal_capture_id
+                        attempt.paypal_status = "COMPLETED"
+                        _mark_milestone_funded(session, attempt)
+                    else:
+                        logger.warning(
+                            f"[WEBHOOK] CHECKOUT.ORDER.COMPLETED event {event_id} amount/currency mismatch: "
+                            f"got {cap_val_str} {cap_curr_str}, expected {attempt.amount} {attempt.currency} "
+                            f"— skipping milestone funding; manual reconciliation required"
+                        )
+                        reconciliation_required = True
     elif event_type in ("PAYMENT.CAPTURE.DENIED", "PAYMENT.CAPTURE.REFUNDED", "CHECKOUT.ORDER.VOIDED"):
         attempt = session.exec(
             select(PaymentAttempt).where(
@@ -925,6 +954,12 @@ async def process_paypal_webhook(
                     "payout_status": payout.status,
                 },
             )
+
+    if reconciliation_required:
+        provider_event.processed = False
+        session.add(provider_event)
+        session.commit()
+        return {"status": "reconciliation_required", "event_id": event_id, "event_type": event_type}
 
     provider_event.processed = True
     provider_event.processed_at = datetime.now(timezone.utc)

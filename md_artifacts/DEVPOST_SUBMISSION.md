@@ -49,9 +49,9 @@ Copy and paste the markdown below into the **"About the project"** editor on Dev
 
 ```markdown
 ## 💡 Inspiration
-Every year, freelancers lose billions in unpaid invoices, while clients risk capital on unfinished or sub-standard work. Traditional escrow platforms charge punitive 10–20% fees, introduce weeks of manual dispute arbitration, and rely on subjective "he-said-she-said" reviews.
+Every year, freelancers lose billions in unpaid invoices, while clients risk capital on unfinished or sub-standard work. Traditional platforms charge punitive 10–20% fees for holding funds, introduce weeks of manual dispute arbitration and rely on subjective reviews.
 
-I built **TrustBroker AI** as an independent developer to establish a trustless, transparent intermediary for the freelance economy. By combining **PayPal Orders v2 milestone captures** and **PayPal Payouts API single-click disbursements** with **autonomous multimodal AI verification** and a deterministic **PolicyEngine**, TrustBroker coordinates verifiable work delivery directly with guaranteed payouts.
+I built **TrustBroker AI** as an independent developer to establish a transparent, evidence-backed intermediary for the freelance economy. By combining **PayPal Orders v2 milestone captures** and **PayPal Payouts API single-click disbursements** with **AI-assisted multimodal verification** and a deterministic **PolicyEngine**, TrustBroker coordinates verifiable work delivery directly with human-authorized payouts.
 
 ---
 
@@ -59,16 +59,16 @@ I built **TrustBroker AI** as an independent developer to establish a trustless,
 
 TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 
-1. **AI Statement of Work (SOW) Generator**: Converts loose client project briefs into structured milestones with objective, measurable acceptance criteria, verifiable deliverables, and clear scope exclusions in under one second via Groq LPU.
-2. **Impartial Applicant Vetting**: Evaluates candidate portfolios, code quality, and communication signals without penalizing newcomers for zero-contract histories, eliminating reputation bias.
+1. **AI Statement of Work (SOW) Generator**: Converts loose client project briefs into structured milestones with objective, measurable acceptance criteria, verifiable deliverables and clear scope exclusions in under one second via Groq LPU.
+2. **Impartial Applicant Vetting**: Evaluates candidate portfolios, code quality and communication signals without penalizing newcomers for zero-contract histories, eliminating reputation bias.
 3. **Mutual Agreement & SHA-256 Hash**: Both parties cryptographically sign the exact agreed SOW hash before any money moves.
-4. **Milestone Escrow via PayPal Orders v2**: Clients fund milestone deliverables using PayPal Smart Buttons. Funds are captured and held staged in sandbox with real PayPal Order and Capture IDs.
+4. **Milestone Funding via PayPal Orders v2**: Clients fund milestone deliverables using PayPal Smart Buttons. Funds are captured and staged in the PayPal sandbox with real PayPal Order and Capture IDs.
 5. **Multimodal Delivery Inspection**: When freelancers deliver, an agentic verification engine inspects evidence across 4 parallel adapters:
-   - **HTTP Probe Adapter**: Validates live URL response codes, HTTPS/TLS certificates, and latency.
+   - **HTTP Probe Adapter**: Validates live URL response codes, HTTPS/TLS certificates and latency.
    - **Vision AI Adapter**: Analyzes UI screenshots against UX requirements.
    - **Document Adapter**: Scans delivery attestations and documentation.
-   - **Repository Adapter**: Inspects GitHub repos for code structure, package manifests, and test suites.
-6. **PolicyEngine Settlement**: A deterministic backend policy engine enforces that no payout can occur unless the milestone is verified, capture is confirmed, and the client authorizes disbursement.
+   - **Repository Adapter**: Inspects GitHub repos for code structure, package manifests and test suites.
+6. **PolicyEngine Settlement**: A deterministic backend policy engine enforces that no payout can occur unless the milestone is verified, capture is confirmed and the client authorizes disbursement.
 7. **PayPal Payouts API Disbursement**: Client authorizes payout with one click. The PayPal Payouts API submits the disbursement to the freelancer's registered PayPal email with an idempotency key (`payout:{milestone_id}`) to prevent double-disbursement. Status transitions to `PAYOUT SUBMITTED` immediately and `PAID` once PayPal webhook confirms.
 8. **AG Studio Operations & AI Copilot**: Live telemetry dashboards powered by enterprise AG Grid ledgers and an AG Studio React agent that reasons over real-time ledger data.
 
@@ -78,11 +78,11 @@ TrustBroker AI is an end-to-end, evidence-linked freelance transaction platform:
 
 As a solo developer, I architected and built the entire full-stack application from scratch:
 
-- **FinTech Payment Layer**: PayPal REST APIs using Python SDK and direct HTTP endpoints — PayPal Orders v2 (`/v2/checkout/orders` with `CAPTURE` intent), PayPal Payouts API (`/v1/payments/payouts`), and asynchronous PayPal Webhook event listeners.
+- **FinTech Payment Layer**: PayPal REST APIs using Python SDK and direct HTTP endpoints — PayPal Orders v2 (`/v2/checkout/orders` with `CAPTURE` intent), PayPal Payouts API (`/v1/payments/payouts`) and asynchronous PayPal Webhook event listeners.
 - **Agentic AI & LLM Inference**: Powered by Groq LPU running Llama 3.3 70B Versatile (rapid SOW drafting and vetting) and Llama 3.2 11B Vision for multimodal screenshot inspection, with OpenRouter fallback chain (DeepSeek, etc.) for resilience.
 - **Deterministic PolicyEngine**: Python FastAPI service that enforces 4 non-negotiable security invariant checks before any financial transaction can execute.
-- **Frontend & Operations**: React 18, TypeScript, Tailwind CSS, Lucide icons, and **AG Grid Enterprise** for the financial ledgers.
-- **Database & Identity**: Supabase (PostgreSQL with RLS, Supabase Auth, and private evidence storage buckets).
+- **Frontend & Operations**: React 18, TypeScript, Tailwind CSS, Lucide icons and **AG Grid Enterprise** for the financial ledgers.
+- **Database & Identity**: Supabase (PostgreSQL with RLS, Supabase Auth and private evidence storage buckets).
 - **Deployment**: Live hosted multi-service architecture on Render Cloud with automated CI/CD.
 
 ---
@@ -107,18 +107,18 @@ A core innovation in TrustBroker AI is the strict safety boundary:
 ### 2. Agentic AI
 - **Multimodal Verification Engine**: 4 parallel inspection adapters (HTTP, Vision, Docs, Code).
 - **AG Studio React Agent**: Autonomous agent capable of querying live ledger telemetry and answering financial operations questions.
-- **Groq LPU Sub-Second Inference**: Rapid reasoning for contract drafting, vetting, and verification.
+- **Groq LPU Sub-Second Inference**: Rapid reasoning for contract drafting, vetting and verification.
 
 ### 3. AG Studio / AG Grid
 - Comprehensive Operations Studios for both Client and Freelancer.
 - Interactive cross-filtering KPI widgets (Committed, Staged, Cleared, Pending).
-- Enterprise AG Grid tables with multi-column sorting, status pill renderers, and live Supabase data.
+- Enterprise AG Grid tables with multi-column sorting, status pill renderers and live Supabase data.
 
 ---
 
 ## 🧗 Challenges I Ran Into
 - **Strict Role Boundaries**: Ensuring clean role switching so clients cannot access freelancer delivery routes and freelancers cannot trigger client payout authorizations. I solved this with canonical `/app/client` and `/app/freelancer` route separation and database-level RLS.
-- **Sub-Second Multimodal Latency**: Running vision, repository, and live URL probes concurrently without blocking the UI. I solved this using parallel async adapter dispatching through Groq's high-throughput LPU.
+- **Sub-Second Multimodal Latency**: Running vision, repository and live URL probes concurrently without blocking the UI. I solved this using parallel async adapter dispatching through Groq's high-throughput LPU.
 - **Idempotency in Payouts**: Preventing accidental double-clicks or network retries from sending duplicate payouts. I solved this by binding `PayPal-Request-Id: payout:{milestone_id}` to each transaction.
 
 ---
@@ -138,7 +138,7 @@ Building this platform end-to-end taught me that financial applications require 
 ## 🚀 What's Next for TrustBroker AI
 - **Automated Milestone Splitting**: Streaming micropayments tied to continuous GitHub pull request merges.
 - **Multi-Currency Payouts**: Expanding PayPal Payouts across global currencies with automatic FX conversion.
-- **Cross-Platform Delivery Adapters**: Adding Figma design file inspect, AWS/GCP infrastructure provisioning checks, and mobile test flight build verifications.
+- **Cross-Platform Delivery Adapters**: Adding Figma design file inspect, AWS/GCP infrastructure provisioning checks and mobile test flight build verifications.
 ```
 
 ---

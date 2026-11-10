@@ -395,10 +395,10 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                   <Badge
                     variant="outline"
                     className={`text-xs border ${isReleased
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : isStaged
-                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                          : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : isStaged
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
                       }`}
                   >
                     {getPaymentStatusLabel(paymentStatus)}
@@ -596,7 +596,7 @@ export const MilestoneDetailDialog: React.FC<MilestoneDetailDialogProps> = ({
                 <div className="rounded-lg p-2.5 bg-[#0A1020] border border-[#1E293B] text-[10px] text-slate-500 leading-normal flex items-start gap-2 mt-2">
                   <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                   <span>
-                    Milestone payments are staged in the PayPal Developer Sandbox. Actual cross-border disbursement availability depends on PayPal seller onboarding, currency, and regional account capabilities.
+                    Milestone payments are staged in the PayPal Developer Sandbox. Actual cross-border disbursement availability depends on PayPal seller onboarding, currency and regional account capabilities.
                   </span>
                 </div>
               </div>

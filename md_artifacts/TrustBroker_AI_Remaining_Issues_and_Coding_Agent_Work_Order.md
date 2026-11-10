@@ -4,7 +4,7 @@
 **Repository snapshot reviewed:** `trustbroker_ai-main.zip` uploaded 9 November 2026  
 **Review date:** 10 November 2026  
 **Companion specification:** `md_artifacts/TrustBroker_AI_Comprehensive_Remediation_Plan_v2.md`  
-**Purpose:** Continue remediation from the latest reviewed code. Preserve completed improvements, fix confirmed remaining defects, investigate areas not yet fully validated, and prove completion with regression tests.
+**Purpose:** Continue remediation from the latest reviewed code. Preserve completed improvements, fix confirmed remaining defects, investigate areas not yet fully validated and prove completion with regression tests.
 
 ---
 
@@ -57,7 +57,7 @@ The following improvements were present in the reviewed ZIP. Verify that they st
 
 | Area | Improvement present in snapshot | Required safeguard |
 |---|---|---|
-| Authentication | Development tokens are checked through `settings.is_dev_auth_allowed`, and production explicitly rejects them. | Keep the production prohibition and test it. |
+| Authentication | Development tokens are checked through `settings.is_dev_auth_allowed` and production explicitly rejects them. | Keep the production prohibition and test it. |
 | Development identities | Only `client` and `freelancer` token roles are accepted. | Reject all other role strings. |
 | PayPal capture | Synthetic completed captures and fabricated `SANDBOX-CAP-*` IDs were removed. Already-captured/422 outcomes are reconciled against the actual PayPal order. | Require complete provider data; do not accept missing transaction fields. |
 | Webhook configuration | Missing `PAYPAL_WEBHOOK_ID` fails closed. | Keep fail-closed behaviour in every environment. |
@@ -371,7 +371,7 @@ Investigate:
 - Expired/invalid approval link.
 - Existing attempt still marked checkout-created after provider order is voided/expired.
 
-Implement a stable, persisted idempotency key per intended funding attempt, a database-level guard/lock against multiple active attempts, and safe provider reconciliation. Reusing an existing checkout must verify its current provider state; do not blindly return a stale approval URL or a nonexistent link.
+Implement a stable, persisted idempotency key per intended funding attempt, a database-level guard/lock against multiple active attempts and safe provider reconciliation. Reusing an existing checkout must verify its current provider state; do not blindly return a stale approval URL or a nonexistent link.
 
 ### Tests
 
@@ -497,7 +497,7 @@ A payout is displayed as released only after PayPal-confirmed item success. Unkn
 
 # 7. P0 — Refund and reclaim must not claim a refund that did not happen
 
-**Snapshot status: NOT COMPLETE.** The code documents that the operation is a local sandbox reset, but the API still returns `status: refunded`, accepts `CHECKOUT_CREATED`, and uses escrow/refund language.
+**Snapshot status: NOT COMPLETE.** The code documents that the operation is a local sandbox reset, but the API still returns `status: refunded`, accepts `CHECKOUT_CREATED` and uses escrow/refund language.
 
 ### Relevant files
 
@@ -550,7 +550,7 @@ Unapproved order cancellation; checkout-created nonrefundability; genuine captur
 
 ### Workstream 7 completion gate
 
-No internal state reset is described as a PayPal refund, and no unapproved checkout is treated as captured/reclaimable money.
+No internal state reset is described as a PayPal refund and no unapproved checkout is treated as captured/reclaimable money.
 
 ---
 
@@ -639,7 +639,7 @@ The actual outbound connection cannot reach a blocked IP even if DNS or redirect
 
 # 10. P1 — Migration and startup behaviour remains unsafe
 
-**Snapshot status: NOT COMPLETE.** The startup path still contains a CLI failure branch that attempts `alembic stamp head` after any nonzero exit, and the separate lifespan migration call catches errors and continues. Startup also runs `create_all`/column healing after migration handling.
+**Snapshot status: NOT COMPLETE.** The startup path still contains a CLI failure branch that attempts `alembic stamp head` after any nonzero exit and the separate lifespan migration call catches errors and continues. Startup also runs `create_all`/column healing after migration handling.
 
 ### Relevant files
 
@@ -676,7 +676,7 @@ A broken/partial migration cannot be silently stamped or hidden; the app does no
 
 # 11. P1 — Demo seeding must never overwrite real profiles or financial records
 
-**Snapshot status: PARTIAL.** Production seeding is guarded by an explicit setting, but `seed_database()` updates existing demo-email profiles with seed values, and the seed contains showcase payment/audit state. This must be made intentionally safe.
+**Snapshot status: PARTIAL.** Production seeding is guarded by an explicit setting, but `seed_database()` updates existing demo-email profiles with seed values and the seed contains showcase payment/audit state. This must be made intentionally safe.
 
 ### Relevant files
 
