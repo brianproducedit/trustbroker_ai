@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 import httpx
@@ -147,12 +147,14 @@ async def create_milestone_funding_order(
     if amount <= Decimal("0.00"):
         raise HTTPException(status_code=400, detail="Cannot fund a milestone with a zero or negative amount")
 
-    # Idempotency & Concurrency: Check if an active CHECKOUT_CREATED attempt already exists for this milestone
+    # Idempotency & Concurrency: Check if an active CHECKOUT_CREATED attempt already exists for this milestone (within 15m)
+    recent_cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
     existing_attempt = session.exec(
         select(PaymentAttempt)
         .where(
             PaymentAttempt.milestone_id == target_milestone.id,
             PaymentAttempt.status == PaymentStatus.CHECKOUT_CREATED,
+            PaymentAttempt.created_at >= recent_cutoff,
         )
         .order_by(PaymentAttempt.created_at.desc())
     ).first()

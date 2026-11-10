@@ -89,6 +89,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             clientId,
             currency: import.meta.env.VITE_PAYPAL_CURRENCY || currency,
             intent: 'capture',
+            environment: (import.meta.env.VITE_PAYPAL_MODE || 'sandbox') as 'sandbox' | 'production',
           }}
         >
           <PayPalButtons
