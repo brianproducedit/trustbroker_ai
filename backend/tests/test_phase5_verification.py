@@ -102,6 +102,67 @@ class TestPhase5Safety(unittest.TestCase):
             self.assertEqual(cm.exception.status_code, 400)
             self.assertIn("blob:", cm.exception.detail)
 
+    def test_cross_user_storage_path_rejected(self):
+        from app.schemas.delivery import DeliveryCreateRequest, DeliveryFileCreate
+        from app.services.delivery_service import submit_delivery
+        from fastapi import HTTPException
+        engine = create_engine("sqlite:///:memory:")
+        SQLModel.metadata.create_all(engine)
+        with Session(engine) as session:
+            client = UserProfile(id=uuid.uuid4(), email="client@test.com", role="client")
+            freelancer = UserProfile(id=uuid.uuid4(), email="freelancer@test.com", role="freelancer")
+            other_user_id = uuid.uuid4()
+            contract = Contract(
+                id=uuid.uuid4(),
+                code="TB-CROSS-001",
+                title="Cross User Storage Test",
+                client_id=client.id,
+                freelancer_id=freelancer.id,
+                status=ContractStatus.ACTIVE,
+                total_amount=Decimal("100.00"),
+            )
+            milestone = Milestone(
+                id=uuid.uuid4(),
+                contract_id=contract.id,
+                title="Milestone 1",
+                amount=Decimal("100.00"),
+                status=MilestoneStatus.IN_PROGRESS,
+                payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+            )
+            session.add_all([client, freelancer, contract, milestone])
+            session.commit()
+
+            # Attempt to attach another user's storage path
+            req = DeliveryCreateRequest(
+                contract_id=contract.id,
+                milestone_id=milestone.id,
+                description="Delivery trying to hijack another user's file",
+                files=[
+                    DeliveryFileCreate(
+                        file_name="stolen_doc.pdf",
+                        storage_path=f"uploads/evidence/{other_user_id}/stolen_file.pdf",
+                        size_bytes=1024,
+                        mime_type="application/pdf",
+                    )
+                ],
+                auto_verify=False,
+            )
+            with self.assertRaises(HTTPException) as cm:
+                submit_delivery(session=session, freelancer=freelancer, req=req)
+            self.assertEqual(cm.exception.status_code, 400)
+            self.assertIn("not authenticated uploader", cm.exception.detail)
+
+    def test_path_traversal_storage_path_rejected(self):
+        from app.services.verification.safety import validate_storage_path
+        uid = uuid.uuid4()
+        safe, err = validate_storage_path(f"uploads/evidence/{uid}/../../etc/passwd", uploader_id=uid)
+        self.assertFalse(safe)
+        self.assertIn("traversal", err.lower())
+
+        safe, err = validate_storage_path("http://evil.com/payload.png", uploader_id=uid)
+        self.assertFalse(safe)
+        self.assertIn("not permitted", err.lower())
+
 
 class TestPhase5Adapters(unittest.TestCase):
     def test_http_probe_reachable(self):

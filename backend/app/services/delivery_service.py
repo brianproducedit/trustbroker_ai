@@ -10,7 +10,7 @@ from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, DeliveryFi
 from app.services.audit_service import log_audit_event
 from app.services.notification_service import queue_notification
 from app.services.verification_service import orchestrate_delivery_verification
-from app.services.verification.safety import validate_evidence_file, sanitize_filename
+from app.services.verification.safety import validate_evidence_file, sanitize_filename, validate_storage_path
 from app.services.policy_engine import PolicyEngine
 from app.utils.security import require_contract_party
 
@@ -140,11 +140,14 @@ def submit_delivery(
     # Add attached files
     files_to_process = req.files or req.file_attachments or []
     for f_data in files_to_process:
-        if f_data.storage_path and f_data.storage_path.startswith("blob:"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Browser-local blob: URLs are not permitted for '{f_data.file_name}'. Deliverables must be uploaded to server storage.",
-            )
+        if f_data.storage_path:
+            path_safe, path_err = validate_storage_path(f_data.storage_path, uploader_id=freelancer.id)
+            if not path_safe:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Storage path rejection for '{f_data.file_name}': {path_err}",
+                )
+
         is_safe, reason = validate_evidence_file(f_data.file_name, f_data.size_bytes, f_data.mime_type)
         if not is_safe:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"File rejection: {reason}")

@@ -4,7 +4,7 @@ Enforces size/type allowlists and sanitizes filenames at $0 ops cost.
 """
 import os
 import re
-from typing import Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB per file
 MAX_TOTAL_SUBMISSION_BYTES = 60 * 1024 * 1024  # 60 MB total
@@ -48,6 +48,53 @@ def validate_evidence_file(file_name: str, size_bytes: int, mime_type: str = "")
         return False, f"File size ({mb:.1f}MB) exceeds the 25MB limit."
 
     return True, "Valid"
+
+
+def validate_storage_path(storage_path: str, uploader_id: Optional[Any] = None) -> Tuple[bool, str]:
+    """Validate storage path format and ownership.
+    
+    Ensures:
+    1. No blob:, data:, javascript:, or arbitrary web schemes
+    2. No path traversal (..), null bytes (\\0), or absolute system paths
+    3. If uploader_id is provided, the path MUST reside in the uploader's subfolder
+    4. Must belong to the approved storage namespace (supabase:// or uploads/evidence/)
+    """
+    if not storage_path or not isinstance(storage_path, str):
+        return False, "Empty or invalid storage path."
+
+    clean = storage_path.strip()
+    if clean.startswith("blob:"):
+        return False, "Browser-local blob: URLs are not permitted."
+    if clean.startswith(("http://", "https://", "data:", "file:", "ftp:")):
+        return False, "External or arbitrary URI schemes are not permitted for storage paths."
+    if "\0" in clean or ".." in clean:
+        return False, "Invalid characters or path traversal attempt detected."
+    if clean.startswith(("/", "\\")) or re.match(r"^[a-zA-Z]:", clean):
+        return False, "Absolute filesystem paths are not permitted."
+
+    expected_uid = str(uploader_id) if uploader_id else None
+
+    if clean.startswith("supabase://"):
+        remainder = clean.replace("supabase://", "", 1)
+        parts = remainder.split("/")
+        if len(parts) < 3:
+            return False, "Invalid Supabase storage path format."
+        bucket, folder = parts[0], parts[1]
+        if expected_uid and folder != expected_uid:
+            return False, f"Storage path belongs to user {folder}, not authenticated uploader."
+        return True, "Valid"
+
+    if clean.startswith("uploads/evidence/"):
+        remainder = clean.replace("uploads/evidence/", "", 1)
+        parts = remainder.split("/")
+        if len(parts) < 2:
+            return False, "Invalid local storage path format."
+        folder = parts[0]
+        if expected_uid and folder != expected_uid:
+            return False, f"Storage path belongs to user {folder}, not authenticated uploader."
+        return True, "Valid"
+
+    return False, f"Unrecognized storage path namespace: {clean[:40]}"
 
 
 # ==============================================================================

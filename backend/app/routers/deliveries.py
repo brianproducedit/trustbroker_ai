@@ -1,9 +1,11 @@
+import logging
 import os
 import uuid
 from typing import List
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
+from app.config import settings
 from app.database import get_session
 from app.models.user import UserProfile
 from app.models.contract import Contract
@@ -14,6 +16,8 @@ from app.schemas.delivery import DeliveryCreateRequest, DeliveryRead, RevisionRe
 from app.services import delivery_service, verification_service
 from app.utils.security import get_current_user, require_contract_party
 from app.utils.supabase_client import get_supabase_admin, get_signed_download_url
+
+logger = logging.getLogger("trustbroker.deliveries")
 
 router = APIRouter(prefix="/deliveries", tags=["Deliveries"])
 
@@ -70,10 +74,24 @@ async def upload_evidence_file(
                 "size_bytes": len(contents),
                 "mime_type": file.content_type or "application/octet-stream",
             }
-        except Exception:
-            pass  # Fallback to local server disk storage
+        except Exception as sup_err:
+            if settings.environment.lower() == "production":
+                logger.error(f"[STORAGE] Production Supabase storage upload failed: {sup_err}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="Evidence storage service unavailable. Please retry shortly.",
+                )
+            # In development/test, fallback to local disk storage
+            logger.warning(f"[STORAGE] Supabase upload failed ({sup_err}); falling back to local disk in {settings.environment}")
 
-    # Local disk fallback
+    if settings.environment.lower() == "production" and not supabase_client:
+        logger.error("[STORAGE] Production requires Supabase storage configuration (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)")
+        raise HTTPException(
+            status_code=503,
+            detail="Cloud evidence storage is not configured on this production environment.",
+        )
+
+    # Local disk fallback (allowed in development and test environments)
     relative_path = f"{str(current_user.id)}/{file_id}_{safe_name}"
     dest_dir = os.path.join(_UPLOAD_DIR, str(current_user.id))
     os.makedirs(dest_dir, exist_ok=True)
@@ -115,10 +133,14 @@ def download_evidence_file(
             if url:
                 return {"download_url": url}
 
-    # Local file download
-    local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), d_file.storage_path)
-    if os.path.exists(local_path):
-        return FileResponse(local_path, media_type=d_file.mime_type, filename=d_file.file_name)
+    # Local file download: canonicalize path and ensure it stays inside _UPLOAD_DIR
+    backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    target_abs = os.path.realpath(os.path.join(backend_root, d_file.storage_path))
+    evidence_root = os.path.realpath(_UPLOAD_DIR)
+
+    # Must stay inside evidence_root and actually exist
+    if target_abs.startswith(evidence_root) and os.path.isfile(target_abs):
+        return FileResponse(target_abs, media_type=d_file.mime_type, filename=d_file.file_name)
 
     raise HTTPException(status_code=404, detail="File content not found on server")
 
