@@ -134,13 +134,14 @@ async def create_payout(
 async def get_payout_batch(batch_id: str) -> Dict[str, Any]:
     """Fetch the current PayPal status for a previously created payout batch."""
     base_url = get_base_url()
+    token = await get_paypal_access_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=20.0) as client:
-        token = await get_paypal_access_token()
-        headers = {"Authorization": f"******", "Content-Type": "application/json"}
         res = await client.get(f"{base_url}/v1/payments/payouts/{batch_id}", headers=headers)
         if res.status_code == 401:
+            # Token may have expired — refresh once and retry
             token = await get_paypal_access_token()
-            headers["Authorization"] = f"******"
+            headers["Authorization"] = f"Bearer {token}"
             res = await client.get(f"{base_url}/v1/payments/payouts/{batch_id}", headers=headers)
         if res.status_code != 200:
             raise Exception(f"Failed to fetch PayPal payout batch {batch_id}: {res.text}")
