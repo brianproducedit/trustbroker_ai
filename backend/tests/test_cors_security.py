@@ -78,3 +78,4 @@ def test_500_error_production_masks_exception_details(client, monkeypatch):
     assert "SensitiveDatabaseConnectionError" not in data["detail"]
     assert "supersecret" not in data["detail"]
     assert "error_id" in data
+

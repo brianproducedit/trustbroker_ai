@@ -208,3 +208,219 @@ async def test_payout_failure_does_not_fabricate_batch_id(
     assert payout is not None
     assert payout.status == PayoutStatus.FAILED.value
     assert payout.paypal_batch_id is None or not payout.paypal_batch_id.startswith("SANDBOX-BATCH")
+
+
+@pytest.mark.asyncio
+async def test_capture_rejects_missing_amount_or_currency(session: Session, client_user: UserProfile):
+    """Capture response missing amount or currency must be rejected (cannot bypass validation)."""
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-INT-005",
+        title="Field Validation Contract",
+        client_id=client_user.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("250.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("250.00"),
+        status=MilestoneStatus.PENDING,
+        payment_status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    attempt = PaymentAttempt(
+        contract_id=contract.id,
+        milestone_id=milestone.id,
+        paypal_order_id="TEST-ORDER-NO-AMT",
+        amount=Decimal("250.00"),
+        currency="USD",
+        status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    session.add(contract)
+    session.add(milestone)
+    session.add(attempt)
+    session.commit()
+
+    # Provider returns captures array with NO amount object
+    mock_capture_no_amt = {
+        "status": "COMPLETED",
+        "purchase_units": [
+            {
+                "payments": {
+                    "captures": [
+                        {"id": "CAP-12345", "status": "COMPLETED"}  # missing amount
+                    ]
+                }
+            }
+        ]
+    }
+
+    with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_capture_no_amt)):
+        with pytest.raises(HTTPException) as exc_info:
+            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-NO-AMT")
+        assert exc_info.value.status_code == 409
+        assert "missing required amount" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_capture_rejects_amount_and_currency_mismatch(session: Session, client_user: UserProfile):
+    """Capture amount or currency mismatch must raise 409 and not fund milestone."""
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-INT-006",
+        title="Mismatch Contract",
+        client_id=client_user.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("200.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("200.00"),
+        status=MilestoneStatus.PENDING,
+        payment_status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    attempt = PaymentAttempt(
+        contract_id=contract.id,
+        milestone_id=milestone.id,
+        paypal_order_id="TEST-ORDER-MISMATCH",
+        amount=Decimal("200.00"),
+        currency="USD",
+        status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    session.add(contract)
+    session.add(milestone)
+    session.add(attempt)
+    session.commit()
+
+    # 1. Amount mismatch: 150.00 vs 200.00
+    mock_mismatch_amount = {
+        "status": "COMPLETED",
+        "purchase_units": [
+            {
+                "payments": {
+                    "captures": [
+                        {
+                            "id": "CAP-MISMATCH-1",
+                            "status": "COMPLETED",
+                            "amount": {"value": "150.00", "currency_code": "USD"},
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_mismatch_amount)):
+        with pytest.raises(HTTPException) as exc_info:
+            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-MISMATCH")
+        assert exc_info.value.status_code == 409
+        assert "does not match milestone amount" in exc_info.value.detail
+
+    # 2. Currency mismatch: EUR vs USD
+    mock_mismatch_currency = {
+        "status": "COMPLETED",
+        "purchase_units": [
+            {
+                "payments": {
+                    "captures": [
+                        {
+                            "id": "CAP-MISMATCH-2",
+                            "status": "COMPLETED",
+                            "amount": {"value": "200.00", "currency_code": "EUR"},
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_mismatch_currency)):
+        with pytest.raises(HTTPException) as exc_info:
+            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-MISMATCH")
+        assert exc_info.value.status_code == 409
+        assert "does not match milestone currency" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_capture_rejects_multiple_purchase_units(session: Session, client_user: UserProfile):
+    """Multiple purchase units in capture response must be rejected."""
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-INT-007",
+        title="Multi-unit Contract",
+        client_id=client_user.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("100.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("100.00"),
+        status=MilestoneStatus.PENDING,
+        payment_status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    attempt = PaymentAttempt(
+        contract_id=contract.id,
+        milestone_id=milestone.id,
+        paypal_order_id="TEST-ORDER-MULTI",
+        amount=Decimal("100.00"),
+        currency="USD",
+        status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    session.add(contract)
+    session.add(milestone)
+    session.add(attempt)
+    session.commit()
+
+    mock_multi_units = {
+        "status": "COMPLETED",
+        "purchase_units": [{"reference_id": "unit_1"}, {"reference_id": "unit_2"}]
+    }
+    with patch("app.utils.paypal_client.capture_paypal_order", AsyncMock(return_value=mock_multi_units)):
+        with pytest.raises(HTTPException) as exc_info:
+            await capture_milestone_escrow_payment(session, client_user, paypal_order_id="TEST-ORDER-MULTI")
+        assert exc_info.value.status_code == 400
+        assert "multiple purchase units" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_refund_unapproved_checkout_returns_cancelled_not_refunded(session: Session, client_user: UserProfile):
+    """Cancelling an unapproved CHECKOUT_CREATED order must return status: cancelled (not refunded)."""
+    from app.services.payment_service import refund_milestone_escrow
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-INT-008",
+        title="Cancel Unapproved Checkout",
+        client_id=client_user.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("300.00"),
+        staged_amount=Decimal("0.00"),  # No staged funds yet
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("300.00"),
+        status=MilestoneStatus.PENDING,
+        payment_status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    session.add(contract)
+    session.add(milestone)
+    session.commit()
+
+    res = refund_milestone_escrow(session, contract.id, milestone.id, client_user)
+    assert res["status"] == "cancelled"
+    assert res["mode"] == "checkout_cancelled"
+    assert res["amount_reclaimed"] == 0.0
+    # Staged amount must NOT go negative
+    assert res["contract_staged_amount"] == 0.0
+
+    session.refresh(milestone)
+    assert milestone.payment_status == PaymentStatus.CANCELLED
+

@@ -258,7 +258,7 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
 
     # 6. test_paypal_capture_resilience
     def test_paypal_capture_resilience(self):
-        """Rule: Sandbox capture handles 422 / UNPROCESSABLE_ENTITY gracefully by promoting status to staged_in_sandbox."""
+        """Rule: Unapproved, declined or ambiguous captures must NOT fund milestone or invent synthetic IDs."""
         contract = Contract(
             id=uuid.uuid4(),
             code="TB-2026-006",
@@ -267,6 +267,7 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
             freelancer_id=self.freelancer.id,
             status=ContractStatus.ACTIVE,
             total_amount=Decimal("500.00"),
+            currency="USD",
         )
         milestone = Milestone(
             id=uuid.uuid4(),
@@ -279,8 +280,9 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         attempt = PaymentAttempt(
             contract_id=contract.id,
             milestone_id=milestone.id,
-            paypal_order_id="SANDBOX-ORDER-422",
+            paypal_order_id="SANDBOX-ORDER-422-UNRECONCILED",
             amount=Decimal("500.00"),
+            currency="USD",
             status=PaymentStatus.CHECKOUT_CREATED,
             paypal_status="PENDING",
         )
@@ -289,21 +291,11 @@ class TrustBrokerMasterLifecycleTests(unittest.TestCase):
         self.session.add(attempt)
         self.session.commit()
 
-        # Simulate sandbox capture resilience recovery
-        attempt.status = PaymentStatus.STAGED_IN_SANDBOX
-        attempt.paypal_status = "COMPLETED"
-        attempt.paypal_capture_id = "SANDBOX-CAP-422-RECOVERED"
-        milestone.payment_status = PaymentStatus.STAGED_IN_SANDBOX
-        contract.staged_amount = Decimal("500.00")
-        self.session.add(attempt)
-        self.session.add(milestone)
-        self.session.add(contract)
-        self.session.commit()
-
-        self.assertEqual(milestone.payment_status, PaymentStatus.STAGED_IN_SANDBOX)
-        self.assertEqual(attempt.status, PaymentStatus.STAGED_IN_SANDBOX)
-        self.assertEqual(attempt.paypal_status, "COMPLETED")
-        self.assertEqual(contract.staged_amount, Decimal("500.00"))
+        # Unapproved / uncaptured orders must remain unfunded and never fabricate synthetic IDs
+        self.assertEqual(milestone.payment_status, PaymentStatus.CHECKOUT_CREATED)
+        self.assertEqual(attempt.status, PaymentStatus.CHECKOUT_CREATED)
+        self.assertIsNone(attempt.paypal_capture_id)
+        self.assertEqual(contract.staged_amount, Decimal("0.00"))
 
     # 7. test_payout_idempotency
     def test_payout_idempotency(self):

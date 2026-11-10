@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -6,6 +7,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from app.config import settings
+
+logger = logging.getLogger("trustbroker.payments")
 from app.models.contract import Contract, ContractStatus
 from app.models.marketplace import Payout, PayoutStatus
 from app.models.milestone import Milestone, MilestoneStatus, PaymentStatus
@@ -281,6 +284,11 @@ async def capture_milestone_escrow_payment(
     capture_id = None
     payer_email = None
     purchase_units = capture_data.get("purchase_units") or []
+    if len(purchase_units) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Unexpected multiple purchase units in PayPal order; single purchase unit expected.",
+        )
     if purchase_units:
         captures = (purchase_units[0].get("payments") or {}).get("captures") or []
         if captures:
@@ -291,12 +299,25 @@ async def capture_milestone_escrow_payment(
             cap_amount_obj = captures[0].get("amount") or {}
             cap_val = cap_amount_obj.get("value")
             cap_curr = cap_amount_obj.get("currency_code")
-            if cap_val and Decimal(str(cap_val)) != attempt.amount:
+
+            # Essential fields MUST be present — missing data cannot fund milestone
+            if not cap_val or not cap_curr:
                 raise HTTPException(
                     status_code=409,
-                    detail=f"Provider capture amount {cap_val} does not match milestone amount {attempt.amount}.",
+                    detail="Provider capture response missing required amount or currency code.",
                 )
-            if cap_curr and cap_curr.upper() != attempt.currency.upper():
+            try:
+                if Decimal(str(cap_val)) != attempt.amount:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Provider capture amount {cap_val} does not match milestone amount {attempt.amount}.",
+                    )
+            except (ValueError, ArithmeticError):
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Invalid capture amount format: {cap_val}",
+                )
+            if cap_curr.upper() != attempt.currency.upper():
                 raise HTTPException(
                     status_code=409,
                     detail=f"Provider capture currency {cap_curr} does not match milestone currency {attempt.currency}.",
@@ -529,25 +550,44 @@ def refund_milestone_escrow(
     ):
         raise HTTPException(status_code=409, detail=f"Milestone is not funded (current payment status: {milestone.payment_status.value})")
 
-    reclaimed = float(milestone.amount)
-    contract.staged_amount = max(Decimal("0.00"), contract.staged_amount - milestone.amount)
+    was_checkout_created = (milestone.payment_status == PaymentStatus.CHECKOUT_CREATED)
+    if was_checkout_created:
+        # Unapproved checkout order: no money was ever staged or captured.
+        # Cancel the pending attempt; do NOT subtract from contract.staged_amount.
+        reclaimed = 0.0
+        status_label = "cancelled"
+        mode_label = "checkout_cancelled"
+    else:
+        # Funded in sandbox: reset staged escrow
+        reclaimed = float(milestone.amount)
+        contract.staged_amount = max(Decimal("0.00"), contract.staged_amount - milestone.amount)
+        status_label = "sandbox_reset"
+        mode_label = "sandbox_reset"
+
     milestone.payment_status = PaymentStatus.CANCELLED
     milestone.status = MilestoneStatus.PENDING
 
     session.add(contract)
     session.add(milestone)
 
+    audit_action = "checkout_cancelled" if was_checkout_created else "escrow_reclaimed"
+    audit_desc = (
+        f"Checkout order cancelled for milestone '{milestone.title}'."
+        if was_checkout_created
+        else f"Client reclaimed staged sandbox escrow ({reclaimed} {contract.currency}) for milestone '{milestone.title}'. Reason: {reason or 'Freelancer inactivity / unaddressed revision timeout'}."
+    )
+
     log_audit_event(
         session=session,
-        action="escrow_reclaimed",
-        details=f"Buyer Protection: Client reclaimed staged escrow ({reclaimed} {contract.currency}) for milestone '{milestone.title}'. Reason: {reason or 'Freelancer inactivity / unaddressed revision timeout'}.",
+        action=audit_action,
+        details=audit_desc,
         contract_id=contract.id,
         actor_id=client.id,
         actor_name=client.full_name or client.email,
-        metadata={"milestone_id": str(milestone.id), "amount": reclaimed, "reason": reason},
+        metadata={"milestone_id": str(milestone.id), "amount": reclaimed, "reason": reason, "mode": mode_label},
     )
 
-    if contract.freelancer_id:
+    if contract.freelancer_id and not was_checkout_created:
         queue_notification(
             session=session,
             user_id=contract.freelancer_id,
@@ -560,8 +600,8 @@ def refund_milestone_escrow(
 
     session.commit()
     return {
-        "status": "refunded",
-        "mode": "sandbox_reset",
+        "status": status_label,
+        "mode": mode_label,
         "milestone_id": str(milestone.id),
         "amount_reclaimed": reclaimed,
         "contract_staged_amount": float(contract.staged_amount),
@@ -705,20 +745,35 @@ async def process_paypal_webhook(
             ).first()
 
         if attempt:
-            # Reconcile amount and currency before applying financial update
-            amount_matches = not val_str or Decimal(val_str) == attempt.amount
-            curr_matches = not curr_str or curr_str.upper() == attempt.currency.upper()
-            if amount_matches and curr_matches:
-                attempt.paypal_capture_id = capture_id or attempt.paypal_capture_id
-                attempt.paypal_status = "COMPLETED"
-                _mark_milestone_funded(session, attempt)
-                log_audit_event(
-                    session=session,
-                    action="payment_capture_completed",
-                    details=f"Webhook captured PayPal payment {capture_id or resource_id}.",
-                    contract_id=attempt.contract_id,
-                    metadata={"paypal_order_id": attempt.paypal_order_id, "paypal_capture_id": attempt.paypal_capture_id},
+            # Reconcile amount and currency before applying financial update.
+            # Both amount and currency MUST be present and match.
+            if not val_str or not curr_str:
+                logger.warning(
+                    f"[WEBHOOK] Event {event_id} missing required amount/currency for capture {capture_id}; reconciliation required"
                 )
+            else:
+                try:
+                    amount_matches = (Decimal(str(val_str)) == attempt.amount)
+                except Exception:
+                    amount_matches = False
+                curr_matches = (curr_str.upper() == attempt.currency.upper())
+
+                if amount_matches and curr_matches:
+                    attempt.paypal_capture_id = capture_id or attempt.paypal_capture_id
+                    attempt.paypal_status = "COMPLETED"
+                    _mark_milestone_funded(session, attempt)
+                    log_audit_event(
+                        session=session,
+                        action="payment_capture_completed",
+                        details=f"Webhook captured PayPal payment {capture_id or resource_id}.",
+                        contract_id=attempt.contract_id,
+                        metadata={"paypal_order_id": attempt.paypal_order_id, "paypal_capture_id": attempt.paypal_capture_id},
+                    )
+                else:
+                    logger.warning(
+                        f"[WEBHOOK] Event {event_id} capture amount/currency mismatch: "
+                        f"got {val_str} {curr_str}, expected {attempt.amount} {attempt.currency}"
+                    )
     elif event_type == "CHECKOUT.ORDER.COMPLETED":
         order_id = resource.get("id")
         attempt = session.exec(
