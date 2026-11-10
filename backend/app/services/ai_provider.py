@@ -365,7 +365,7 @@ def generate_sow_draft(
         "- Write in polished, professional English (consistently applied).\n"
         "- STRICT RULE: Never use the Oxford comma before words like 'and' or 'or' in enumerations of three or more items "
         "(e.g., write 'architecture, development and deployment' instead of 'architecture, development and deployment'; "
-        "write 'React, TypeScript or Python' instead of 'React, TypeScript, or Python').\n\n"
+        "write 'React, TypeScript or Python' instead of 'React, TypeScript or Python').\n\n"
         "STATEMENT OF WORK SPECIFICATIONS:\n"
         "- Generate an exhaustive, clear project description (400 to 600 words) defining functional objectives, system architecture and non-functional requirements (security, performance, test coverage and responsive cross-browser compatibility).\n"
         "- Divide the project into 3 to 5 realistic, sequential milestones with logical deadlines.\n"
@@ -518,7 +518,7 @@ Budget: {total_budget} USD
         ],
         "marketing": [
             "Who is the target audience and primary channel?",
-            "Is copywriting included, or design/assets only?",
+            "Is copywriting included or design/assets only?",
             "Do you have existing analytics or campaign data to use?",
             "What conversion event should this work improve?",
         ],
@@ -559,7 +559,7 @@ def evaluate_delivery_against_criteria(
         "- score: 0 to 100 "
         "- passed: true if score >= 80, else false "
         "- explanation: detailed justification of why the evidence meets or fails the criterion "
-        "- evidence_match_snippet: specific quote, link, or artifact reference that supports your assessment. "
+        "- evidence_match_snippet: specific quote, link or artifact reference that supports your assessment. "
         "Compute an overall_score (0-100). The milestone passes only if overall_score >= 80 and all required criteria pass. "
         "Return ONLY JSON."
     )

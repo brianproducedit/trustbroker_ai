@@ -24,7 +24,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - `GET /`: List user contracts with status filtering and pagination.
 - `GET /{contract_id}`: Fetch detailed contract agreement, milestones and version history.
 - `DELETE /{contract_id}`: **Guarded delete** for `DRAFT` contracts only, cascading across draft milestones and criteria.
-- `PATCH /{contract_id}/milestones/{milestone_id}`: Update individual milestone title, description, amount, or deadline for draft contracts (recalculates contract totals and SHA-256 content hash).
+- `PATCH /{contract_id}/milestones/{milestone_id}`: Update individual milestone title, description, amount or deadline for draft contracts (recalculates contract totals and SHA-256 content hash).
 - `DELETE /{contract_id}/milestones/{milestone_id}`: Delete an unstarted draft milestone (enforces 1 milestone minimum).
 - `PATCH /{contract_id}/milestones/{milestone_id}/criteria/{criterion_id}`: Update individual acceptance criterion.
 - `DELETE /{contract_id}/milestones/{milestone_id}/criteria/{criterion_id}`: Delete an individual acceptance criterion.
@@ -69,7 +69,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 
 ### Immutability & Role Safeguards
 - **Client-Only Payout Disbursals:** Releases are strictly restricted to verified contract clients in `PolicyEngine.can_release_payout()`; non-clients are rejected with HTTP 403.
-- **Contract State Protection:** Contracts in `ACTIVE`, `IN_VERIFICATION`, or `COMPLETED` states are strictly protected from mutation or deletion.
+- **Contract State Protection:** Contracts in `ACTIVE`, `IN_VERIFICATION` or `COMPLETED` states are strictly protected from mutation or deletion.
 - **Financial Immutability:** Financial records (`payment_attempts`, `payouts`, `audit_events`, `deliveries`, `verification_reports`) are permanently immutable to guarantee legal non-repudiation.
 
 ---

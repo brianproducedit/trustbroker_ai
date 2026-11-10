@@ -285,7 +285,7 @@ PayPal Payout Email:    freelancer-payout@sandbox.paypal.com
 **Column 3 — Client Settlement Panel (focus here):**
 > *"On the right: the action panel. The milestone is verified and ready. There are three options:"*
 > *"The primary action — the green **Authorize PayPal Payout** button — this sends real sandbox funds to Tariro."*
-> *"Two secondary options: **Request Revision** if the work needs changes, or **AI Dispute** to escalate to our dispute resolution engine."*
+> *"Two secondary options: **Request Revision** if the work needs changes or **AI Dispute** to escalate to our dispute resolution engine."*
 > *"Elena is satisfied. Let's authorize the payout."*
 
 ---

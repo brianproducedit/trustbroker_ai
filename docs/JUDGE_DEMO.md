@@ -41,7 +41,7 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
 | **Platform** | Sandbox Business (REST App) | Receives captured milestone funds in sandbox; backend credentials issue orders and payouts. |
 | **Freelancer (Receiver)** | Sandbox Personal Account | Target `paypal_payout_email` that receives the payout batch item. |
 
-> **Note for Judges:** You can use sandbox personal accounts created in your [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/accounts), or use the test credentials pre-populated in the project environment.
+> **Note for Judges:** You can use sandbox personal accounts created in your [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/accounts) or use the test credentials pre-populated in the project environment.
 
 ---
 

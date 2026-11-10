@@ -23,7 +23,7 @@
 
 Clients describe milestones in plain English and AI drafts an objective Statement of Work (SOW) with verifiable acceptance criteria. Freelancers apply to open listings, where an AI vetting engine ranks candidates based on concrete portfolio evidence and skills—without penalizing talented newcomers who lack past platform contract history. 
 
-Once awarded, clients stage milestone funds using **PayPal Checkout (Orders v2)**. When freelancers submit code, live URLs, or test suites, an automated AI evaluation engine verifies each criterion. Upon successful verification, the client authorizes a single-click disbursement executed directly via the **PayPal Payouts API** into the freelancer’s registered PayPal email.
+Once awarded, clients stage milestone funds using **PayPal Checkout (Orders v2)**. When freelancers submit code, live URLs or test suites, an automated AI evaluation engine verifies each criterion. Upon successful verification, the client authorizes a single-click disbursement executed directly via the **PayPal Payouts API** into the freelancer’s registered PayPal email.
 
 > **Provider Truthfulness on Payments:** Every staged transaction communicates with authentic PayPal sandbox Orders and Payouts APIs with strict error propagation and no synthetic IDs.  
 > **Human Governance:** AI *never* unilaterally moves money. Funds release strictly requires explicit authenticated client authorization via the **PolicyEngine** after multimodal criteria verification.
@@ -110,7 +110,7 @@ graph TD
 - **Render:** Cloud hosting for static SPA and containerized Python API.
 - **Postman & APIMatic:** API collection testing and contract generation — see [`postman/TrustBroker_AI.postman_collection.json`](postman/TrustBroker_AI.postman_collection.json).
 
-*(Note: Core inference runs on $0-budget tiers (Groq + OpenRouter free). DeepSeek is an optional paid tier-3 fallback. This project does not use Gemini, KERNEL, or Bryntum.)*
+*(Note: Core inference runs on $0-budget tiers (Groq + OpenRouter free). DeepSeek is an optional paid tier-3 fallback. This project does not use Gemini, KERNEL or Bryntum.)*
 
 ---
 
@@ -239,7 +239,7 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
 ## Recent Engineering Updates (November 2026)
 
 - **Production Hardening & Hackathon Remediation (Phases 1–9 Complete):**
-  - **Verification Truthfulness (Phase 1):** Removed all heuristic pass fallbacks from vision, repo metadata and document adapters. When external APIs fail, rate limit, or time out, adapters safely return `NEEDS_REVIEW` (score 50, requires human review) instead of false passes. Orchestrator calls real AI evaluator with structured JSON schema enforcement; model attribution records real model or `fallback:none`.
+  - **Verification Truthfulness (Phase 1):** Removed all heuristic pass fallbacks from vision, repo metadata and document adapters. When external APIs fail, rate limit or time out, adapters safely return `NEEDS_REVIEW` (score 50, requires human review) instead of false passes. Orchestrator calls real AI evaluator with structured JSON schema enforcement; model attribution records real model or `fallback:none`.
   - **CORS Exception Reflection Hardening (Phase 2):** Eliminated arbitrary origin reflection from the global exception handler. Generic error responses in production mask internal stack traces, SQL and system paths.
   - **Startup Migration Hardening (Phase 3):** Removed automatic `stamp head` on generic Alembic CLI exit code errors, preventing the server from serving traffic against unmigrated or corrupted database schemas.
   - **PayPal Capture Validation & Integrity (Phase 4):** Required amount and currency validation with exact `Decimal` precision matching against stored attempts. Disallowed multiple purchase units; unapproved checkouts return `cancelled` rather than `refunded`.

@@ -317,7 +317,7 @@ export const Landing: React.FC = () => {
                   Objective verification replaces endless debates.
                 </h2>
                 <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
-                  Every milestone has explicit acceptance criteria. When the freelancer submits evidence, AI assesses it against those criteria and gives the client a clear pass, fail, or needs-review breakdown before any payout.
+                  Every milestone has explicit acceptance criteria. When the freelancer submits evidence, AI assesses it against those criteria and gives the client a clear pass, fail or needs-review breakdown before any payout.
                 </p>
 
                 <div className="pt-2 flex flex-col sm:flex-row gap-3">

@@ -89,7 +89,7 @@ export const HowItWorks: React.FC = () => {
       step: '06',
       title: 'Submit work, AI verifies',
       subtitle: 'Evidence against criteria',
-      desc: 'The freelancer submits screenshots, files or a live URL. AI inspects the evidence against each criterion and records pass, fail, or needs review.',
+      desc: 'The freelancer submits screenshots, files or a live URL. AI inspects the evidence against each criterion and records pass, fail or needs review.',
       icon: CheckCircle2,
       iconColor: 'bg-emerald-50 text-emerald-600 border-emerald-200',
       bullets: [
@@ -116,17 +116,17 @@ export const HowItWorks: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F6F8FC] text-[#1A2940] flex flex-col font-sans relative overflow-x-hidden">
       {/* Background Subtle Mesh & Glow Orbs */}
-      <div 
-        aria-hidden="true" 
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40" 
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-40"
       />
-      <div 
-        aria-hidden="true" 
-        className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none -z-10"
       />
-      <div 
-        aria-hidden="true" 
-        className="absolute top-24 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none -z-10" 
+      <div
+        aria-hidden="true"
+        className="absolute top-24 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none -z-10"
       />
 
       <Header />
@@ -191,7 +191,7 @@ export const HowItWorks: React.FC = () => {
           <div className="mt-12 p-8 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center space-y-4 shadow-sm">
             <h2 className="text-2xl font-bold">Ready to start?</h2>
             <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto leading-relaxed">
-              Create a client account to publish a contract, or a freelancer account to apply for open work.
+              Create a client account to publish a contract or a freelancer account to apply for open work.
             </p>
             <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" className="bg-white hover:bg-slate-100 text-blue-700 font-semibold text-xs h-10 px-5 gap-2">

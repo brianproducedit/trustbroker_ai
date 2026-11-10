@@ -362,18 +362,18 @@ export const ClientContractPage: React.FC = () => {
                 <div
                   key={step.num}
                   className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 transition-all ${step.done
-                      ? 'bg-blue-950/40 border-blue-800/60 text-blue-200'
-                      : step.active
-                        ? 'bg-blue-600/20 border-blue-500 text-white ring-1 ring-blue-500/50'
-                        : 'bg-[#0E1528] border-[#222A3D] text-slate-500'
+                    ? 'bg-blue-950/40 border-blue-800/60 text-blue-200'
+                    : step.active
+                      ? 'bg-blue-600/20 border-blue-500 text-white ring-1 ring-blue-500/50'
+                      : 'bg-[#0E1528] border-[#222A3D] text-slate-500'
                     }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${step.done
-                        ? 'bg-blue-600 text-white'
-                        : step.active
-                          ? 'bg-blue-500 text-white animate-pulse'
-                          : 'bg-[#1C263B] text-slate-400'
+                      ? 'bg-blue-600 text-white'
+                      : step.active
+                        ? 'bg-blue-500 text-white animate-pulse'
+                        : 'bg-[#1C263B] text-slate-400'
                       }`}
                   >
                     {step.done ? '✓' : step.num}
@@ -420,7 +420,7 @@ export const ClientContractPage: React.FC = () => {
               <div>
                 <h3 className="text-base font-semibold text-white">Milestone Matrix</h3>
                 <p className="text-xs text-slate-400">
-                  Click on any milestone row to view acceptance criteria, fund with PayPal, or release verified payouts.
+                  Click on any milestone row to view acceptance criteria, fund with PayPal or release verified payouts.
                 </p>
               </div>
 
@@ -490,7 +490,7 @@ export const ClientContractPage: React.FC = () => {
                     <Textarea
                       value={newDescription}
                       onChange={(e) => setNewDescription(e.target.value)}
-                      placeholder="Outline expected code artifacts, test suites, or deployment endpoints for AI verification."
+                      placeholder="Outline expected code artifacts, test suites or deployment endpoints for AI verification."
                       rows={2}
                       className="bg-[#0B1120] border-[#222A3D] text-white text-xs"
                     />
@@ -574,12 +574,12 @@ export const ClientContractPage: React.FC = () => {
                             <td className="py-3.5 px-4">
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-medium inline-flex items-center gap-1 ${isVerified
-                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                    : m.status === 'in_progress'
-                                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                                      : m.status === 'in_verification' || m.status === 'submitted'
-                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
-                                        : 'bg-slate-700/50 text-slate-300 border border-slate-600/40'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : m.status === 'in_progress'
+                                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                    : m.status === 'in_verification' || m.status === 'submitted'
+                                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+                                      : 'bg-slate-700/50 text-slate-300 border border-slate-600/40'
                                   }`}
                               >
                                 {m.status || 'pending'}
@@ -593,17 +593,16 @@ export const ClientContractPage: React.FC = () => {
                             </td>
                             <td className="py-3.5 px-4">
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium inline-flex items-center gap-1 ${
-                                  isReleased
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium inline-flex items-center gap-1 ${isReleased
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                     : isReleaseAuthorized
-                                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500 font-bold animate-pulse'
-                                    : isStaged
-                                    ? 'bg-blue-950 text-blue-300 border border-blue-800'
-                                    : isOrderCreated
-                                    ? 'bg-amber-950/40 text-amber-300 border border-amber-600/50'
-                                    : 'bg-slate-800/60 text-slate-400 border border-slate-700/50'
-                                }`}
+                                      ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500 font-bold animate-pulse'
+                                      : isStaged
+                                        ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                                        : isOrderCreated
+                                          ? 'bg-amber-950/40 text-amber-300 border border-amber-600/50'
+                                          : 'bg-slate-800/60 text-slate-400 border border-slate-700/50'
+                                  }`}
                               >
                                 {isReleased ? (
                                   <>
@@ -696,12 +695,12 @@ export const ClientContractPage: React.FC = () => {
                             </span>
                             <Badge
                               className={`text-[10px] uppercase font-mono ${app.status === 'awarded'
-                                  ? 'bg-emerald-600 text-white'
-                                  : app.status === 'shortlisted'
-                                    ? 'bg-blue-600 text-white'
-                                    : app.status === 'rejected'
-                                      ? 'bg-rose-950 text-rose-400 border-rose-800'
-                                      : 'bg-slate-800 text-slate-300'
+                                ? 'bg-emerald-600 text-white'
+                                : app.status === 'shortlisted'
+                                  ? 'bg-blue-600 text-white'
+                                  : app.status === 'rejected'
+                                    ? 'bg-rose-950 text-rose-400 border-rose-800'
+                                    : 'bg-slate-800 text-slate-300'
                                 }`}
                             >
                               {app.status === 'rejected' ? 'Another candidate chosen' : app.status}

@@ -136,7 +136,7 @@ So webhooks are **not required** for the demo. `verify_webhook_signature()` is p
 ## 5. AG Studio — from badge to real dashboard
 
 ### 5.1 What was actually there before
-Only `<AgStudioProvider>` wrapping a page that used **AG Grid Community** plus hand-rolled cards and a chat FAB. None of `AgStudio`, `createWidgets`, `GridWidget`, or `PivotGridWidget` were used and **no license key** was configured. For the sponsor brief that is effectively "AG Grid + a badge."
+Only `<AgStudioProvider>` wrapping a page that used **AG Grid Community** plus hand-rolled cards and a chat FAB. None of `AgStudio`, `createWidgets`, `GridWidget` or `PivotGridWidget` were used and **no license key** was configured. For the sponsor brief that is effectively "AG Grid + a badge."
 
 ### 5.2 Licensing correction (important)
 AG's official docs state that an **AG Studio licence covers AG Studio and its built-in widgets only — not standalone AG Grid Enterprise**:
@@ -408,7 +408,7 @@ This session resolved critical production edge cases encountered during end-to-e
 - **Resolution:** Removed `.role` check; routing now cleanly branches on `current_user.primary_workspace == "client"`.
 
 ### 2.4 PayPal Sandbox 422 & Capture State Desynchronization
-- **Symptom:** PayPal Sandbox API returned HTTP 422 with `The requested action could not be performed, semantically incorrect, or failed business validation.`
+- **Symptom:** PayPal Sandbox API returned HTTP 422 with `The requested action could not be performed, semantically incorrect or failed business validation.`
 - **Root Cause:** When an order has already been captured or a sandbox payment session experiences timing desynchronization, re-attempting `POST /v2/checkout/orders/{id}/capture` fails business validation.
 - **Resolution:** Updated `capture_milestone_escrow_payment()` in `backend/app/services/payment_service.py` to match `ORDER_ALREADY_CAPTURED`, `INSTRUMENT_DECLINED`, `422`, `"semantically incorrect"` and `"business validation"`, gracefully promoting the milestone to funded status.
 
@@ -639,7 +639,7 @@ const isVerified = (assessment?.passed || status === 'verified' || paymentStatus
 
 **Logic:**
 1. Client-only enforcement: `require_client(client, contract)`.
-2. Rejects if milestone is already `COMPLETED`, `RELEASED`, or `CANCELLED`.
+2. Rejects if milestone is already `COMPLETED`, `RELEASED` or `CANCELLED`.
 3. Sets `milestone.payment_status = PaymentStatus.CANCELLED`.
 4. Sets `milestone.status = MilestoneStatus.PENDING` (unfunds the milestone, allows re-funding after resubmission).
 5. Deducts from `contract.staged_amount`.
@@ -926,7 +926,7 @@ Fully resolved all 28 audit findings across 14 dedicated engineering workstreams
 Systematically resolved all audit findings and completed the full 9-phase remediation plan across backend services, adapters, models and frontend state machines:
 
 ### 16.1 Phase 1 — Verification False Positives (P0)
-- **Vision Adapter (`adapters/vision.py`):** Eliminated heuristic PASS fallback (`vision_heuristic_fallback`). Image format errors, API failures, or missing credentials safely return `NEEDS_REVIEW` (score 50, requires human review). Removed hardcoded model names when no model ran.
+- **Vision Adapter (`adapters/vision.py`):** Eliminated heuristic PASS fallback (`vision_heuristic_fallback`). Image format errors, API failures or missing credentials safely return `NEEDS_REVIEW` (score 50, requires human review). Removed hardcoded model names when no model ran.
 - **Repository Meta Adapter (`adapters/repo_meta.py`):** Removed `github_heuristic_fallback` and fabricated files list. Implemented strict URL parsing (`urlparse`) requiring exact `github.com` hostname. Non-GitHub repositories (GitLab, Bitbucket) and edge rate limits (429/403) return `NEEDS_REVIEW`.
 - **Document Adapter (`adapters/document.py`):** Keyword match converted to context observation rather than automated pass.
 - **Orchestrator (`orchestrator.py`):** Connected real AI evaluator via `evaluate_delivery_against_criteria()` with OpenRouter fallback. Truthful model attribution persists actual provider model or `fallback:none`.

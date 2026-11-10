@@ -208,7 +208,7 @@ def studio_turn(
         f"DATABASE CONTEXT: {json.dumps(live_context, default=str)}\n\n"
         "Instructions:\n"
         "1. Answer user questions directly, accurately and authoritatively based on the database context.\n"
-        "2. If asked about unpaid funded milestones, earnings, win rates, or contract health, quote the exact figures.\n"
+        "2. If asked about unpaid funded milestones, earnings, win rates or contract health, quote the exact figures.\n"
         "3. Provide 2-3 concise, actionable next steps or suggested actions.\n"
         "4. Format your response strictly as a JSON object with keys:\n"
         "   - 'response': string with clear markdown formatted explanation\n"

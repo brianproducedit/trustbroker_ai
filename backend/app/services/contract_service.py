@@ -716,7 +716,7 @@ def delete_contract(
 ) -> dict:
     """Permanently delete a DRAFT contract with no payment attempts.
 
-    Active, completed, awarded, or cancelled contracts cannot be deleted —
+    Active, completed, awarded or cancelled contracts cannot be deleted —
     use cancel_contract() for those.  Financial records (payment_attempts,
     payouts) are immutable and block deletion if they exist.
 

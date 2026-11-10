@@ -104,7 +104,7 @@ class PolicyEngine:
 
     @classmethod
     def can_accept_contract(cls, user: UserProfile, contract: Contract) -> PolicyResult:
-        """Must be a contracted party and contract must be draft, awarded, or pending_acceptance."""
+        """Must be a contracted party and contract must be draft, awarded or pending_acceptance."""
         if not cls.is_party(user, contract):
             return PolicyResult(False, "You are not an authorized party on this contract.")
         if contract.status not in (
@@ -131,7 +131,7 @@ class PolicyEngine:
 
     @classmethod
     def can_cancel_contract(cls, user: UserProfile, contract: Contract) -> PolicyResult:
-        """Client can cancel draft or pending contract, or either party if in draft."""
+        """Client can cancel draft or pending contract or either party if in draft."""
         if not cls.is_party(user, contract):
             return PolicyResult(False, "You are not an authorized party on this contract.")
         if contract.status in (ContractStatus.COMPLETED, ContractStatus.CANCELLED):

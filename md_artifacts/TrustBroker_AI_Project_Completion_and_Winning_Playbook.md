@@ -716,7 +716,7 @@ A user may hold either role on different projects. Avoid permanently locking a u
 
 ## 10.2 Distinguish payment and delivery states
 
-These are independent dimensions. A project can be paid but not delivered, or delivered and verified while a permitted payment action remains pending.
+These are independent dimensions. A project can be paid but not delivered or delivered and verified while a permitted payment action remains pending.
 
 Suggested display:
 
@@ -892,7 +892,7 @@ The schedule below is a recommended scope plan, not a claim that the work is alr
 
 ## 13.1 Feature freeze rule
 
-After the planned feature freeze, only fix defects that block the demo, create security or payment-integrity risks, or violate the official submission requirements. Do not add new integrations because they look impressive on a roadmap.
+After the planned feature freeze, only fix defects that block the demo, create security or payment-integrity risks or violate the official submission requirements. Do not add new integrations because they look impressive on a roadmap.
 
 ---
 

@@ -258,7 +258,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           set({ isLoading: false })
           const isInvalid = error.message.toLowerCase().includes('invalid login credentials') || error.status === 400
           const friendlyMessage = isInvalid
-            ? `No ${expectedRole ? (expectedRole === 'client' ? 'Client' : 'Freelancer') : ''} account found with these credentials. Please check your email and password, or create an account.`
+            ? `No ${expectedRole ? (expectedRole === 'client' ? 'Client' : 'Freelancer') : ''} account found with these credentials. Please check your email and password or create an account.`
             : error.message
           return { success: false, error: friendlyMessage }
         }

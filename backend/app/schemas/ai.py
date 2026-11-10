@@ -21,7 +21,7 @@ class SOWDraftResponse(BaseModel):
 
 class ClarifyRequest(BaseModel):
     prompt: str = Field(..., description="Client brief in plain language")
-    category: str = Field("software", description="software, design, marketing, or research")
+    category: str = Field("software", description="software, design, marketing or research")
     total_budget: float = Field(1000.0, gt=0)
     answers: Optional[List[Dict[str, str]]] = Field(
         default=None,

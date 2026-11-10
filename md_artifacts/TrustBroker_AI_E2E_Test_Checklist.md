@@ -166,7 +166,7 @@ Every project in TrustBroker AI follows an immutable, evidence-linked lifecycle:
 ## 🔒 Security & Sanity Checks
 
 - [ ] Double-click on "Release Payout" does not result in duplicate transactions.
-- [ ] No occurrences of "escrow" appear in modal titles, table headers, or alerts.
+- [ ] No occurrences of "escrow" appear in modal titles, table headers or alerts.
 - [ ] PayPal regional capability notice is prominent on all payment pages.
 - [ ] Content hash fingerprint matches between Client and Freelancer contract views.
 

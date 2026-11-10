@@ -34,7 +34,7 @@
 ## Design Philosophy for Redesign
 
 > [!IMPORTANT]
-> **Core principle:** This app tells one story - "Do I pay first, or work first?" TrustBroker solves that with AI-drafted contracts, staged payments and verified delivery. Every screen must make that story obvious in under 5 seconds.
+> **Core principle:** This app tells one story - "Do I pay first or work first?" TrustBroker solves that with AI-drafted contracts, staged payments and verified delivery. Every screen must make that story obvious in under 5 seconds.
 
 ### Design Rules
 

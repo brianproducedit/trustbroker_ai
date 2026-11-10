@@ -200,14 +200,14 @@ Deliver a bulletproof verification pipeline that tests all 4 evidence types (Liv
 #### Subphase 4.1: Edge CDN Tolerance & Resilient Probing
 - **Refactor `http_probe.py`:**
   - Preserve the expanded domain whitelist (`.vercel.app`, `.github.com`, `.netlify.app`, `.render.com`, `.fly.dev`, `.railway.app`, `.pages.dev`).
-  - When encountering HTTP 429, 403, or 401 with valid TLS and DNS, classify as `verified_bot_checkpoint` rather than an unreachable failure.
+  - When encountering HTTP 429, 403 or 401 with valid TLS and DNS, classify as `verified_bot_checkpoint` rather than an unreachable failure.
 - **Refactor `scoring.py`:**
   - Classify CDN challenges as `NEEDS_REVIEW` (score 65) instead of a fatal score of 0.
   - Ensure an aggregate milestone score requires every critical criterion to meet the minimum threshold.
 
 #### Subphase 4.2: Raster Deliverables Routing to Vision
 - **Refactor `document.py` & `orchestrator.py`:**
-  - When evidence is submitted as a PNG, JPG, or WEBP under a document/architecture criterion, forward the bytes or file path to `vision.inspect_screenshot_with_vision`.
+  - When evidence is submitted as a PNG, JPG or WEBP under a document/architecture criterion, forward the bytes or file path to `vision.inspect_screenshot_with_vision`.
   - Extract visual components (e.g. diagrams, cards, layout structures) using Groq vision inference.
 
 #### Subphase 4.3: Interactive Revision Request & Resubmission Flow

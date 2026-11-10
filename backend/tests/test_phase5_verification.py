@@ -440,11 +440,29 @@ class TestPhase5Orchestrator(unittest.TestCase):
 
     def test_orchestration_run_fallback_when_ai_unavailable(self):
         """When AI providers are unavailable, verification safely falls back to NEEDS_REVIEW (not a synthetic PASS)."""
-        # Patch all AI call paths to simulate provider outage
-        with patch("app.services.ai_provider.call_groq", return_value=(None, None)), \
+        # Patch all AI call paths (Groq, OpenRouter, DeepSeek) and mock factual repo probe
+        mock_repo_facts = {
+            "adapter": "github_api",
+            "is_github": True,
+            "exists": True,
+            "passed": True,
+            "needs_review": False,
+            "owner": "octocat",
+            "repo": "Hello-World",
+            "language": "JavaScript",
+            "default_branch": "master",
+            "files_found": ["README", "src/App.tsx"],
+            "readme_snippet": "Hello World",
+            "citation": "GitHub octocat/Hello-World verified",
+            "error": None,
+        }
+        with patch("app.services.ai_provider.call_ai_with_fallbacks", return_value=(None, "fallback:none")), \
+             patch("app.services.ai_provider.call_groq", return_value=(None, None)), \
              patch("app.services.ai_provider.call_openrouter", return_value=(None, None)), \
+             patch("app.services.ai_provider.call_deepseek", return_value=(None, None)), \
              patch("app.services.verification.orchestrator.ai_provider.call_groq", return_value=(None, None)), \
-             patch("app.services.verification.orchestrator.ai_provider.call_openrouter", return_value=(None, None)):
+             patch("app.services.verification.orchestrator.ai_provider.call_openrouter", return_value=(None, None)), \
+             patch("app.services.verification.adapters.repo_meta.inspect_repository", return_value=mock_repo_facts):
             result = run_verification_orchestration(
                 session=self.session,
                 contract_id=self.contract.id,
@@ -526,6 +544,26 @@ class TestPhase5Orchestrator(unittest.TestCase):
         self.session.refresh(self.milestone)
         self.assertEqual(self.milestone.status, MilestoneStatus.VERIFIED)
 
+    def test_missing_criterion_in_ai_response_causes_needs_review(self):
+        """If AI evaluator omits one of the criteria orchestrator must flag it as NEEDS_REVIEW."""
+        mock_incomplete_ai_eval = {
+            "overall_score": 90,
+            "passed": True,
+            "summary_analysis": "Only evaluated criterion 1.",
+            "requires_human_review": False,
+            "provider_used": "groq:openai/gpt-oss-120b",
+            "criterion_evaluations": [
+                {
+                    "criterion_id": str(self.criterion1.id),
+                    "passed": True,
+                    "score": 95,
+                    "confidence": 0.95,
+                    "explanation": "Valid source archive",
+                    "evidence_match_snippet": "Intact ZIP",
+                },
+                # criterion2 is missing from AI response!
+            ],
+        }
     def test_missing_criterion_in_ai_response_causes_needs_review(self):
         """If AI evaluator omits one of the criteria, orchestrator must flag it as NEEDS_REVIEW."""
         mock_incomplete_ai_eval = {

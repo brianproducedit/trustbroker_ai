@@ -132,7 +132,7 @@ def vet_application(
     system = (
         "You are TrustBroker AI applicant vetting. Score a freelancer for one open contract using canonical dimension weights: "
         "40% skills_match, 25% past_delivery (or newcomer portfolio weight), 20% portfolio_relevance, 15% communication. "
-        "Never invent employers, GitHub stars, or completed jobs. "
+        "Never invent employers, GitHub stars or completed jobs. "
         "If completed_contracts_count is 0, set past_delivery to the string insufficient_evidence, "
         "NOT a numeric 0. For strong matches (score >= 90), recommendation must be strong_fit. "
         "If profile_completeness < 40, recommendation must be insufficient_evidence. "

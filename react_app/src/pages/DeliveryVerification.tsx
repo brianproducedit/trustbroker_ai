@@ -481,8 +481,8 @@ export const DeliveryVerification: React.FC = () => {
                   key={m.id}
                   onClick={() => setSelectedMilestoneId(m.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${selectedMilestoneId === m.id
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-[#171F33]'
                     }`}
                 >
                   {mFunded ? (
@@ -511,10 +511,10 @@ export const DeliveryVerification: React.FC = () => {
                 <StatusBadge status={selectedMilestone.status} />
                 <Badge
                   className={`text-[10px] font-mono uppercase ${isReleased
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                      : isFunded
-                        ? 'bg-blue-950 text-blue-300 border-blue-800'
-                        : 'bg-amber-950 text-amber-300 border-amber-800'
+                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                    : isFunded
+                      ? 'bg-blue-950 text-blue-300 border-blue-800'
+                      : 'bg-amber-950 text-amber-300 border-amber-800'
                     }`}
                 >
                   {isReleased ? 'Paid via PayPal' : isFunded ? 'PayPal Staged (Unlocked)' : 'Locked (Unfunded)'}
@@ -911,8 +911,8 @@ export const DeliveryVerification: React.FC = () => {
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
                         className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${isDragging
-                            ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
-                            : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
+                          ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
+                          : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
                           }`}
                       >
                         <input
@@ -986,8 +986,8 @@ export const DeliveryVerification: React.FC = () => {
                       type="submit"
                       disabled={isEvaluating || isUploadingFile || isSettled || isLocked}
                       className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${isLocked
-                          ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                     >
                       {isLocked ? (
@@ -1069,8 +1069,8 @@ export const DeliveryVerification: React.FC = () => {
                     {/* Human Review Banner if triggered */}
                     {assessment.requiresHumanReview && (
                       <div className={`p-3 rounded-lg border space-y-1.5 text-xs ${assessment.modelUsed?.includes('Offline')
-                          ? 'bg-rose-950/30 border-rose-800/40 animate-pulse'
-                          : 'bg-amber-950/30 border-amber-800/40'
+                        ? 'bg-rose-950/30 border-rose-800/40 animate-pulse'
+                        : 'bg-amber-950/30 border-amber-800/40'
                         }`}>
                         <div className={`flex items-center gap-1.5 font-semibold ${assessment.modelUsed?.includes('Offline') ? 'text-rose-300' : 'text-amber-300'
                           }`}>
@@ -1300,8 +1300,8 @@ export const DeliveryVerification: React.FC = () => {
                                 onClick={handleNudgeClient}
                                 disabled={isNudged}
                                 className={`w-full text-xs gap-1.5 h-9 font-semibold transition-all cursor-pointer ${isNudged
-                                    ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                                  ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
                                   }`}
                               >
                                 {isNudged ? (
@@ -1598,7 +1598,7 @@ export const DeliveryVerification: React.FC = () => {
                 rows={3}
                 value={revisionNotes}
                 onChange={(e) => setRevisionNotes(e.target.value)}
-                placeholder="Specify required code fixes, missing criteria, or layout fixes..."
+                placeholder="Specify required code fixes, missing criteria or layout fixes..."
                 className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
               />
             </div>
@@ -1818,7 +1818,7 @@ export const DeliveryVerification: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-2 text-[11px] text-slate-300">
                     <span className="text-blue-400 font-bold mt-0.5">3.</span>
-                    <span><strong className="text-white">Binding Recommendation:</strong> AI issues a recommendation — Release funds (freelancer wins), Revise further (client wins), or Partial settlement — recorded in the immutable audit trail.</span>
+                    <span><strong className="text-white">Binding Recommendation:</strong> AI issues a recommendation — Release funds (freelancer wins), Revise further (client wins) or Partial settlement — recorded in the immutable audit trail.</span>
                   </div>
                   <div className="flex items-start gap-2 text-[11px] text-slate-300">
                     <span className="text-blue-400 font-bold mt-0.5">4.</span>

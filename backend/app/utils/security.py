@@ -193,7 +193,7 @@ def get_optional_current_user(
     authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session),
 ) -> Optional[UserProfile]:
-    """Dependency that returns UserProfile if authenticated, or None if unauthenticated.
+    """Dependency that returns UserProfile if authenticated or None if unauthenticated.
     
     If an Authorization header is supplied, it MUST be valid. Invalid or expired
     credentials raise 401 instead of being silently downgraded to anonymous access.

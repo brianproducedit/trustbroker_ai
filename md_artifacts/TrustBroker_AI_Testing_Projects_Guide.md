@@ -35,7 +35,7 @@ When a freelancer applies, the AI vets the candidate across **4 Core Dimensions*
 
 ## 👤 Tariro Moyo (Freelancer Demo Profile)
 
-Ensure your demo profile in TrustBroker AI reflects these credentials (already updated in `seed.py`, or editable under **Freelancer Workspace → Profile**):
+Ensure your demo profile in TrustBroker AI reflects these credentials (already updated in `seed.py` or editable under **Freelancer Workspace → Profile**):
 
 * **Email:** `freelancer.demo@trustbroker.ai`
 * **Headline:** Senior Full-Stack & Cloud Architecture Lead (React, Next.js, Stripe, FastAPI)
@@ -105,7 +105,7 @@ Repository Setup: Open source repository available at https://github.com/Eliasua
 
 Navigation Sidebar: Sidebar renders all navigation links. Active route is highlighted. Sidebar collapses on mobile viewports.
 
-KPI Metric Cards: Dashboard displays data visualisation cards showing user metrics, revenue, orders and system status. Cards fetch from Zustand state with mock JSON data source.
+KPI Metric Cards: Dashboard displays data visualisation cards showing user metrics, revenue orders and system status. Cards fetch from Zustand state with mock JSON data source.
 
 User Data Table: User table renders with columns for name, email, role and status. Table is sortable by column header. Pagination controls are present.
 
@@ -242,7 +242,7 @@ User Authentication: User registration and login using JWT tokens. Protected rou
 
 Stripe Checkout: Stripe payment integration opens a test-mode checkout session. Stripe test card 4242 4242 4242 4242 completes the order flow successfully.
 
-Backend API: Express REST API endpoints for products, cart, orders and users are implemented. Endpoint structure visible in the GitHub repository at https://github.com/ishantmishra03/ecommerce-typescript.
+Backend API: Express REST API endpoints for products, cart orders and users are implemented. Endpoint structure visible in the GitHub repository at https://github.com/ishantmishra03/ecommerce-typescript.
 
 Vercel Deployment: Frontend is live at https://klyora.vercel.app with HTTPS and HTTP 200 response on all primary routes.
 

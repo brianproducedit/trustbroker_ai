@@ -62,6 +62,6 @@ def withdraw_application(
     session: Session = Depends(get_session),
 ):
     """Freelancer withdraws their own PENDING application.
-    Applications that have been shortlisted, awarded, or rejected cannot be withdrawn.
+    Applications that have been shortlisted, awarded or rejected cannot be withdrawn.
     """
     marketplace_service.withdraw_application(session, application_id, current_user)

@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS payment_attempts (
 );
 
 -- 3. Seed User Profiles (Linking real Supabase Auth IDs)
-INSERT INTO profiles (id, email, full_name, organization, created_at, updated_at)
+INSERT INTO profiles (id, email, full_name organization, created_at, updated_at)
 VALUES 
     ('""" + ELENA_ID + """', 'elena@acmeglobal.com', 'Elena Rostova', 'Acme Global Ventures LLC', NOW(), NOW()),
     ('""" + TARIRO_ID + """', 'tariro@devstudio.co.zw', 'Tariro Moyo', 'DevStudio Zimbabwe', NOW(), NOW())

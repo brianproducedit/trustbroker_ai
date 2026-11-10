@@ -251,7 +251,7 @@ def get_delivery_verification_status(
         # If milestone is in SUBMITTED state (queued or reverted due to engine error):
         if milestone and milestone.status == MilestoneStatus.SUBMITTED:
             if age_seconds > 45:
-                # Background task either never started, crashed, or was interrupted
+                # Background task either never started, crashed or was interrupted
                 return {
                     "delivery_id": str(delivery.id),
                     "status": "needs_review",

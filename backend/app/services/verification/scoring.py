@@ -2,7 +2,7 @@
 Scoring and Decision Engine for Multimodal Milestone Verification.
 Enforces the strict judging rules defined in §7.2 of the TrustBroker AI Roadmap:
 - Pass: Evidence directly supports the criterion (factual verification).
-- Fail: Required evidence missing, URL down, or criterion explicitly unmet.
+- Fail: Required evidence missing, URL down or criterion explicitly unmet.
 - Needs Review: Subjective design taste, copywriting quality, unreadable files.
 - Overall Pass only if EVERY criterion passes and no adapter hard-fails.
 """
@@ -40,7 +40,24 @@ def score_criterion_result(
     adapter_error = adapter_facts.get("error")
     citation = adapter_facts.get("citation", "")
 
-    # Hard failure: adapter failed (e.g., 404 URL, corrupt ZIP, missing evidence)
+    # If the adapter explicitly flagged needs_review (e.g. rate limit, private repo, probe unreachable, non-GitHub host):
+    if adapter_facts.get("needs_review"):
+        return {
+            "criterion_id": criterion_id,
+            "title": title,
+            "status": CriterionStatus.NEEDS_REVIEW,
+            "passed": False,
+            "score": 50,
+            "confidence": 0.60,
+            "explanation": (
+                f"Evidence check via {adapter_name} requires manual verification: {adapter_error or citation or 'Requires human review.'}"
+            ),
+            "evidence_match_snippet": citation or adapter_error or "Requires human review",
+            "adapter_used": adapter_name,
+            "requires_review": True,
+        }
+
+    # Hard failure: adapter failed without needs_review (e.g., 404 URL, corrupt ZIP, missing evidence)
     if not adapter_passed and adapter_error:
         # Rate-limiting / anti-bot challenges from edge CDNs are not a real failure.
         # Treat 429, 403 or "bot protection" messages as Needs Review, not hard fail.

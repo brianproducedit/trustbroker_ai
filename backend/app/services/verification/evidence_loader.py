@@ -6,7 +6,7 @@ Supports:
   - Local filesystem paths               → direct file read
   - Unknown / unavailable                → returns None (safe fallback)
 
-Never performs SSRF, URL redirection, or private-network requests.
+Never performs SSRF, URL redirection or private-network requests.
 """
 import io
 import logging

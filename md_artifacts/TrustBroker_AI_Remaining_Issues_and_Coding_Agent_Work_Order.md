@@ -16,7 +16,7 @@ You are continuing work on the existing TrustBroker AI repository. This document
 
 1. Read this document and `md_artifacts/TrustBroker_AI_Comprehensive_Remediation_Plan_v2.md` before editing.
 2. Inspect the current source and tests. Do not rely on line numbers from this document; use function names and search terms.
-3. Preserve improvements already present in the 9 November snapshot. Do not reintroduce development authentication in production, synthetic PayPal capture success, synthetic payout success, open webhook verification, or fabricated payout recipients.
+3. Preserve improvements already present in the 9 November snapshot. Do not reintroduce development authentication in production, synthetic PayPal capture success, synthetic payout success, open webhook verification or fabricated payout recipients.
 4. Make security, evidence-ownership, verification and financial-state decisions on the backend. Frontend-only disabling, labels or checks are not security controls.
 5. AI can draft, interpret and assess evidence. It must never authorize or execute a payment, payout, refund, contract acceptance or other privileged state transition.
 6. An unavailable provider, unreadable file, failed HTTP request, missing evidence or ambiguous result must never be converted into a successful verification or financial state.
@@ -96,7 +96,7 @@ In the snapshot, `inspect_screenshot_with_vision()` falls back to `vision_heuris
 ### Required change
 
 - Remove the successful fallback.
-- If image bytes are unavailable, unreadable, unsupported, or the vision provider cannot complete the assessment, return `NEEDS_REVIEW` (or a safe adapter representation that the scoring engine maps to `NEEDS_REVIEW`).
+- If image bytes are unavailable, unreadable, unsupported or the vision provider cannot complete the assessment, return `NEEDS_REVIEW` (or a safe adapter representation that the scoring engine maps to `NEEDS_REVIEW`).
 - Do not invent visual elements, observations, citations or confidence values.
 - Use `model_used=None` or an explicit unavailable value when no model ran.
 - Distinguish a genuine model evaluation from a mere file-presence check.
@@ -145,7 +145,7 @@ In `orchestrator.py`, the snapshot sets `llm_eval` to `None` and passes it to `s
 
 ### Required change
 
-Connect the actual AI criterion evaluator to the verification orchestration, or implement an equivalent single, testable assessment service. For each acceptance criterion, provide only the evidence actually retrieved:
+Connect the actual AI criterion evaluator to the verification orchestration or implement an equivalent single, testable assessment service. For each acceptance criterion, provide only the evidence actually retrieved:
 
 - Original criterion ID, title, description and expected evidence type.
 - Freelancer's written submission.
@@ -792,7 +792,7 @@ If FastAPI `BackgroundTasks` remains the MVP execution mechanism, explicitly doc
 
 ### Tests
 
-Successful task, provider timeout, orchestrator exception, missing actor, database failure, process restart/interruption simulation, retry, retry exhaustion and client/freelancer polling permissions.
+Successful task, provider timeout orchestrator exception, missing actor, database failure, process restart/interruption simulation, retry, retry exhaustion and client/freelancer polling permissions.
 
 ### Workstream 13 completion gate
 

@@ -109,7 +109,7 @@ export const ClientContracts: React.FC = () => {
   }, [contracts, activeFilter])
 
   const onRowClicked = (event: any) => {
-    // Prevent opening contract overview if click occurred in actions column, button, or link
+    // Prevent opening contract overview if click occurred in actions column, button or link
     const target = event.event?.target as HTMLElement | null
     const colId = event.column?.getColId()
     const headerName = event.column?.getColDef()?.headerName
@@ -295,8 +295,8 @@ export const ClientContracts: React.FC = () => {
                     type="button"
                     onClick={() => setActiveFilter(opt.value)}
                     className={`text-[10px] font-medium px-2.5 py-1 rounded capitalize transition-colors cursor-pointer ${activeFilter === opt.value
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
                       }`}
                   >
                     {opt.label}

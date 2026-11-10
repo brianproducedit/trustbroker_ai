@@ -9,13 +9,13 @@
   --color-brand-blue-soft: #F1F5FF;
   --color-brand-navy: #0E1B35;
   --color-canvas: #F6F8FC;
-  
+
   --color-surface: #FFFFFF;
   --color-surface-subtle: #F8FAFC;
   --color-surface-tint: #525E7C;
   --color-border: #DDE4EF;
   --color-border-subtle: #EDF2F7;
-  
+
   --color-text-primary: #1A2940;
   --color-text-secondary: #5D6B82;
   --color-text-tertiary: #8C9BAE;
@@ -46,8 +46,9 @@
   * {
     border-color: var(--color-border);
   }
-  
-  html, body {
+
+  html,
+  body {
     margin: 0;
     padding: 0;
     font-family: var(--font-sans);
@@ -61,13 +62,16 @@
   width: 6px;
   height: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
 }
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #334155;
 }
@@ -145,7 +149,7 @@
   color: #E2E8F0 !important;
 }
 
-/* Eliminate ANY white background in empty space, viewports, or scroll areas */
+/* Eliminate ANY white background in empty space, viewports or scroll areas */
 .ag-root,
 .ag-root-wrapper,
 .ag-root-wrapper-body,

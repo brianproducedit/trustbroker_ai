@@ -54,8 +54,8 @@ def validate_storage_path(storage_path: str, uploader_id: Optional[Any] = None) 
     """Validate storage path format and ownership.
     
     Ensures:
-    1. No blob:, data:, javascript:, or arbitrary web schemes
-    2. No path traversal (..), null bytes (\\0), or absolute system paths
+    1. No blob:, data:, javascript: or arbitrary web schemes
+    2. No path traversal (..), null bytes (\\0) or absolute system paths
     3. If uploader_id is provided, the path MUST reside in the uploader's subfolder
     4. Must belong to the approved storage namespace (supabase:// or uploads/evidence/)
     """
@@ -138,7 +138,7 @@ BLOCKED_IP_NETWORKS = [
 
 
 def is_ip_blocked(ip: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]) -> bool:
-    """Check if an IP address belongs to private, loopback, link-local, multicast, or cloud metadata ranges."""
+    """Check if an IP address belongs to private, loopback, link-local, multicast or cloud metadata ranges."""
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
         ip = ip.ipv4_mapped
 

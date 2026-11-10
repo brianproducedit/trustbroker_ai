@@ -94,7 +94,7 @@ export const ContractDetail: React.FC = () => {
           <div className="space-y-1.5">
             <h2 className="text-lg font-bold text-white">Contract Not Found or Access Restricted</h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Contract <span className="text-blue-400 font-mono">{id}</span> could not be found, or your active account is not authorized to inspect it.
+              Contract <span className="text-blue-400 font-mono">{id}</span> could not be found or your active account is not authorized to inspect it.
             </p>
           </div>
           <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-9">
@@ -658,10 +658,10 @@ export const ContractDetail: React.FC = () => {
                 <div
                   key={step.id}
                   className={`p-2.5 rounded-lg border text-xs transition-all ${isCompleted
-                      ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
-                      : isCurrent
-                        ? 'bg-blue-950/30 border-blue-500/60 text-white ring-1 ring-blue-500/20 shadow-sm'
-                        : 'bg-[#0B1326] border-[#222A3D] text-slate-500'
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                    : isCurrent
+                      ? 'bg-blue-950/30 border-blue-500/60 text-white ring-1 ring-blue-500/20 shadow-sm'
+                      : 'bg-[#0B1326] border-[#222A3D] text-slate-500'
                     }`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1">
@@ -1007,8 +1007,8 @@ export const ContractDetail: React.FC = () => {
                         key={f.key}
                         onClick={() => setMilestoneFilter(f.key as any)}
                         className={`px-2.5 py-1 rounded text-xs transition-colors ${milestoneFilter === f.key
-                            ? 'bg-blue-600 text-white font-medium shadow-sm'
-                            : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
+                          ? 'bg-blue-600 text-white font-medium shadow-sm'
+                          : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
                           }`}
                       >
                         {f.label}
@@ -1144,10 +1144,10 @@ export const ContractDetail: React.FC = () => {
                                       <Badge
                                         variant="outline"
                                         className={`text-[10px] font-mono uppercase px-2 py-0.5 shrink-0 ${isPass
-                                            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                                            : isFail
-                                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                              : 'bg-slate-800 text-slate-400 border-slate-700'
+                                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                          : isFail
+                                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                            : 'bg-slate-800 text-slate-400 border-slate-700'
                                           }`}
                                       >
                                         {c.status || 'pending'}
@@ -1225,10 +1225,10 @@ export const ContractDetail: React.FC = () => {
                               <Badge
                                 variant="outline"
                                 className={`text-[11px] font-mono capitalize ${isReleased
-                                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                                    : isStaged
-                                      ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                  : isStaged
+                                    ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700'
                                   }`}
                               >
                                 {isReleased
@@ -1711,8 +1711,8 @@ export const ContractDetail: React.FC = () => {
                           key={filter}
                           onClick={() => setActivityFilter(filter)}
                           className={`px-2 py-0.5 rounded text-xs capitalize transition-colors ${activityFilter === filter
-                              ? 'bg-blue-600 text-white font-medium'
-                              : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
+                            ? 'bg-blue-600 text-white font-medium'
+                            : 'bg-[#0B1326] text-slate-400 hover:text-white border border-[#222A3D]'
                             }`}
                         >
                           {filter}

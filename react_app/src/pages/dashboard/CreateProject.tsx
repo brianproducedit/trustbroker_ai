@@ -326,7 +326,7 @@ export const CreateProject: React.FC = () => {
       } catch {
         setQuestions([
           { id: 'q1', question: 'What must be true for the first milestone to count as done?' },
-          { id: 'q2', question: 'Are there tools, brands, or repos the freelancer must use?' },
+          { id: 'q2', question: 'Are there tools, brands or repos the freelancer must use?' },
           { id: 'q3', question: 'Who reviews the work besides you?' },
         ])
         usedFallback = true
@@ -497,10 +497,10 @@ export const CreateProject: React.FC = () => {
                 disabled={!isCompleted}
                 onClick={() => isCompleted && setStep(s.num as WizardStep)}
                 className={`py-2 px-1 rounded-lg border transition-all ${isActive
-                    ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-semibold'
-                    : isCompleted
-                      ? 'bg-[#171F33] border-[#2D3449] text-emerald-400 hover:bg-[#222A3D]'
-                      : 'bg-[#131B2E] border-[#222A3D] text-slate-500 opacity-60'
+                  ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-semibold'
+                  : isCompleted
+                    ? 'bg-[#171F33] border-[#2D3449] text-emerald-400 hover:bg-[#222A3D]'
+                    : 'bg-[#131B2E] border-[#222A3D] text-slate-500 opacity-60'
                   }`}
               >
                 <span className="truncate block">{s.label}</span>
@@ -546,8 +546,8 @@ export const CreateProject: React.FC = () => {
                       type="button"
                       onClick={() => setCategory(c.value)}
                       className={`px-2.5 py-1 rounded-md text-[11px] border transition-colors cursor-pointer ${category === c.value
-                          ? 'border-blue-500 bg-blue-600/30 text-blue-300 font-semibold'
-                          : 'border-[#222A3D] bg-[#0E1528] text-slate-400 hover:text-white hover:border-slate-600'
+                        ? 'border-blue-500 bg-blue-600/30 text-blue-300 font-semibold'
+                        : 'border-[#222A3D] bg-[#0E1528] text-slate-400 hover:text-white hover:border-slate-600'
                         }`}
                     >
                       {c.label}

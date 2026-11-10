@@ -213,7 +213,7 @@ def delete_contract(
     session: Session = Depends(get_session),
 ):
     """Permanently delete a DRAFT contract with no payment history.
-    Active, awarded, completed, or cancelled contracts cannot be deleted.
+    Active, awarded, completed or cancelled contracts cannot be deleted.
     Financial records (payment attempts, payouts) block deletion to protect the audit trail.
     """
     contract_service.delete_contract(session=session, contract_id=contract_id, client=current_user)
@@ -259,7 +259,7 @@ def delete_milestone(
     session: Session = Depends(get_session),
 ):
     """Delete a milestone that has no payment activity.
-    Funded, staged, or released milestones are permanently locked and cannot be removed.
+    Funded, staged or released milestones are permanently locked and cannot be removed.
     """
     contract_service.delete_milestone(
         session=session,

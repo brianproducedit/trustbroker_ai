@@ -107,7 +107,7 @@ The Render blueprint sets `ENVIRONMENT=production`, but that does not currently 
 3. Reject unknown `dev-user-*` values. Do not map arbitrary suffixes to the freelancer identity.
 4. Keep Supabase JWT cryptographic verification as the only hosted authentication path. Preserve signature, expiry, algorithm and subject checks. Confirm that the JWT audience/issuer settings match the actual Supabase project configuration rather than disabling relevant checks without a documented reason.
 5. Gate all frontend demo-token generation behind a build-time development flag. Set it to false for hosted builds. A Supabase outage, rejected password or expired session must show an authentication error; it must not silently create a client/freelancer session.
-6. Remove `password123` and `demo123` aliases. Demo users should authenticate through actual seeded Supabase Auth accounts with a unique, documented demo password, or the demo login should be disabled.
+6. Remove `password123` and `demo123` aliases. Demo users should authenticate through actual seeded Supabase Auth accounts with a unique, documented demo password or the demo login should be disabled.
 7. Verify that workspace switching changes the UI workspace only. It must never change the identity, user ID or backend authorization role.
 8. Validate required production configuration at startup. A production backend must not start with an unsafe default environment or missing authentication configuration.
 9. Review `get_optional_current_user()`: on endpoints where an Authorization header is supplied but invalid, do not silently downgrade an invalid credential to anonymous access unless that behaviour is explicitly intended and tested. Public unauthenticated access and invalid authenticated access should be distinguishable.
@@ -777,7 +777,7 @@ The HTTP probe accepts user-submitted URLs and performs a server-side GET with r
 9. Run an end-to-end hosted check after each deploy using the public URLs, not only localhost. Check cold-start behaviour on Render free tier.
 10. Ensure demo account/profile seeding is disabled in production restarts after the initial explicit setup.
 11. Restrict CORS to exact, configured frontend origins. In `backend/app/main.py`, remove the wildcard `allow_origin_regex` for arbitrary `*.onrender.com` subdomains.
-12. In `global_exception_handler`, do not reflect an arbitrary `Origin` header into `Access-Control-Allow-Origin` while also enabling credentials. Return CORS headers only for an origin in the explicit allowlist, or let the configured CORS middleware own the response.
+12. In `global_exception_handler`, do not reflect an arbitrary `Origin` header into `Access-Control-Allow-Origin` while also enabling credentials. Return CORS headers only for an origin in the explicit allowlist or let the configured CORS middleware own the response.
 
 ### Acceptance tests
 

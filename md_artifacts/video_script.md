@@ -61,7 +61,7 @@
 >
 > *TrustBroker's verification engine runs across specialized adapters: the HTTP probe validates live endpoint health, Vision AI inspects design compliance, the Document adapter checks specifications and the Repository adapter audits file structures and tests.*
 >
-> *Crucially: verification is truthful. If evidence is subjective, missing, or requires human eyes, it flags NEEDS REVIEW — preventing unsafe auto-pass. Only verified criteria with strict AI assessment can proceed to automatic settlement eligibility."*
+> *Crucially: verification is truthful. If evidence is subjective, missing or requires human eyes, it flags NEEDS REVIEW — preventing unsafe auto-pass. Only verified criteria with strict AI assessment can proceed to automatic settlement eligibility."*
 
 **[Show: Verification progress → score badge appears (e.g., 92/100 PASSED) with citations]**
 

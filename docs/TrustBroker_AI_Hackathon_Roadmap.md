@@ -12,7 +12,7 @@
 
 1. Work **one phase at a time**, top to bottom.
 2. Check a box only when the **acceptance criteria** for that item are true in running code, not when the file exists.
-3. Do not skip Phase 0 terminology. Do not claim PayPal escrow, Zimbabwe payouts, or live legal status.
+3. Do not skip Phase 0 terminology. Do not claim PayPal escrow, Zimbabwe payouts or live legal status.
 4. If a stretch item would delay the core money loop, leave it unchecked and continue.
 5. After each phase, run the **phase gate** checklist before starting the next phase.
 
@@ -24,7 +24,7 @@ These are locked unless the project owner explicitly changes them.
 
 | Decision | Locked choice | Why |
 |---|---|---|
-| Language | **Client** and **Freelancer** everywhere. Never buyer/supplier in UI, copy, routes, or new code. | Owner instruction. |
+| Language | **Client** and **Freelancer** everywhere. Never buyer/supplier in UI, copy, routes or new code. | Owner instruction. |
 | Dual capability | One signed-in user may operate **both workspaces**. Switching workspace does **not** impersonate another person. | Matches real freelance platforms and the original guide. |
 | Sign-up | **Primary workspace is required** (Hire / Find work). User can still switch later. Role is never permanently locked. | Owner decision 27 Oct 2026. |
 | Judge access | **Seeded client + freelancer (+ newcomer) accounts only.** No one-click demo login on landing or sign-in. | Owner decision: more production-like. |
@@ -43,7 +43,7 @@ TrustBroker AI is the trust layer between **clients** and **freelancers**. A cli
 
 ### 0.2 What this product is not
 
-- Not a licensed bank, escrow company, or legal arbitrator.
+- Not a licensed bank, escrow company or legal arbitrator.
 - Not Upwork clone with reviews, disputes courts and global tax forms.
 - Not an autonomous agent that pays people without a policy check.
 - Not a shopping app (do **not** bolt on Channel3).
@@ -97,7 +97,7 @@ Inspected as of this roadmap. Agents must treat this as the starting point.
 | FastAPI + SQLModel + Alembic | `backend/` | Present |
 | Supabase auth client | `react_app/src/lib/supabase.ts` | Present |
 | Contract + milestone + criterion models | `backend/app/models/` | Present; no applications/profiles/portfolio |
-| AI SOW draft + text verification | `backend/app/services/ai_provider.py` | Groq → OpenRouter → fallback. **Text/filenames only** — does not see images, PDFs, or live pages |
+| AI SOW draft + text verification | `backend/app/services/ai_provider.py` | Groq → OpenRouter → fallback. **Text/filenames only** — does not see images, PDFs or live pages |
 | Policy engine | `backend/app/services/policy_engine.py` | Present; extend for applications/payouts |
 | PayPal order create + capture | `backend/app/utils/paypal_client.py`, `payment_service.py` | Present |
 | Release payout | `payment_service.release_milestone_payout` | **DB status flip only** — does not call PayPal Payouts |
@@ -173,7 +173,7 @@ Keep each screen to **one job**. Never put brief + milestones + freelancer picke
    - Step 4 — Preview as a freelancer would see it.
    - Step 5 — Publish as **Open contract** (or save draft).
 4. **Open contract** appears in freelancer marketplace.
-5. Client **Applicants** page: ranked list + AI vet report per applicant. Client can shortlist, reject, or award **one** freelancer.
+5. Client **Applicants** page: ranked list + AI vet report per applicant. Client can shortlist, reject or award **one** freelancer.
 6. Award sends notification. Contract status → `awarded` then `pending_acceptance`.
 7. Freelancer accepts the same contract version. Status → `accepted`.
 8. Client **funds the next unfunded milestone** via PayPal Buttons. Backend creates order, capture is verified server-side and by webhook. Status of milestone payment → `funded`.
@@ -778,10 +778,10 @@ Write **`README.md` at the repository root** (not only `react_app/README.md` or 
 - [x] **P0** Tech stack table.
 - [x] **P0** PayPal APIs used (Orders, Capture, Webhooks, Payouts) and what AI does (SOW, vetting, evidence).
 - [x] **P0** Local run: frontend, backend, env vars (names only, no secrets).
-- [x] **P0** Hosted demo URL + pointer to `docs/JUDGE_DEMO.md` for seeded accounts (never put passwords in the README if the repo is public — use JUDGE_DEMO and Devpost private fields, or a clearly labeled demo password the owner accepts).
+- [x] **P0** Hosted demo URL + pointer to `docs/JUDGE_DEMO.md` for seeded accounts (never put passwords in the README if the repo is public — use JUDGE_DEMO and Devpost private fields or a clearly labeled demo password the owner accepts).
 - [x] **P0** Link to this roadmap (`docs/TrustBroker_AI_Hackathon_Roadmap.md`) and the product guide.
 - [x] **P0** LICENSE named and linked. Open-source license file at repo root (required by Devpost).
-- [x] **P0** Tools used for Devpost: PayPal, Groq, OpenRouter, AG Studio, Render, Postman, APIMatic. **Do not list Gemini, KERNEL, or Bryntum.**
+- [x] **P0** Tools used for Devpost: PayPal, Groq, OpenRouter, AG Studio, Render, Postman, APIMatic. **Do not list Gemini, KERNEL or Bryntum.**
 - [x] **P1** Architecture diagram (mermaid in README is fine; GitHub renders it).
 - [x] **P1** Folder map: `react_app/`, `backend/`, `docs/`.
 
@@ -926,7 +926,7 @@ Do not re-ask these. Do not implement the opposite.
 2. **KERNEL:** out of scope.
 3. **Bryntum:** out of scope. Use a simple CSS timeline if a schedule view is needed.
 4. **Sign-up:** required primary workspace (Hire / Find work); switching later is allowed; never lock forever.
-5. **Gemini API:** out of scope. Do not add a Gemini key, client, or adapter.
+5. **Gemini API:** out of scope. Do not add a Gemini key, client or adapter.
 
 ---
 
@@ -938,9 +938,9 @@ For any coding agent using this file:
 2. Implement only the current phase’s **P0** items unless the user says otherwise.
 3. After edits, run frontend lint/build and backend import checks if the environment allows.
 4. Check off items in **this file** when the acceptance criteria are met.
-5. Do not reintroduce buyer/supplier, Elena/Tariro impersonation, or “African bank rails” copy.
+5. Do not reintroduce buyer/supplier, Elena/Tariro impersonation or “African bank rails” copy.
 6. Do not put secrets in the client.
-7. If blocked by missing credentials (PayPal, Groq, OpenRouter), implement the adapter behind a feature flag and continue. Never add Gemini, KERNEL, or Bryntum.
+7. If blocked by missing credentials (PayPal, Groq, OpenRouter), implement the adapter behind a feature flag and continue. Never add Gemini, KERNEL or Bryntum.
 
 ---
 

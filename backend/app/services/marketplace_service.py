@@ -492,7 +492,7 @@ def withdraw_application(
 ) -> dict:
     """Freelancer withdraws a PENDING application.
 
-    Applications that have been shortlisted, awarded, or rejected cannot be
+    Applications that have been shortlisted, awarded or rejected cannot be
     withdrawn — the client may have already taken action based on the submission.
     """
     application = session.get(Application, application_id)

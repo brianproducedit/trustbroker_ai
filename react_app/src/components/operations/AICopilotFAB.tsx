@@ -96,8 +96,8 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
       sender: 'assistant',
       text:
         workspace === 'client'
-          ? "👋 Hello! I am your TrustBroker AI Operations Copilot. Ask me about your active contracts, staged funds, milestone verifications, or PayPal releases."
-          : "👋 Hello! I am your Freelancer Copilot. Ask me about your active deliverables, earnings, pending AI verifications, or marketplace matching.",
+          ? "👋 Hello! I am your TrustBroker AI Operations Copilot. Ask me about your active contracts, staged funds, milestone verifications or PayPal releases."
+          : "👋 Hello! I am your Freelancer Copilot. Ask me about your active deliverables, earnings, pending AI verifications or marketplace matching.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       suggestedActions: promptStarters,
     },

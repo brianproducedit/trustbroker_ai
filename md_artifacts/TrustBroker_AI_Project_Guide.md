@@ -49,7 +49,7 @@ Do not attempt to build every category as a separate product during the hackatho
 
 ## 3. The main problem we solve
 
-A project can start as an informal conversation on WhatsApp, email, or another messaging platform. That can leave both parties uncertain about scope, deadlines, revisions, payment and what qualifies as complete work.
+A project can start as an informal conversation on WhatsApp, email or another messaging platform. That can leave both parties uncertain about scope, deadlines, revisions, payment and what qualifies as complete work.
 
 The client may worry about paying and receiving poor or incomplete work. The provider may worry about completing the work and not getting paid. TrustBroker makes the agreement and process more structured and traceable.
 
@@ -83,13 +83,13 @@ Use PayPal sandbox checkout for the hackathon. FastAPI creates orders and verifi
 
 ### Delivery submission and verification
 
-The provider submits supported evidence, such as a file, source archive, screenshot, report, or repository link. TrustBroker records the submission and time.
+The provider submits supported evidence, such as a file, source archive, screenshot, report or repository link. TrustBroker records the submission and time.
 
 The AI compares available evidence with the agreed criteria and reports a result for each criterion:
 
 - **Pass** — evidence appears to satisfy the criterion.
 - **Fail / Incomplete** — the evidence does not satisfy it or required material is missing.
-- **Needs Review** — evidence is ambiguous, subjective, inaccessible, or beyond reliable automated assessment.
+- **Needs Review** — evidence is ambiguous, subjective, inaccessible or beyond reliable automated assessment.
 
 Save each report and link it to the relevant contract version, criteria and submission. A design's visual quality or a report's usefulness may require the client or a human reviewer to make the final judgment.
 
@@ -114,7 +114,7 @@ The main demonstration should show one project moving through the whole lifecycl
 7. FastAPI verifies the resulting payment state with PayPal.
 8. The provider submits the agreed deliverable or evidence.
 9. The AI assesses the evidence against the accepted criteria.
-10. The policy engine decides whether the next permitted status is revision, human review, release eligibility, or another supported state.
+10. The policy engine decides whether the next permitted status is revision, human review, release eligibility or another supported state.
 11. The dashboard and activity history show what happened.
 
 Also demonstrate exception handling:
@@ -138,7 +138,7 @@ Therefore:
 - Treat release eligibility as a backend decision, not as proof that money was transferred.
 - Use states such as `RELEASE_ELIGIBLE` or `PAYOUT_NOT_AVAILABLE` when appropriate.
 - Only show payout success after the provider confirms it.
-- Do not promise live escrow, guaranteed payouts to Zimbabwean suppliers, or guaranteed local-currency settlement.
+- Do not promise live escrow, guaranteed payouts to Zimbabwean suppliers or guaranteed local-currency settlement.
 - If currency estimates are shown, label them **indicative** and include their source and timestamp. Do not promise a locked exchange rate without a supported mechanism.
 
 Useful PayPal references to recheck during implementation:
@@ -210,7 +210,7 @@ Authentication proves who signed in. Authorization determines which contracts, f
 
 ### Defer from the MVP
 
-Do not make social login, SMS verification, enterprise SSO, or mandatory multifactor authentication a blocker for the first release. MFA can be added later. Do not skip the required authentication and authorization safeguards just because this is a hackathon.
+Do not make social login, SMS verification, enterprise SSO or mandatory multifactor authentication a blocker for the first release. MFA can be added later. Do not skip the required authentication and authorization safeguards just because this is a hackathon.
 
 ## 9. File storage decision: Supabase Storage first
 
@@ -218,7 +218,7 @@ Do not make social login, SMS verification, enterprise SSO, or mandatory multifa
 
 Use private storage, access rules and short-lived signed URLs when appropriate. Validate file type and size. Avoid running uploaded archives or arbitrary code inside the main FastAPI process.
 
-Keep file storage behind a small backend abstraction where practical, so R2 can be added later if real storage volume, download activity, cost, or operational requirements justify it. Do not add a second storage provider just to make the architecture look more complex.
+Keep file storage behind a small backend abstraction where practical, so R2 can be added later if real storage volume, download activity, cost or operational requirements justify it. Do not add a second storage provider just to make the architecture look more complex.
 
 ## 10. Recommended technology stack
 
@@ -237,7 +237,7 @@ Keep file storage behind a small backend abstraction where practical, so R2 can 
 | Hosting | Render static site and FastAPI service, subject to current limits | Public demonstration deployment |
 | API documentation/testing | FastAPI OpenAPI and Postman | Documentation and repeatable API tests; APIMatic optional |
 
-Do not place API keys, PayPal secrets, Supabase service-role keys, or unrestricted payment operations in the frontend.
+Do not place API keys, PayPal secrets, Supabase service-role keys or unrestricted payment operations in the frontend.
 
 ## 11. Architecture in plain language
 
@@ -246,7 +246,7 @@ Do not place API keys, PayPal secrets, Supabase service-role keys, or unrestrict
 3. **Supabase:** stores users/authentication, contract and workflow records and private uploaded files.
 4. **External services:** Gemini (or a replaceable AI provider) and PayPal sandbox. An optional FX reference API can be considered later, but it is not required for the MVP.
 
-The frontend is not the authority for payment success, identity permissions, or whether a payout may occur. Those decisions must be enforced or verified by the backend and relevant providers.
+The frontend is not the authority for payment success, identity permissions or whether a payout may occur. Those decisions must be enforced or verified by the backend and relevant providers.
 
 ## 12. Suggested data entities
 
@@ -266,7 +266,7 @@ Use database constraints and idempotency protections for operations that must no
 
 ## 13. Design direction for Google Stitch
 
-Use Google Stitch to generate and iterate on the user interface. It can help design screens and support handoff, but **it does not replace implementation of the backend, database security, payment verification, or business logic**. Those still need to be built and tested in code.
+Use Google Stitch to generate and iterate on the user interface. It can help design screens and support handoff, but **it does not replace implementation of the backend, database security, payment verification or business logic**. Those still need to be built and tested in code.
 
 ### Visual style
 
@@ -296,11 +296,11 @@ The interface should clearly distinguish:
 
 - Draft versus accepted contract.
 - Contract version accepted by each party.
-- Payment pending, confirmed, failed, cancelled, release eligible, or payout unavailable.
-- Delivery not submitted, submitted, incomplete, passed, or needing review.
+- Payment pending, confirmed, failed, cancelled, release eligible or payout unavailable.
+- Delivery not submitted, submitted, incomplete, passed or needing review.
 - AI suggestion versus human decision versus provider-confirmed event.
 
-Every operation that changes important state should provide feedback and a traceable event. Show useful empty states when no contracts or deliveries exist. Confirm important actions such as accepting a contract version. Give clear recovery instructions when uploads, verification, checkout, login, or email delivery fail.
+Every operation that changes important state should provide feedback and a traceable event. Show useful empty states when no contracts or deliveries exist. Confirm important actions such as accepting a contract version. Give clear recovery instructions when uploads, verification, checkout, login or email delivery fail.
 
 ## 15. Features to defer
 
@@ -331,7 +331,7 @@ The MVP is ready when all of the following are true:
 - [ ] A working PayPal sandbox checkout is available.
 - [ ] Payment state is verified server-side; a cancelled or failed checkout is never displayed as paid.
 - [ ] A supplier can submit supported files or repository links and see submission history.
-- [ ] AI verification creates saved criterion-level Pass, Fail/Incomplete, or Needs Review results.
+- [ ] AI verification creates saved criterion-level Pass, Fail/Incomplete or Needs Review results.
 - [ ] Incomplete and ambiguous cases lead to revision or human review as appropriate.
 - [ ] Backend rules block unauthorized actions and protect against duplicate processing.
 - [ ] AG Grid shows real API-backed records with useful sorting, filtering, details and statuses.

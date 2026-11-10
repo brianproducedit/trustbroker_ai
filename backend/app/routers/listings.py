@@ -21,7 +21,7 @@ def list_listings(
     category: Optional[str] = Query(None, description="Filter by category, e.g. software, design"),
     min_budget: Optional[Decimal] = Query(None, ge=0, description="Minimum total contract amount in USD"),
     max_budget: Optional[Decimal] = Query(None, ge=0, description="Maximum total contract amount in USD"),
-    skill: Optional[str] = Query(None, description="Match required skills, title, or description"),
+    skill: Optional[str] = Query(None, description="Match required skills, title or description"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: UserProfile = Depends(get_current_user),
