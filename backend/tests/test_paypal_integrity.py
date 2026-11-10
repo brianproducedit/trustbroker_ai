@@ -581,6 +581,59 @@ async def test_payout_notification_and_amounts_accurate(session: Session, client
     assert "submitted to PayPal" in notif.body
 
 
+@pytest.mark.asyncio
+async def test_existing_payout_is_idempotent_after_revision_request(
+    session: Session, client_user: UserProfile
+):
+    """A retry returns the existing PayPal payout even if a later revision request is open."""
+    freelancer = UserProfile(
+        id=uuid.uuid4(),
+        email="freelancer.retry@example.com",
+        full_name="Retry Freelancer",
+        role="freelancer",
+        paypal_payout_email="freelancer.retry@sandbox.paypal.com",
+    )
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-RETRY-001",
+        title="Idempotent Payout Contract",
+        client_id=client_user.id,
+        freelancer_id=freelancer.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("300.00"),
+        staged_amount=Decimal("300.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("300.00"),
+        status=MilestoneStatus.REVISION_REQUESTED,
+        payment_status=PaymentStatus.RELEASE_AUTHORIZED,
+    )
+    payout = Payout(
+        contract_id=contract.id,
+        milestone_id=milestone.id,
+        freelancer_id=freelancer.id,
+        amount=milestone.amount,
+        currency="USD",
+        paypal_payout_email=freelancer.paypal_payout_email,
+        status=PayoutStatus.PROCESSING.value,
+        idempotency_key=f"payout:{milestone.id}",
+        paypal_batch_id="BATCH-RETRY-001",
+        paypal_item_id="ITEM-RETRY-001",
+    )
+    session.add_all([freelancer, contract, milestone, payout])
+    session.commit()
+
+    res = await release_milestone_payout(session, contract.id, milestone.id, client_user)
+
+    assert res["duplicate"] is True
+    assert res["status"] == PayoutStatus.PROCESSING.value
+    assert res["paypal_batch_id"] == "BATCH-RETRY-001"
+
+
 def test_apply_payout_status_unknown_status_maps_to_reconciliation_required(session: Session):
     """Unknown provider status strings must map to reconciliation_required, never fabricated success."""
     from app.services.payment_service import _apply_payout_status
@@ -768,5 +821,4 @@ async def test_unresolved_webhook_retry_reuses_original_payload(
     ).one()
     assert attempt.paypal_capture_id == "CAP-RETRY"
     assert attempt.paypal_status == "COMPLETED"
-
 

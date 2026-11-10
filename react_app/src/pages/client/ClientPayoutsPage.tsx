@@ -167,6 +167,16 @@ export const ClientPayoutsPage: React.FC = () => {
 
   const totalCaptured = Math.max(paymentAttemptsCaptured, totalStaged + totalReleased)
 
+  const activePayoutByMilestone = new Map(
+    ledger.payouts
+      .filter((p) =>
+        ['pending', 'processing', 'unclaimed', 'reconciliation_required', 'success'].includes(
+          (p.status || '').toLowerCase()
+        )
+      )
+      .map((p) => [p.milestone_id, p.status?.toLowerCase()])
+  )
+
   // Collect staged milestones from local contract store (funded but not released)
   const stagedMilestones = contracts.flatMap((c) =>
     c.milestones
@@ -175,6 +185,7 @@ export const ClientPayoutsPage: React.FC = () => {
         m.paymentStatus === 'release_authorized' ||
         (m as any).paymentStatus === 'staged'
       )
+      .filter((m) => !activePayoutByMilestone.has(m.id))
       .map((m) => ({ contract: c, milestone: m }))
   )
 

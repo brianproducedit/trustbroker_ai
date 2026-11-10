@@ -401,18 +401,6 @@ async def release_milestone_payout(
     if contract.client_id != client.id:
         require_client(client, contract)
 
-    freelancer = session.get(UserProfile, contract.freelancer_id) if contract.freelancer_id else None
-    release_policy = PolicyEngine.can_release_payout(client, contract, milestone, freelancer)
-    if not release_policy.allowed:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=release_policy.reason)
-
-    receiver = (freelancer.paypal_payout_email or "").strip() if freelancer else ""
-    if not receiver:
-        raise HTTPException(
-            status_code=400,
-            detail="Freelancer has not configured a PayPal payout email. Payout cannot be released.",
-        )
-
     request_id = f"payout:{milestone.id}"
     existing = session.exec(select(Payout).where(Payout.idempotency_key == request_id)).first()
     if existing and existing.status in (
@@ -432,6 +420,18 @@ async def release_milestone_payout(
             "payout": PayoutRead.model_validate(existing).model_dump(mode="json"),
             "duplicate": True,
         }
+
+    freelancer = session.get(UserProfile, contract.freelancer_id) if contract.freelancer_id else None
+    release_policy = PolicyEngine.can_release_payout(client, contract, milestone, freelancer)
+    if not release_policy.allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=release_policy.reason)
+
+    receiver = (freelancer.paypal_payout_email or "").strip() if freelancer else ""
+    if not receiver:
+        raise HTTPException(
+            status_code=400,
+            detail="Freelancer has not configured a PayPal payout email. Payout cannot be released.",
+        )
 
     payout = existing or Payout(
         contract_id=contract.id,
