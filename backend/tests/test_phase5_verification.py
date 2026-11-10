@@ -513,5 +513,107 @@ class TestPhase5Orchestrator(unittest.TestCase):
         self.assertEqual(self.milestone.status, MilestoneStatus.VERIFIED)
 
 
+class TestPhase7TerminalJobState(unittest.TestCase):
+    """Phase 7: Verifies that verification polling always resolves to a visible terminal state."""
+
+    def setUp(self):
+        self.engine = create_engine("sqlite:///:memory:")
+        SQLModel.metadata.create_all(self.engine)
+        self.session = Session(self.engine)
+
+        self.client_user = UserProfile(
+            id=uuid.uuid4(),
+            email="client.term@trustbroker.ai",
+            role="client",
+            full_name="Terminal Client",
+        )
+        self.freelancer_user = UserProfile(
+            id=uuid.uuid4(),
+            email="freelancer.term@trustbroker.ai",
+            role="freelancer",
+            full_name="Terminal Freelancer",
+        )
+        self.contract = Contract(
+            id=uuid.uuid4(),
+            code="TB-TERM-001",
+            title="Terminal State Contract",
+            client_id=self.client_user.id,
+            freelancer_id=self.freelancer_user.id,
+            status=ContractStatus.ACTIVE,
+            total_amount=Decimal("500.00"),
+            currency="USD",
+        )
+        self.milestone = Milestone(
+            id=uuid.uuid4(),
+            contract_id=self.contract.id,
+            title="Terminal Milestone",
+            amount=Decimal("500.00"),
+            status=MilestoneStatus.VERIFYING,
+            payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+        )
+        self.session.add(self.client_user)
+        self.session.add(self.freelancer_user)
+        self.session.add(self.contract)
+        self.session.add(self.milestone)
+        self.session.commit()
+
+    def tearDown(self):
+        self.session.close()
+
+    def test_interrupted_state_when_verifying_times_out(self):
+        """If a service restarted or timed out (>90s) while in VERIFYING, status endpoint reports 'interrupted'."""
+        from datetime import datetime, timezone, timedelta
+        from app.routers.deliveries import get_delivery_verification_status
+
+        old_time = datetime.now(timezone.utc) - timedelta(seconds=120)
+        delivery = Delivery(
+            id=uuid.uuid4(),
+            contract_id=self.contract.id,
+            milestone_id=self.milestone.id,
+            submitted_by=self.freelancer_user.id,
+            description="Interrupted delivery",
+            submitted_at=old_time,
+        )
+        self.session.add(delivery)
+        self.session.commit()
+
+        status_res = get_delivery_verification_status(
+            delivery_id=delivery.id,
+            current_user=self.client_user,
+            session=self.session,
+        )
+        self.assertEqual(status_res["status"], "interrupted")
+        self.assertIn("interrupted", status_res["error"].lower())
+
+    def test_needs_review_state_when_submitted_fails_to_verify(self):
+        """If a delivery was submitted >45s ago and reverted/stayed in SUBMITTED with no report, status is 'needs_review'."""
+        from datetime import datetime, timezone, timedelta
+        from app.routers.deliveries import get_delivery_verification_status
+
+        self.milestone.status = MilestoneStatus.SUBMITTED
+        self.session.add(self.milestone)
+        self.session.commit()
+
+        old_time = datetime.now(timezone.utc) - timedelta(seconds=60)
+        delivery = Delivery(
+            id=uuid.uuid4(),
+            contract_id=self.contract.id,
+            milestone_id=self.milestone.id,
+            submitted_by=self.freelancer_user.id,
+            description="Needs review delivery",
+            submitted_at=old_time,
+        )
+        self.session.add(delivery)
+        self.session.commit()
+
+        status_res = get_delivery_verification_status(
+            delivery_id=delivery.id,
+            current_user=self.client_user,
+            session=self.session,
+        )
+        self.assertEqual(status_res["status"], "needs_review")
+        self.assertIn("human review", status_res["error"].lower())
+
+
 if __name__ == "__main__":
     unittest.main()

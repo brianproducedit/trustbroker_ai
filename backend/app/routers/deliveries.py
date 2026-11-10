@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
@@ -223,13 +224,51 @@ def get_delivery_verification_status(
     ).first()
 
     if report is None:
-        queued = milestone is not None and milestone.status in (
-            MilestoneStatus.SUBMITTED,
-            MilestoneStatus.VERIFYING,
-        )
+        now = datetime.now(timezone.utc)
+        sub_time = delivery.submitted_at
+        if sub_time.tzinfo is None:
+            sub_time = sub_time.replace(tzinfo=timezone.utc)
+        age_seconds = (now - sub_time).total_seconds()
+
+        # If milestone is actively in VERIFYING state:
+        if milestone and milestone.status == MilestoneStatus.VERIFYING:
+            if age_seconds > 90:
+                # Background task died or service was restarted while processing
+                return {
+                    "delivery_id": str(delivery.id),
+                    "status": "interrupted",
+                    "milestone_status": milestone.status.value,
+                    "error": "Verification process timed out or was interrupted by a service restart. Manual client review required.",
+                    "report": None,
+                }
+            return {
+                "delivery_id": str(delivery.id),
+                "status": "verifying",
+                "milestone_status": milestone.status.value,
+                "report": None,
+            }
+
+        # If milestone is in SUBMITTED state (queued or reverted due to engine error):
+        if milestone and milestone.status == MilestoneStatus.SUBMITTED:
+            if age_seconds > 45:
+                # Background task either never started, crashed, or was interrupted
+                return {
+                    "delivery_id": str(delivery.id),
+                    "status": "needs_review",
+                    "milestone_status": milestone.status.value,
+                    "error": "Automated verification could not complete; deliverable is queued for human review.",
+                    "report": None,
+                }
+            return {
+                "delivery_id": str(delivery.id),
+                "status": "queued",
+                "milestone_status": milestone.status.value,
+                "report": None,
+            }
+
         return {
             "delivery_id": str(delivery.id),
-            "status": "queued" if queued else "pending",
+            "status": "pending",
             "milestone_status": milestone.status.value if milestone else None,
             "report": None,
         }
@@ -253,9 +292,11 @@ def get_delivery_verification_status(
         for cr, title in criterion_rows
     ]
 
+    terminal_status = "needs_review" if report.requires_human_review else ("completed" if report.passed else "failed")
+
     return {
         "delivery_id": str(delivery.id),
-        "status": "completed",
+        "status": terminal_status,
         "milestone_status": milestone.status.value if milestone else None,
         "report": {
             "report_id": str(report.id),

@@ -658,7 +658,12 @@ export const useContractStore = create<ContractStore>((set, get) => ({
             const statusRes = await api.deliveries.verificationStatus(deliveryId)
             if (statusRes?.report) {
               verifyRes = statusRes.report
-            } else if (statusRes?.status === 'pending') {
+            } else if (
+              statusRes?.status === 'pending' ||
+              statusRes?.status === 'interrupted' ||
+              statusRes?.status === 'failed' ||
+              statusRes?.status === 'needs_review'
+            ) {
               break
             }
           }
