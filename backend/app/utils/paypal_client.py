@@ -14,7 +14,7 @@ def get_base_url() -> str:
 async def get_paypal_access_token() -> str:
     """Fetch OAuth2 Bearer token from PayPal Developer API."""
     base_url = get_base_url()
-    auth_str = f"{settings.paypal_client_id}:{settings.paypal_client_secret}"
+    auth_str = f"{settings.paypal_client_id.strip()}:{settings.paypal_client_secret.strip()}"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
 
     headers = {
@@ -133,11 +133,15 @@ async def create_payout(
 
 async def get_payout_batch(batch_id: str) -> Dict[str, Any]:
     """Fetch the current PayPal status for a previously created payout batch."""
-    token = await get_paypal_access_token()
     base_url = get_base_url()
-    headers = {"Authorization": f"******", "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=20.0) as client:
+        token = await get_paypal_access_token()
+        headers = {"Authorization": f"******", "Content-Type": "application/json"}
         res = await client.get(f"{base_url}/v1/payments/payouts/{batch_id}", headers=headers)
+        if res.status_code == 401:
+            token = await get_paypal_access_token()
+            headers["Authorization"] = f"******"
+            res = await client.get(f"{base_url}/v1/payments/payouts/{batch_id}", headers=headers)
         if res.status_code != 200:
             raise Exception(f"Failed to fetch PayPal payout batch {batch_id}: {res.text}")
         return res.json()
