@@ -95,7 +95,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
           }}
         >
           <PayPalButtons
-            style={{ layout: 'horizontal', color: 'gold', shape: 'rect', label: 'paypal', height: 44 }}
+            style={{ layout: 'horizontal', color: 'gold', shape: 'rect', label: 'paypal', tagline: false, height: 44 }}
             disabled={isProcessing}
             createOrder={async () => {
               setErrorMsg(null)
@@ -152,6 +152,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
               if (onPaymentError) onPaymentError(err)
             }}
           />
+          <p className="text-center text-sm text-white">The safer, easier way to pay</p>
         </PayPalScriptProvider>
       )}
     </div>
