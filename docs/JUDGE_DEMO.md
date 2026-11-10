@@ -3,18 +3,18 @@
 > **Competition:** [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)  
 > **Target Audience:** Hackathon Judges, Evaluators and Technical Reviewers  
 > **Live App:** https://trustbroker-ai-frontend-bx9a.onrender.com  
-> **Key Innovation:** Autonomous AI milestone verification paired with real PayPal Orders v2 milestone captures and PayPal Payouts API disbursements — governed by a PolicyEngine that ensures AI never releases funds unilaterally.
+> **Key Innovation:** AI-assisted milestone evidence review paired with PayPal Orders v2 sandbox captures and PayPal Payouts API submission — governed by a PolicyEngine that ensures AI never authorizes funds unilaterally.
 
 ---
 
 ## 1. Sandbox Account Architecture
 
-To experience the complete, real-money loop without real funds, TrustBroker operates in **PayPal Sandbox Mode** (`https://api-m.sandbox.paypal.com`):
+To experience the complete payment-coordination workflow without real funds, TrustBroker operates in **PayPal Sandbox Mode** (`https://api-m.sandbox.paypal.com`):
 
 ```
 +------------------------------------+
 | Client Personal Sandbox Account    |
-| (Buyer / Employer)                 |
+| (Client)                           |
 +------------------------------------+
                   |
                   | 1. PayPal Smart Buttons Popup (Orders v2 Capture)
@@ -37,7 +37,7 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
 
 | Role | PayPal Sandbox Type | Purpose in Demo |
 |---|---|---|
-| **Client (Buyer)** | Sandbox Personal Account | Funds milestones via PayPal Buttons popup. Logs into PayPal modal. |
+| **Client** | Sandbox Personal Account | Funds milestones via PayPal Buttons popup. Logs into PayPal modal. |
 | **Platform** | Sandbox Business (REST App) | Receives captured milestone funds in sandbox; backend credentials issue orders and payouts. |
 | **Freelancer (Receiver)** | Sandbox Personal Account | Target `paypal_payout_email` that receives the payout batch item. |
 
@@ -47,7 +47,9 @@ To experience the complete, real-money loop without real funds, TrustBroker oper
 
 ## 2. Demo User Credentials (Supabase Auth)
 
-The app comes pre-seeded with clean test accounts representing both sides of the marketplace:
+Demo accounts are available only when the deployed environment has explicitly provisioned them
+(for example, with `SEED_DEMO_DATA=true`). Do not assume these accounts exist on an
+unseeded deployment:
 
 | Email | Workspace | Password | Characteristics |
 |---|---|---|---|
@@ -114,7 +116,7 @@ Follow this path to verify every stage of the contract and payment lifecycle.
 2. Click into an active contract (e.g., `TB-2026-009`)
 3. The Contract Detail page has four tabs:
    - **Milestones** — Deliverables, acceptance criteria, status badges
-   - **Legal SOW** — AI-drafted statement of work, SHA-256 content hash, exclusions
+   - **Contract SOW** — AI-drafted statement of work, SHA-256 content hash, exclusions
    - **Payments** — PayPal Funding & Disbursement Hub
    - **Audit Activity** — Immutable chronological event log with SHA-256 integrity proofs
 
@@ -162,7 +164,7 @@ Follow this path to verify every stage of the contract and payment lifecycle.
 
 ### Step 5: AI Verification Engine Runs
 
-After submission, the Groq-powered verification agent automatically evaluates the evidence against the contract's acceptance criteria using four parallel adapter types:
+After submission, the Groq-powered verification agent evaluates the evidence against the contract's acceptance criteria by dispatching it to specialized adapters:
 
 | Adapter | What It Checks |
 |---|---|
@@ -178,7 +180,7 @@ The **criterion assessment matrix** shows:
 - Milestone status transitions to `verified` on successful completion
 
 > [!NOTE]
-> All AI inference runs on Groq's LPU — typical verification completes in under a few seconds. If the AI provider is unavailable or rate-limited, verification returns `NEEDS_REVIEW` (requires human client decision) rather than a synthetic pass.
+> Groq is the primary AI provider, with configured fallbacks. Verification latency varies with provider and evidence type. If providers are unavailable or rate-limited, verification returns `NEEDS_REVIEW` (requiring a human client decision) rather than a synthetic pass.
 
 ---
 
@@ -410,4 +412,3 @@ To connect real cloud storage:
    SUPABASE_SERVICE_ROLE_KEY=[YOUR-SERVICE-ROLE-KEY]
    ```
 5. Deliverables will now upload directly to your private cloud storage bucket.
-

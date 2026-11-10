@@ -1,6 +1,7 @@
 html_version/
 /md_artefacts/
 dist/
+/dist/
 node_modules/
 .env
 .env.local

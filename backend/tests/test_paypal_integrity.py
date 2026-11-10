@@ -696,4 +696,77 @@ async def test_webhook_checkout_order_completed_reconciles_amount(session: Sessi
         assert milestone.payment_status == PaymentStatus.STAGED_IN_SANDBOX
 
 
+@pytest.mark.asyncio
+async def test_unresolved_webhook_retry_reuses_original_payload(
+    session: Session, client_user: UserProfile
+):
+    """A retained event must be retried from its original payload after reconciliation."""
+    from app.models.contract import Contract
+    from app.models.milestone import Milestone
+    from app.models.payment import PaymentAttempt, PaymentStatus
+    from app.services.payment_service import process_paypal_webhook
+
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-WH-RETRY",
+        title="Webhook Retry Contract",
+        client_id=client_user.id,
+        status="active",
+        total_amount=Decimal("100.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Retry milestone",
+        amount=Decimal("100.00"),
+        order_index=1,
+        status="pending",
+        payment_status=PaymentStatus.CHECKOUT_CREATED,
+    )
+    session.add(contract)
+    session.add(milestone)
+    session.commit()
+
+    event_id = f"WH-RETRY-{uuid.uuid4().hex[:8]}"
+    payload = {
+        "id": event_id,
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource": {
+            "id": "CAP-RETRY",
+            "supplementary_data": {"related_ids": {"order_id": "ORDER-RETRY"}},
+            "amount": {"value": "100.00", "currency_code": "USD"},
+        },
+    }
+
+    with patch("app.services.payment_service.paypal_client.verify_webhook_signature", return_value=True):
+        first = await process_paypal_webhook(session, {}, payload)
+        assert first["status"] == "reconciliation_required"
+
+        session.add(
+            PaymentAttempt(
+                contract_id=contract.id,
+                milestone_id=milestone.id,
+                paypal_order_id="ORDER-RETRY",
+                amount=Decimal("100.00"),
+                currency="USD",
+                status=PaymentStatus.CHECKOUT_CREATED,
+            )
+        )
+        session.commit()
+
+        retried_payload = {
+            **payload,
+            "event_type": "PAYMENT.CAPTURE.COMPLETED",
+            "resource": {"id": "CAP-RETRY", "amount": {"value": "1.00", "currency_code": "EUR"}},
+        }
+        retried = await process_paypal_webhook(session, {}, retried_payload)
+
+    assert retried["status"] == "processed"
+    attempt = session.exec(
+        select(PaymentAttempt).where(PaymentAttempt.paypal_order_id == "ORDER-RETRY")
+    ).one()
+    assert attempt.paypal_capture_id == "CAP-RETRY"
+    assert attempt.paypal_status == "COMPLETED"
+
 

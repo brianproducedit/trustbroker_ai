@@ -40,6 +40,34 @@ def score_criterion_result(
     adapter_error = adapter_facts.get("error")
     citation = adapter_facts.get("citation", "")
 
+    # Metadata-only probes establish availability, not semantic completion.
+    # Keep these cases reviewable unless an adapter explicitly supplies bounded
+    # content-level observations.
+    if (
+        adapter_passed
+        and not adapter_facts.get("semantic_evidence", False)
+        and adapter_name in {"github_api", "zip_listing", "http_probe"}
+    ):
+        return {
+            "criterion_id": criterion_id,
+            "title": title,
+            "status": CriterionStatus.NEEDS_REVIEW,
+            "passed": False,
+            "score": 50,
+            "confidence": 0.60,
+            "explanation": (
+                llm_evaluation.get("explanation")
+                if llm_evaluation and llm_evaluation.get("needs_review")
+                else (
+                    f"{adapter_name} confirmed that the evidence is available, but did not inspect "
+                    "enough content to establish semantic completion. Manual review is required."
+                )
+            ),
+            "evidence_match_snippet": citation,
+            "adapter_used": adapter_name,
+            "requires_review": True,
+        }
+
     # If the adapter explicitly flagged needs_review (e.g. rate limit, private repo, probe unreachable, non-GitHub host):
     if adapter_facts.get("needs_review"):
         return {

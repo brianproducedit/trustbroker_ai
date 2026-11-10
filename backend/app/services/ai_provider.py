@@ -3,9 +3,56 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple
 import httpx
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, ValidationError
 from app.config import settings
 
 logger = logging.getLogger("trustbroker.ai")
+
+
+class _CriterionEvaluation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    criterion_id: StrictStr
+    passed: StrictBool
+    score: StrictInt = Field(ge=0, le=100)
+    confidence: float = Field(ge=0.0, le=1.0)
+    explanation: StrictStr
+    evidence_match_snippet: StrictStr
+
+
+class _DeliveryEvaluation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    overall_score: StrictInt = Field(ge=0, le=100)
+    passed: StrictBool
+    summary_analysis: StrictStr
+    requires_human_review: StrictBool
+    criterion_evaluations: List[_CriterionEvaluation]
+
+
+def _validate_delivery_evaluation(
+    result: Optional[Dict[str, Any]],
+    criteria: List[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """Accept only a complete, strictly typed assessment for the given criteria."""
+    if not result:
+        return None
+    try:
+        validated = _DeliveryEvaluation.model_validate(result)
+    except ValidationError as exc:
+        logger.warning("AI evaluator returned malformed assessment: %s", exc)
+        return None
+
+    expected_ids = {str(c["id"]) for c in criteria}
+    actual_ids = [item.criterion_id for item in validated.criterion_evaluations]
+    if set(actual_ids) != expected_ids or len(actual_ids) != len(expected_ids):
+        logger.warning(
+            "AI evaluator returned incorrect criterion IDs: expected=%s actual=%s",
+            expected_ids,
+            actual_ids,
+        )
+        return None
+    return validated.model_dump()
 
 
 # ==============================================================================
@@ -605,6 +652,7 @@ Evaluate the submission and respond with JSON matching this format:
     {{
       "criterion_id": "<id of criterion>",
       "passed": <boolean>,
+  "confidence": <number from 0.0 to 1.0>,
       "score": <int 0-100>,
       "explanation": "<detailed rationale>",
       "evidence_match_snippet": "<matching quote or reference>"
@@ -614,9 +662,10 @@ Evaluate the submission and respond with JSON matching this format:
 """
 
     result, provider_used = call_ai_with_fallbacks(system_instruction, user_content)
-    if result and "criterion_evaluations" in result:
-        result["provider_used"] = provider_used
-        return result
+    validated = _validate_delivery_evaluation(result, criteria)
+    if validated:
+        validated["provider_used"] = provider_used
+        return validated
 
     # AI unavailable fallback — triggers human review; no automatic pass awarded.
     # When all configured AI providers fail, we cannot evaluate criteria objectively.
@@ -633,6 +682,7 @@ Evaluate the submission and respond with JSON matching this format:
             "criterion_id": c["id"],
             "passed": False,
             "score": 50,
+            "confidence": 0.0,
             "explanation": (
                 f"AI providers unavailable — criterion '{c['title']}' could not be evaluated automatically. "
                 "Manual client review is required."

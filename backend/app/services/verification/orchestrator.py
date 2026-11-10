@@ -209,6 +209,11 @@ def run_verification_orchestration(
                         "error": None,
                     }
 
+            if "status_code" in facts:
+                facts.setdefault("adapter", "http_probe")
+                facts["semantic_evidence"] = False
+            elif facts.get("adapter") in {"github_api", "zip_listing"}:
+                facts["semantic_evidence"] = False
             criterion_facts[cid] = facts
 
         # ------------------------------------------------------------------ #
@@ -246,21 +251,23 @@ def run_verification_orchestration(
             if cid:
                 raw_passed = ae.get("passed")
                 raw_score = ae.get("score", 50)
-                try:
-                    # Strict boolean coercion: reject truthy strings like "false"
-                    if raw_passed is True:
-                        validated_passed = True
-                    elif raw_passed is False:
-                        validated_passed = False
-                    elif isinstance(raw_passed, str) and raw_passed.lower() == "true":
-                        validated_passed = True
-                    else:
-                        validated_passed = False
-                    validated_score = max(0, min(100, int(raw_score)))
-                except (TypeError, ValueError):
-                    logger.warning(f"AI evaluator returned invalid passed/score for criterion {cid} — using NEEDS_REVIEW")
-                    validated_passed = False
-                    validated_score = 50
+                raw_confidence = ae.get("confidence")
+                is_valid_shape = (
+                    isinstance(raw_passed, bool)
+                    and isinstance(raw_score, int)
+                    and not isinstance(raw_score, bool)
+                    and 0 <= raw_score <= 100
+                    and isinstance(raw_confidence, (int, float))
+                    and not isinstance(raw_confidence, bool)
+                    and 0 <= raw_confidence <= 1
+                    and isinstance(ae.get("explanation"), str)
+                    and isinstance(ae.get("evidence_match_snippet"), str)
+                )
+                if not is_valid_shape:
+                    logger.warning(
+                        "AI evaluator returned malformed values for criterion %s — using NEEDS_REVIEW",
+                        cid,
+                    )
                 # Detect duplicate criterion IDs from AI response
                 if cid in ai_eval_by_id:
                     logger.warning(
@@ -276,11 +283,16 @@ def run_verification_orchestration(
                     }
                 else:
                     ai_eval_by_id[cid] = {
-                        "passed": validated_passed,
-                        "score": validated_score,
-                        "confidence": float(ae.get("confidence", 0.5)),
-                        "explanation": str(ae.get("explanation", "")),
-                        "cited_snippet": str(ae.get("evidence_match_snippet", "")),
+                        "passed": raw_passed if is_valid_shape else False,
+                        "score": raw_score if is_valid_shape else 50,
+                        "confidence": float(raw_confidence) if is_valid_shape else 0.0,
+                        "explanation": (
+                            ae["explanation"]
+                            if is_valid_shape
+                            else "AI evaluator returned malformed values — manual review required."
+                        ),
+                        "cited_snippet": ae["evidence_match_snippet"] if is_valid_shape else "",
+                        "needs_review": not is_valid_shape,
                     }
 
         # Enforce: every criterion must have exactly one AI evaluation.
@@ -288,6 +300,20 @@ def run_verification_orchestration(
         # so scoring.py never sees None as "optional".
         criteria_ids_expected = {str(c.id) for c in criteria}
         criteria_ids_got = set(ai_eval_by_id.keys())
+        unknown_ids = criteria_ids_got - criteria_ids_expected
+        if unknown_ids:
+            logger.warning(
+                "AI evaluator returned unknown criterion IDs: %s — marking response for review",
+                unknown_ids,
+            )
+            for unknown_id in unknown_ids:
+                ai_eval_by_id.pop(unknown_id, None)
+            for expected_id in criteria_ids_expected & criteria_ids_got:
+                ai_eval_by_id[expected_id]["needs_review"] = True
+                ai_eval_by_id[expected_id]["passed"] = False
+                ai_eval_by_id[expected_id]["explanation"] = (
+                    "AI evaluator returned an unknown criterion ID — manual review required."
+                )
         missing_ids = criteria_ids_expected - criteria_ids_got
         if missing_ids:
             logger.warning(

@@ -34,6 +34,18 @@ _ALLOWED_MIME_TYPES = {
 _MAX_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
+def _has_expected_file_signature(content_type: str, contents: bytes) -> bool:
+    signatures = {
+        "application/pdf": contents.startswith(b"%PDF-"),
+        "application/zip": contents.startswith(b"PK\x03\x04"),
+        "image/png": contents.startswith(b"\x89PNG\r\n\x1a\n"),
+        "image/jpeg": contents.startswith(b"\xff\xd8\xff"),
+        "image/gif": contents.startswith((b"GIF87a", b"GIF89a")),
+        "image/webp": contents.startswith(b"RIFF") and contents[8:12] == b"WEBP",
+    }
+    return signatures.get(content_type, True)
+
+
 @router.post("/upload-file", summary="Upload a delivery evidence file")
 async def upload_evidence_file(
     file: UploadFile = File(...),
@@ -51,9 +63,22 @@ async def upload_evidence_file(
             detail=f"File type '{file.content_type}' is not allowed. Permitted: {', '.join(sorted(_ALLOWED_MIME_TYPES))}",
         )
 
-    contents = await file.read()
+    contents = bytearray()
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        contents.extend(chunk)
+        if len(contents) > _MAX_SIZE_BYTES:
+            raise HTTPException(status_code=413, detail="File exceeds the 25 MB limit.")
+    contents = bytes(contents)
     if len(contents) > _MAX_SIZE_BYTES:
         raise HTTPException(status_code=413, detail="File exceeds the 25 MB limit.")
+    if not _has_expected_file_signature(file.content_type or "", contents):
+        raise HTTPException(
+            status_code=400,
+            detail="File content does not match the declared MIME type.",
+        )
 
     safe_name = "".join(c if c.isalnum() or c in "-_." else "_" for c in (file.filename or "file"))
     file_id = uuid.uuid4()
@@ -358,4 +383,3 @@ def override_milestone_review(
         client=current_user,
         reason=req.reason,
     )
-

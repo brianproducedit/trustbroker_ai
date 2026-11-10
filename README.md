@@ -54,7 +54,7 @@ flowchart LR
 
 ## Who It's For
 
-- **For Clients:** Eliminate the fear of paying upfront for unfinished work. Rest assured milestone funds stay PayPal-secured until deliverables objectively pass AI verification.
+- **For Clients:** Reduce the risk of paying for unfinished work with milestone state, evidence review, explicit client authorization, and PayPal sandbox payment coordination.
 - **For Freelancers:** Know that milestone funds are staged via PayPal before you write a single line of code and receive payouts submitted directly to your PayPal account upon verified delivery.
 
 ---
@@ -115,6 +115,10 @@ graph TD
 ---
 
 ## Repository Structure
+
+The committed `dist/` directory is generated and intentionally excluded from source
+control. Render builds the frontend from `react_app/`; use the documented build command
+to produce local output when needed.
 
 ```
 trustbroker_ai/
@@ -225,10 +229,10 @@ TrustBroker AI features dual-tier storage for deliverable evidence (screenshots,
 
 ## Judge Walkthrough & Demo Credentials
 
-To test the complete end-to-end flow with real PayPal sandbox money movement:
+To test the complete end-to-end flow with PayPal sandbox payment movement:
 
 1. Follow the 10-minute click-by-click instructions in [**`docs/JUDGE_DEMO.md`**](docs/JUDGE_DEMO.md).
-2. Use the pre-seeded demo personas:
+2. If the deployment has `SEED_DEMO_DATA=true`, use the provisioned demo personas:
    - **Client:** `client.demo@trustbroker.ai` / `DemoPassword2026!`
    - **Freelancer:** `freelancer.demo@trustbroker.ai` / `DemoPassword2026!`
    - **Newcomer:** `newcomer.demo@trustbroker.ai` / `DemoPassword2026!`
@@ -241,9 +245,9 @@ To test the complete end-to-end flow with real PayPal sandbox money movement:
 - **Final Hackathon Readiness & System Truthfulness (November 10, 2026):**
   - **Supabase Evidence Loader:** Production evidence uploads and inspection are seamlessly connected. The evidence loader (`evidence_loader.py`) downloads real deliverable bytes directly from Supabase Storage (`supabase://delivery-evidence/...`) for vision, document, and zip adapters, falling back safely to `NEEDS_REVIEW` if unavailable (zero false passes).
   - **Verification False-PASS Elimination:** When AI providers (Groq, OpenRouter, DeepSeek) are unavailable or rate-limited, verification strictly issues `NEEDS_REVIEW` (score 50, requires human review) rather than synthetic passes.
-  - **Zero-Mock Architecture:** Production application code contains zero mock fallbacks. All PayPal payment staging and payouts communicate directly with authentic PayPal Sandbox REST endpoints (`/v2/checkout/orders`, `/v1/payments/payouts`), and unconfigured auth methods return truthful service errors.
+  - **Backend-Authoritative State:** Hosted contract, payment, delivery, and verification actions require successful backend responses; the frontend does not present failed hosted actions as persisted successes.
   - **Terminology Standardization:** Completely transitioned from "staged funds" to compliant "staged funds" and "milestone payment coordination" with explicit non-bank legal disclaimers across all application views and documentation.
-  - **Automated Regression Suite:** 84 passing tests (100% pass rate) in local and remote CI across authentication, PayPal state machines, SSRF safety, evidence adapters, and lifecycle policies.
+  - **Automated Regression Suite:** Backend regression coverage includes authentication, PayPal state machines, SSRF safety, evidence adapters, strict AI response validation, webhook retries, and lifecycle policies.
 - **Production Hardening & Hackathon Remediation (Phases 1–9 Complete):**
   - **Verification Truthfulness (Phase 1):** Removed all heuristic pass fallbacks from vision, repo metadata and document adapters. When external APIs fail, rate limit or time out, adapters safely return `NEEDS_REVIEW` (score 50, requires human review) instead of false passes. Orchestrator calls real AI evaluator with structured JSON schema enforcement; model attribution records real model or `fallback:none`.
   - **CORS Exception Reflection Hardening (Phase 2):** Eliminated arbitrary origin reflection from the global exception handler. Generic error responses in production mask internal stack traces, SQL and system paths.

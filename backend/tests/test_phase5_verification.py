@@ -483,8 +483,8 @@ class TestPhase5Orchestrator(unittest.TestCase):
         self.session.refresh(self.milestone)
         self.assertEqual(self.milestone.status, MilestoneStatus.SUBMITTED)
 
-    def test_orchestration_run_with_passing_ai(self):
-        """When AI evaluator passes criteria and adapter facts verify, milestone is VERIFIED."""
+    def test_metadata_only_adapters_require_human_review(self):
+        """Repository/archive metadata cannot independently establish completion."""
         mock_ai_eval = {
             "overall_score": 90,
             "passed": True,
@@ -537,12 +537,82 @@ class TestPhase5Orchestrator(unittest.TestCase):
                 )
 
         self.assertIn("report_id", result)
-        self.assertTrue(result["passed"])
-        self.assertGreaterEqual(result["overall_score"], 80)
-        self.assertFalse(result["requires_human_review"])
+        self.assertFalse(result["passed"])
+        self.assertTrue(result["requires_human_review"])
 
         self.session.refresh(self.milestone)
-        self.assertEqual(self.milestone.status, MilestoneStatus.VERIFIED)
+        self.assertEqual(self.milestone.status, MilestoneStatus.SUBMITTED)
+
+    def test_adapter_findings_are_passed_to_ai_evaluator(self):
+        """The evaluator must receive the observations produced by evidence adapters."""
+        captured = {}
+
+        def capture_evaluator(**kwargs):
+            captured.update(kwargs)
+            return {
+                "overall_score": 50,
+                "passed": False,
+                "summary_analysis": "Manual review required.",
+                "requires_human_review": True,
+                "provider_used": "test-provider",
+                "criterion_evaluations": [
+                    {
+                        "criterion_id": str(self.criterion1.id),
+                        "passed": False,
+                        "score": 50,
+                        "confidence": 0.5,
+                        "explanation": "Review required.",
+                        "evidence_match_snippet": "Adapter observation",
+                    },
+                    {
+                        "criterion_id": str(self.criterion2.id),
+                        "passed": False,
+                        "score": 50,
+                        "confidence": 0.5,
+                        "explanation": "Review required.",
+                        "evidence_match_snippet": "Adapter observation",
+                    },
+                ],
+            }
+
+        with patch(
+            "app.services.ai_provider.evaluate_delivery_against_criteria",
+            side_effect=capture_evaluator,
+        ):
+            with patch(
+                "app.services.verification.adapters.repo_meta.inspect_repository",
+                return_value={
+                    "adapter": "github_api",
+                    "exists": True,
+                    "passed": True,
+                    "needs_review": False,
+                    "files_found": ["README.md"],
+                    "citation": "GitHub repository inspected",
+                    "error": None,
+                },
+            ):
+                delivery = Delivery(
+                    id=uuid.uuid4(),
+                    contract_id=self.contract.id,
+                    milestone_id=self.milestone.id,
+                    submitted_by=self.freelancer_user.id,
+                    description="Repository delivery",
+                    repo_url="https://github.com/octocat/Hello-World",
+                )
+                self.session.add(delivery)
+                self.session.commit()
+                run_verification_orchestration(
+                    session=self.session,
+                    contract_id=self.contract.id,
+                    milestone_id=self.milestone.id,
+                    delivery_id=delivery.id,
+                    actor=self.freelancer_user,
+                )
+
+        findings = captured.get("evidence_findings", {})
+        self.assertIn(str(self.criterion2.id), findings)
+        self.assertEqual(findings[str(self.criterion2.id)]["adapter"], "github_api")
+        self.assertTrue(findings[str(self.criterion2.id)]["exists"])
 
     def test_missing_criterion_in_ai_response_causes_needs_review(self):
         """If AI evaluator omits one of the criteria orchestrator must flag it as NEEDS_REVIEW."""

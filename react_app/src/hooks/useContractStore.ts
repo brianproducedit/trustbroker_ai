@@ -113,19 +113,19 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           })
           return
         } else {
-          // If the backend has no contracts for this user yet, retain any active locally-created UUID drafts
-          const activeCreated = get().contracts.filter((c) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c.id))
           set({
-            contracts: activeCreated,
-            activeContractId: activeCreated[0]?.id || '',
+            contracts: [],
+            activeContractId: '',
             isSyncing: false,
             error: null,
           })
           return
         }
       }
-    } catch (err: any) {
-      console.warn('Backend list_contracts fallback to local state:', err?.message || err)
+    } catch (err) {
+      console.error('Backend list_contracts failed:', err)
+      set({ isSyncing: false, error: 'Unable to load contracts from the backend.' })
+      throw err
     }
     set({ isSyncing: false })
   },
@@ -250,7 +250,6 @@ export const useContractStore = create<ContractStore>((set, get) => ({
   },
 
   createContractDraft: async (title, description, milestones, options) => {
-    const totalAmount = milestones.reduce((sum, m) => sum + m.amount, 0)
     const freelancerEmail = options?.freelancerEmail
 
     // Try backend API first
@@ -287,59 +286,10 @@ export const useContractStore = create<ContractStore>((set, get) => ({
         return transformed.id
       }
     } catch (err) {
-      console.warn('Backend contract creation failed, applying local fallback:', err)
+      console.error('Backend contract creation failed:', err)
+      throw err
     }
-
-    // Local fallback for offline/demo robustness
-    const newCode = `TB-2026-${Math.floor(100 + Math.random() * 900)}`
-    const newId = `contract-${Date.now()}`
-
-    const newContract: Contract = {
-      id: newId,
-      code: newCode,
-      title,
-      description,
-      version: 1,
-      status: 'draft',
-      totalAmount,
-      currency: 'USD',
-      stagedAmount: 0,
-      releasedAmount: 0,
-      client: {
-        id: useAuthStore.getState().user?.id || 'client-01',
-        name: useAuthStore.getState().user?.name || 'Client',
-        email: useAuthStore.getState().user?.email || '',
-        role: 'client',
-        accepted: true,
-        acceptedAt: new Date().toISOString(),
-      },
-      freelancer: {
-        id: 'freelancer-01',
-        name: freelancerEmail ? freelancerEmail.split('@')[0] : 'Freelancer',
-        email: freelancerEmail || '',
-        role: 'freelancer',
-        accepted: false,
-      },
-      milestones,
-      auditLogs: [
-        {
-          id: `log-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          actor: workspaceActor('client'),
-          action: 'CONTRACT_CREATED',
-          details: `Draft created: "${title}" with ${milestones.length} milestones.`,
-        },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    set((state) => ({
-      contracts: [newContract, ...state.contracts],
-      activeContractId: newId,
-    }))
-
-    return newId
+    throw new Error('Backend did not return a created contract.')
   },
 
   publishContract: async (contractId) => {
@@ -359,7 +309,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       try {
         await api.contracts.update(contractId, updates)
       } catch (err) {
-        console.warn('Backend updateContract failed:', err)
+        console.error('Backend updateContract failed:', err)
+        throw err
       }
     }
 
@@ -402,7 +353,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       try {
         await api.contracts.cancel(contractId, reason)
       } catch (err) {
-        console.warn('Backend cancelContract warning:', err)
+        console.error('Backend cancelContract failed:', err)
+        throw err
       }
     }
 
@@ -444,7 +396,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           return
         }
       } catch (err) {
-        console.warn('Backend acceptContract warning, applying local state update:', err)
+        console.error('Backend acceptContract failed:', err)
+        throw err
       }
     }
 
@@ -497,7 +450,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           return
         }
       } catch (err) {
-        console.warn('Backend declineAward warning, applying local state update:', err)
+        console.error('Backend declineAward failed:', err)
+        throw err
       }
     }
 
@@ -588,7 +542,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           paypal_order_id: paypalOrderId,
         })
       } catch (err) {
-        console.warn('Backend payment capture warning, recording in local state:', err)
+        console.error('Backend payment capture failed:', err)
+        throw err
       }
     }
 
@@ -689,7 +644,7 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               title: ce.title || 'Verified criterion',
               description: ce.explanation || '',
               status: ce.status || (ce.passed ? 'pass' : 'fail'),
-              aiConfidence: (Number(ce.score) || 85) / 100,
+              aiConfidence: typeof ce.confidence === 'number' ? ce.confidence : 0,
               evidenceMatchSnippet: ce.evidence_match_snippet || '',
               feedback: ce.explanation || '',
             })),
@@ -737,65 +692,17 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           return assessment
         }
       } catch (err) {
-        console.warn('Backend verify delivery API fallback:', err)
+        console.error('Backend verify delivery failed:', err)
+        set({ isLoading: false })
+        throw err
       }
     }
 
-    // Offline fallback — AI engine unavailable, requires manual client review
-    const assessment: VerificationAssessment = {
-      id: `assess-${Date.now()}`,
-      submissionId: `sub-${Date.now()}`,
-      overallScore: 0,
-      passed: false,
-      criteriaResults: [],
-      summaryAnalysis:
-        'AI verification engine is currently unavailable. Manual client review is required to approve or request revision for this milestone.',
-      assessedAt: new Date().toISOString(),
-      modelUsed: 'Offline (manual review required)',
-      requiresHumanReview: true,
+    if (!isUuid) {
+      throw new Error('Verification requires a persisted backend contract.')
     }
 
-    set((state) => ({
-      contracts: state.contracts.map((c) => {
-        if (c.id === contractId || c.code === contractId) {
-          return {
-            ...c,
-            milestones: c.milestones.map((m) => {
-              if (m.id === milestoneId) {
-                return {
-                  ...m,
-                  status: 'submitted' as MilestoneStatus,
-                  paymentStatus: m.paymentStatus,
-                  assessment,
-                  submittedEvidence: {
-                    repoUrl: submission.repoUrl,
-                    liveUrl: submission.liveUrl,
-                    description: submission.description,
-                    fileAttachments: submission.fileAttachments,
-                    submittedAt: new Date().toISOString(),
-                  },
-                }
-              }
-              return m
-            }),
-            auditLogs: [
-              ...c.auditLogs,
-              {
-                id: `log-${Date.now()}`,
-                timestamp: new Date().toISOString(),
-                actor: 'TrustBroker AI Verifier',
-                action: 'AI_VERIFICATION_OFFLINE',
-                details: `AI engine offline for milestone "${milestoneId}". Evidence recorded; client manual review required.`,
-              },
-            ],
-          }
-        }
-        return c
-      }),
-      isLoading: false,
-    }))
-
-    return assessment
+    throw new Error('Backend did not return a verification assessment.')
   },
 
   requestRevision: async (contractId, milestoneId, notes) => {
@@ -804,7 +711,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       try {
         await api.deliveries.requestRevision(contractId, milestoneId, notes)
       } catch (err) {
-        console.warn('Backend requestRevision warning:', err)
+        console.error('Backend requestRevision failed:', err)
+        throw err
       }
     }
 
@@ -904,7 +812,8 @@ export const useContractStore = create<ContractStore>((set, get) => ({
       try {
         await api.payments.releasePayout({ contract_id: contractId, milestone_id: milestoneId })
       } catch (err) {
-        console.warn('Backend release payout API warning:', err)
+        console.error('Backend release payout failed:', err)
+        throw err
         throw err
       }
     }

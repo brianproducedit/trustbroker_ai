@@ -16,6 +16,7 @@ from typing import Optional
 logger = logging.getLogger("trustbroker.verification.evidence_loader")
 
 SUPABASE_SCHEME = "supabase://delivery-evidence/"
+MAX_EVIDENCE_BYTES = 25 * 1024 * 1024
 
 
 def load_evidence_bytes(storage_path: str) -> Optional[bytes]:
@@ -36,8 +37,7 @@ def load_evidence_bytes(storage_path: str) -> Optional[bytes]:
     # 2. Local filesystem path (dev/test only)
     if os.path.isfile(storage_path):
         try:
-            with open(storage_path, "rb") as f:
-                return f.read()
+            return _read_bounded_file(storage_path)
         except Exception as exc:
             logger.warning(f"evidence_loader: failed to read local file {storage_path}: {exc}")
             return None
@@ -76,6 +76,9 @@ def _load_from_supabase(storage_path: str) -> Optional[bytes]:
         client: Client = create_client(settings.supabase_url, settings.supabase_service_role_key)
         response = client.storage.from_(bucket).download(relative_path)
         if isinstance(response, (bytes, bytearray)):
+            if len(response) > MAX_EVIDENCE_BYTES:
+                logger.warning("evidence_loader: Supabase evidence exceeds size limit")
+                return None
             logger.info(f"evidence_loader: loaded {len(response)} bytes from Supabase: {relative_path[:60]}")
             return bytes(response)
         logger.warning(f"evidence_loader: unexpected response type from Supabase download: {type(response)}")
@@ -83,3 +86,13 @@ def _load_from_supabase(storage_path: str) -> Optional[bytes]:
     except Exception as exc:
         logger.warning(f"evidence_loader: Supabase download failed for {relative_path}: {exc}")
         return None
+
+
+def _read_bounded_file(path: str) -> Optional[bytes]:
+    """Read local evidence without allowing unbounded memory allocation."""
+    with open(path, "rb") as file_handle:
+        contents = file_handle.read(MAX_EVIDENCE_BYTES + 1)
+    if len(contents) > MAX_EVIDENCE_BYTES:
+        logger.warning("evidence_loader: local evidence exceeds size limit")
+        return None
+    return contents

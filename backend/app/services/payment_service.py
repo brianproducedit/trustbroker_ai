@@ -792,6 +792,7 @@ async def process_paypal_webhook(
         event_type = existing.event_type
         resource_id = existing.resource_id
         payload = existing.payload
+        resource = payload.get("resource") or {}
     else:
         provider_event = ProviderEvent(
             event_id=event_id,
@@ -816,6 +817,7 @@ async def process_paypal_webhook(
             event_type = concurrent.event_type
             resource_id = concurrent.resource_id
             payload = concurrent.payload
+            resource = payload.get("resource") or {}
 
     reconciliation_required = False
 
@@ -829,16 +831,29 @@ async def process_paypal_webhook(
         curr_str = amount_data.get("currency_code")
 
         attempt = None
-        if capture_id:
+        if capture_id and order_id:
             attempt = session.exec(
-                select(PaymentAttempt).where(PaymentAttempt.paypal_capture_id == capture_id)
+                select(PaymentAttempt).where(
+                    PaymentAttempt.paypal_capture_id == capture_id,
+                    PaymentAttempt.paypal_order_id == order_id,
+                )
             ).first()
-        if not attempt and order_id:
-            attempt = session.exec(
-                select(PaymentAttempt).where(PaymentAttempt.paypal_order_id == order_id)
-            ).first()
+            if not attempt:
+                # A first capture event may arrive before the capture ID is
+                # persisted, but the order correlation is still mandatory.
+                attempt = session.exec(
+                    select(PaymentAttempt).where(PaymentAttempt.paypal_order_id == order_id)
+                ).first()
+        if not capture_id or not order_id:
+            reconciliation_required = True
 
-        if attempt:
+        if not attempt:
+            logger.warning(
+                "[WEBHOOK] Event %s could not be correlated to a payment attempt; reconciliation required",
+                event_id,
+            )
+            reconciliation_required = True
+        else:
             # Reconcile amount and currency before applying financial update.
             # Both amount and currency MUST be present and match.
             if not val_str or not curr_str:
