@@ -145,6 +145,9 @@ export const DeliveryVerification: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [isEvaluating, setIsEvaluating] = useState(false)
+  const [verificationDeliveryId, setVerificationDeliveryId] = useState<string | null>(null)
+  const [verificationElapsedSeconds, setVerificationElapsedSeconds] = useState(0)
+  const [verificationCancelled, setVerificationCancelled] = useState(false)
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false)
   const [revisionNotes, setRevisionNotes] = useState('')
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false)
@@ -279,6 +282,8 @@ export const DeliveryVerification: React.FC = () => {
 
   const handleSubmitEvidence = async (e: React.FormEvent) => {
     e.preventDefault()
+    setVerificationCancelled(false)
+    setVerificationElapsedSeconds(0)
     setIsEvaluating(true)
 
     try {
@@ -292,6 +297,11 @@ export const DeliveryVerification: React.FC = () => {
         repoUrl,
         liveUrl,
         fileAttachments,
+        onVerificationProgress: (progress) => {
+          if (progress.deliveryId) setVerificationDeliveryId(progress.deliveryId)
+          setVerificationElapsedSeconds(progress.elapsedSeconds)
+        },
+        isVerificationCancelled: () => verificationCancelled,
       })
 
       await loadMilestoneDeliveries(selectedMilestone.id)
@@ -305,6 +315,19 @@ export const DeliveryVerification: React.FC = () => {
       })
     } finally {
       setIsEvaluating(false)
+      setVerificationDeliveryId(null)
+    }
+  }
+
+  const handleStopVerification = async () => {
+    if (!verificationDeliveryId) return
+    setVerificationCancelled(true)
+    try {
+      await api.deliveries.cancelVerification(verificationDeliveryId)
+      toast.info('AI verification stopped. No assessment was saved.')
+    } catch (error) {
+      setVerificationCancelled(false)
+      toast.error(error instanceof Error ? error.message : 'Could not stop verification.')
     }
   }
 
@@ -1076,9 +1099,28 @@ export const DeliveryVerification: React.FC = () => {
           </details>
         </div>
 
+        {isEvaluating ? (
+          <div className="w-full min-h-9 rounded-md bg-blue-600/80 text-white text-xs gap-2 px-3 py-1.5 font-semibold shadow-sm flex items-center">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span className="flex-1 text-left">
+              AI is inspecting evidence... usually under 1 minute
+              {verificationElapsedSeconds > 45 ? ' (a provider retry may take up to 5 minutes)' : ''}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleStopVerification}
+              disabled={!verificationDeliveryId || verificationCancelled}
+              className="h-7 border-rose-400/50 text-rose-200 hover:bg-rose-500/10"
+            >
+              {verificationCancelled ? 'Stopping...' : 'Stop assessment'}
+            </Button>
+          </div>
+        ) : (
         <Button
           type="submit"
-          disabled={isEvaluating || isUploadingFile || isSettled || isLocked}
+          disabled={isUploadingFile || isSettled || isLocked}
           className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${isLocked
             ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
             : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -1089,11 +1131,6 @@ export const DeliveryVerification: React.FC = () => {
               <Lock className="w-3.5 h-3.5 text-slate-500" />
               Milestone Locked (Client PayPal Funding Required)
             </>
-          ) : isEvaluating ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              AI is inspecting evidence across multimodal adapters...
-            </>
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" />
@@ -1101,6 +1138,7 @@ export const DeliveryVerification: React.FC = () => {
             </>
           )}
         </Button>
+        )}
       </form>
                 )}
     </CardContent>

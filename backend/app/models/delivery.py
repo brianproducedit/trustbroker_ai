@@ -20,6 +20,8 @@ class Delivery(SQLModel, table=True):
     live_url: Optional[str] = Field(default=None, nullable=True)
     version: int = Field(default=1, nullable=False)
     submitted_at: datetime = Field(default_factory=utc_now, nullable=False)
+    verification_cancelled: Optional[bool] = Field(default=False, nullable=True)
+    verification_cancelled_at: Optional[datetime] = Field(default=None, nullable=True)
 
 
 class DeliveryFile(SQLModel, table=True):

@@ -207,6 +207,8 @@ def submit_milestone_delivery(
             "status": "queued",
             "delivery_id": str(delivery_id),
             "milestone_status": MilestoneStatus.VERIFYING.value,
+            "estimated_seconds": 45,
+            "maximum_seconds": 420,
         }
 
     return result
@@ -249,6 +251,13 @@ def get_delivery_verification_status(
     ).first()
 
     if report is None:
+        if delivery.verification_cancelled:
+            return {
+                "delivery_id": str(delivery.id),
+                "status": "cancelled",
+                "milestone_status": milestone.status.value if milestone else None,
+                "report": None,
+            }
         now = datetime.now(timezone.utc)
         sub_time = delivery.submitted_at
         if sub_time.tzinfo is None:
@@ -257,8 +266,9 @@ def get_delivery_verification_status(
 
         # If milestone is actively in VERIFYING state:
         if milestone and milestone.status == MilestoneStatus.VERIFYING:
-            if age_seconds > 90:
-                # Background task died or service was restarted while processing
+            if age_seconds > 420:
+                # Allow the configured provider retry window plus network/model
+                # calls before declaring a background task interrupted.
                 return {
                     "delivery_id": str(delivery.id),
                     "status": "interrupted",
@@ -266,10 +276,13 @@ def get_delivery_verification_status(
                     "error": "Verification process timed out or was interrupted by a service restart. Manual client review required.",
                     "report": None,
                 }
+
             return {
                 "delivery_id": str(delivery.id),
                 "status": "verifying",
                 "milestone_status": milestone.status.value,
+                "estimated_seconds": 45,
+                "maximum_seconds": 420,
                 "report": None,
             }
 
@@ -337,6 +350,39 @@ def get_delivery_verification_status(
             "model_used": report.model_used,
             "criterion_evaluations": criterion_evaluations,
         },
+    }
+
+
+@router.post("/{delivery_id}/cancel-verification", summary="Cancel a running AI verification")
+def cancel_delivery_verification(
+    delivery_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Request cancellation of a background verification without creating a report."""
+    delivery = session.get(Delivery, delivery_id)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found")
+    contract = session.get(Contract, delivery.contract_id)
+    require_contract_party(current_user, contract)
+    milestone = session.get(Milestone, delivery.milestone_id)
+
+    if session.exec(
+        select(VerificationReport).where(VerificationReport.delivery_id == delivery.id)
+    ).first():
+        raise HTTPException(status_code=409, detail="Verification has already completed")
+
+    delivery.verification_cancelled = True
+    delivery.verification_cancelled_at = datetime.now(timezone.utc)
+    if milestone and milestone.status == MilestoneStatus.VERIFYING:
+        milestone.status = MilestoneStatus.SUBMITTED
+        session.add(milestone)
+    session.add(delivery)
+    session.commit()
+    return {
+        "delivery_id": str(delivery.id),
+        "status": "cancelled",
+        "message": "Verification stopped. No AI assessment was created.",
     }
 
 

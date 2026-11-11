@@ -219,20 +219,28 @@ def _parse_retry_delay(headers: httpx.Headers) -> float:
     """Read common provider reset formats and cap waits to five minutes."""
     retry_after = headers.get("retry-after", "")
     reset = headers.get("x-ratelimit-reset-requests", "")
-    value = retry_after or reset
-    if not value:
+    values = [value for value in (retry_after, reset) if value]
+    if not values:
         return 0.0
-    try:
-        if value.strip().replace(".", "", 1).isdigit():
-            return min(300.0, max(0.0, float(value)))
-    except ValueError:
-        pass
-    match = re.fullmatch(r"(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?", value.strip())
-    if match:
-        minutes = float(match.group(1) or 0)
-        seconds = float(match.group(2) or 0)
-        return min(300.0, max(0.0, minutes * 60 + seconds))
-    return 0.0
+
+    delays = []
+    for value in values:
+        try:
+            if value.strip().replace(".", "", 1).isdigit():
+                delays.append(float(value))
+                continue
+        except ValueError:
+            pass
+        match = re.fullmatch(r"(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?", value.strip())
+        if match:
+            minutes = float(match.group(1) or 0)
+            seconds = float(match.group(2) or 0)
+            delays.append(minutes * 60 + seconds)
+
+    # Providers sometimes return a short Retry-After alongside the longer
+    # request-window reset. Waiting for the longer window avoids an immediate
+    # retry that is guaranteed to receive another 429.
+    return min(300.0, max(delays, default=0.0))
 
 
 # ==============================================================================

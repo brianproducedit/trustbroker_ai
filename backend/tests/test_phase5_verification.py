@@ -243,7 +243,9 @@ class TestPhase5Adapters(unittest.TestCase):
         self.assertEqual(res["adapter"], "vision_needs_review")
 
     def test_vision_adapter_missing_api_key_needs_review(self):
-        with patch("app.config.settings.groq_api_key", ""):
+        with patch("app.config.settings.groq_api_key", ""), \
+             patch("app.config.settings.openrouter_api_key", ""), \
+             patch("app.config.settings.deepseek_api_key", ""):
             res = vision.inspect_screenshot_with_vision(
                 image_source="data:image/png;base64,iVBORw0KGgo=",
                 criterion_title="UI Hero Section",
@@ -835,11 +837,11 @@ class TestPhase7TerminalJobState(unittest.TestCase):
         self.session.close()
 
     def test_interrupted_state_when_verifying_times_out(self):
-        """If a service restarted or timed out (>90s) while in VERIFYING, status endpoint reports 'interrupted'."""
+        """If a service restarted or timed out (>420s) while in VERIFYING, status endpoint reports 'interrupted'."""
         from datetime import datetime, timezone, timedelta
         from app.routers.deliveries import get_delivery_verification_status
 
-        old_time = datetime.now(timezone.utc) - timedelta(seconds=120)
+        old_time = datetime.now(timezone.utc) - timedelta(seconds=480)
         delivery = Delivery(
             id=uuid.uuid4(),
             contract_id=self.contract.id,

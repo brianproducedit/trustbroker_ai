@@ -28,6 +28,15 @@ from app.services import ai_provider
 
 logger = logging.getLogger("trustbroker.verification.orchestrator")
 
+class VerificationCancelled(Exception):
+    """Raised when a user cancels verification before its report is saved."""
+
+
+def _ensure_not_cancelled(session: Session, delivery_id: uuid.UUID) -> None:
+    delivery = session.get(Delivery, delivery_id)
+    if delivery and delivery.verification_cancelled:
+        raise VerificationCancelled
+
 
 def run_verification_orchestration(
     session: Session,
@@ -78,6 +87,7 @@ def run_verification_orchestration(
         models_used: List[str] = []
 
         for c in criteria:
+            _ensure_not_cancelled(session, delivery.id)
             cid = str(c.id)
             etype = (c.evidence_type or "text").lower().strip()
             criterion_etypes[cid] = etype
@@ -219,6 +229,7 @@ def run_verification_orchestration(
         # ------------------------------------------------------------------ #
         # AI Criterion Evaluator — connected to real orchestration path       #
         # ------------------------------------------------------------------ #
+        _ensure_not_cancelled(session, delivery.id)
         ai_criteria_input = [
             {
                 "id": str(c.id),
@@ -371,6 +382,7 @@ def run_verification_orchestration(
         summary_analysis = assessment["summary_analysis"]
 
         # Persist VerificationReport
+        _ensure_not_cancelled(session, delivery.id)
         report = VerificationReport(
             delivery_id=delivery.id,
             contract_id=contract.id,
@@ -405,6 +417,7 @@ def run_verification_orchestration(
 
         # State transitions: AI verification updates work status (VERIFIED / SUBMITTED / REVISION_REQUESTED).
         # Payment status remains STAGED_IN_SANDBOX until client explicitly authorizes disbursement.
+        _ensure_not_cancelled(session, delivery.id)
         if passed:
             milestone.status = MilestoneStatus.VERIFIED
         elif requires_human_review:
@@ -466,6 +479,19 @@ def run_verification_orchestration(
             "criterion_evaluations": criterion_evaluations,
         }
 
+    except VerificationCancelled:
+        session.rollback()
+        cancelled_milestone = session.get(Milestone, milestone_id)
+        if cancelled_milestone:
+            cancelled_milestone.status = MilestoneStatus.SUBMITTED
+            session.add(cancelled_milestone)
+            session.commit()
+        logger.info("Verification cancelled for delivery %s", delivery_id)
+        return {
+            "status": "cancelled",
+            "delivery_id": str(delivery_id),
+            "report": None,
+        }
     except Exception as exc:
         # If verification fails unexpectedly, revert milestone to SUBMITTED (Needs Review)
         # so it is never stuck in VERIFYING forever. Human review will be required.

@@ -75,7 +75,10 @@ interface ContractStore {
   submitEvidence: (
     contractId: string,
     milestoneId: string,
-    submission: Omit<EvidenceSubmission, 'id' | 'submittedAt' | 'version'>
+    submission: Omit<EvidenceSubmission, 'id' | 'submittedAt' | 'version'> & {
+      onVerificationProgress?: (progress: { deliveryId?: string; status: string; elapsedSeconds: number }) => void
+      isVerificationCancelled?: () => boolean
+    }
   ) => Promise<VerificationAssessment>
   requestRevision: (contractId: string, milestoneId: string, notes: string) => Promise<void>
   overrideReview: (contractId: string, milestoneId: string, reason: string) => Promise<void>
@@ -604,6 +607,13 @@ export const useContractStore = create<ContractStore>((set, get) => ({
 
         const deliveryId = deliveryRes?.delivery?.id || deliveryRes?.id
         let verifyRes = deliveryRes?.verification
+        const progress = submission.onVerificationProgress
+        const startedAt = Date.now()
+        progress?.({
+          deliveryId,
+          status: verifyRes?.status || 'submitted',
+          elapsedSeconds: 0,
+        })
 
         // If verification was queued in the background, poll until the report lands.
         if (verifyRes?.status === 'queued' && deliveryId) {
@@ -611,17 +621,31 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           // reset before retrying. Keep polling long enough for that job instead
           // of starting a second verification request while it is still running.
           for (let attempt = 0; attempt < 220 && !verifyRes?.report; attempt++) {
+            if (submission.isVerificationCancelled?.()) {
+              throw new Error('Verification cancelled')
+            }
             await new Promise((r) => setTimeout(r, 1500))
             const statusRes = await api.deliveries.verificationStatus(deliveryId)
+            progress?.({
+              deliveryId,
+              status: statusRes?.status || 'verifying',
+              elapsedSeconds: Math.round((Date.now() - startedAt) / 1000),
+            })
             if (statusRes?.report) {
               verifyRes = statusRes.report
             } else if (
               statusRes?.status === 'interrupted' ||
-              statusRes?.status === 'failed'
+              statusRes?.status === 'failed' ||
+              statusRes?.status === 'cancelled'
             ) {
+              verifyRes = statusRes
               break
             }
           }
+        }
+
+        if (verifyRes?.status === 'cancelled' || submission.isVerificationCancelled?.()) {
+          throw new Error('Verification cancelled')
         }
 
         if ((!verifyRes || verifyRes.status === 'queued') && deliveryId) {
