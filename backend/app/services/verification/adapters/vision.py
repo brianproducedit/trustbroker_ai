@@ -1,6 +1,15 @@
 """
 Vision Adapter for Screenshots and Design Files.
-Inspects UI renders, screenshots and visual assets via Groq Vision API.
+Inspects UI renders, screenshots and visual assets via Groq Vision + OpenRouter Vision APIs.
+
+Model chain (Nov 2026):
+  Groq (primary):
+    1. qwen/qwen3.8-27b          — 27B multimodal, vision + JSON mode, 3 images/req
+    2. meta-llama/llama-4-scout-17b-16e-instruct — Llama 4 Scout, strong vision
+  OpenRouter free (secondary):
+    3. nvidia/nemotron-3.5-super-vl:free  — 1M context, GUI/screenshot specialist
+    4. google/gemma-4-31b-it:free        — Gemma 4 multimodal
+    5. openrouter/free                   — auto-routes to any available free vision model
 """
 import base64
 import json
@@ -12,10 +21,17 @@ from app.config import settings
 
 logger = logging.getLogger("trustbroker.verification.vision")
 
-VISION_MODELS = [
-    "llama-3.2-11b-vision-preview",
-    "llama-3.2-90b-vision-preview",
+# Groq vision models (current as of Nov 2026 — no llama-3.2 preview, those are decommissioned)
+GROQ_VISION_MODELS = [
     "qwen/qwen3.8-27b",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+]
+
+# OpenRouter free vision models (fallback when Groq is exhausted)
+OPENROUTER_VISION_MODELS = [
+    "nvidia/nemotron-3.5-super-vl:free",
+    "google/gemma-4-31b-it:free",
+    "openrouter/free",
 ]
 
 
@@ -52,39 +68,12 @@ def inspect_screenshot_with_vision(
         except Exception as e:
             logger.warning(f"Failed to read local image file {image_source}: {e}")
 
-    # Only attempt vision API if we have both an API key and actual image data
+    # Only attempt vision API if we have actual image data
     if not data_uri:
         reason = "Image bytes unavailable or could not be read"
         logger.warning(f"Vision inspection skipped for criterion '{criterion_title}': {reason}")
-        return {
-            "adapter": "vision_needs_review",
-            "model_used": None,
-            "matches_criterion": False,
-            "confidence": 0.0,
-            "visual_elements": [],
-            "observation": f"Image evidence submitted but could not be read or encoded. {reason}. Manual review required.",
-            "citation": "Screenshot evidence present but uninspected — needs human review",
-            "defects": [],
-            "passed": False,
-            "needs_review": True,
-        }
+        return _needs_review_result(criterion_title, f"Image evidence submitted but could not be read or encoded. {reason}. Manual review required.")
 
-    if not settings.groq_api_key:
-        logger.warning(f"Vision inspection skipped for criterion '{criterion_title}': no vision API key configured")
-        return {
-            "adapter": "vision_needs_review",
-            "model_used": None,
-            "matches_criterion": False,
-            "confidence": 0.0,
-            "visual_elements": [],
-            "observation": "No vision API key configured. Image evidence submitted but could not be inspected by a model. Manual review required.",
-            "citation": "Screenshot evidence present but uninspected — needs human review",
-            "defects": [],
-            "passed": False,
-            "needs_review": True,
-        }
-
-    # Groq API key is available — attempt vision models in order
     system_prompt = (
         "You are TrustBroker AI's Senior Design & UI Auditor. "
         "Analyze the provided screenshot carefully against the acceptance criterion. "
@@ -116,98 +105,236 @@ def inspect_screenshot_with_vision(
     ]
 
     last_error: Optional[str] = None
-    for model in VISION_MODELS:
-        try:
-            with httpx.Client(timeout=18.0) as client:
-                resp = client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.groq_api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_content},
-                        ],
-                        "response_format": {"type": "json_object"},
-                        "temperature": 0.1,
-                    },
-                )
 
-                if resp.status_code == 429:
-                    logger.warning(f"Vision model {model} rate-limited (429) — trying next model")
-                    last_error = "Rate limited (429)"
+    # --- PRIMARY: Groq vision models (fast LPU inference) ---
+    if settings.groq_api_key:
+        for model in GROQ_VISION_MODELS:
+            result = _try_groq_vision(model, system_prompt, user_content, settings.groq_api_key)
+            if result is not None:
+                if result.get("error"):
+                    last_error = result["error"]
                     continue
+                return result
+            last_error = last_error or f"Groq {model} failed"
+        logger.warning(f"All Groq vision models exhausted for criterion '{criterion_title}' — trying OpenRouter vision")
+    else:
+        logger.info(f"Groq API key not configured — skipping Groq vision for criterion '{criterion_title}'")
 
-                if resp.status_code != 200:
-                    logger.warning(f"Vision model {model} returned HTTP {resp.status_code}")
-                    last_error = f"HTTP {resp.status_code}"
+    # --- SECONDARY: OpenRouter free vision models ---
+    if settings.openrouter_api_key and settings.openrouter_api_key.strip():
+        for model in OPENROUTER_VISION_MODELS:
+            result = _try_openrouter_vision(model, system_prompt, user_content, settings.openrouter_api_key.strip())
+            if result is not None:
+                if result.get("error"):
+                    last_error = result["error"]
                     continue
+                return result
+            last_error = last_error or f"OpenRouter {model} failed"
+        logger.warning(f"All OpenRouter vision models exhausted for criterion '{criterion_title}'")
+    else:
+        logger.info(f"OpenRouter API key not configured — skipping OpenRouter vision for criterion '{criterion_title}'")
 
-                raw = resp.json()["choices"][0]["message"]["content"]
-                try:
-                    parsed = json.loads(raw)
-                except (json.JSONDecodeError, KeyError) as parse_err:
-                    logger.warning(f"Vision model {model} returned malformed JSON: {parse_err}")
-                    last_error = "Malformed JSON response"
-                    continue
-
-                # Validate required fields — missing or wrong types become NEEDS_REVIEW
-                matches = parsed.get("matches_criterion")
-                if not isinstance(matches, bool):
-                    logger.warning(
-                        f"Vision model {model} returned invalid matches_criterion={matches!r} — skipping"
-                    )
-                    last_error = "Missing or invalid matches_criterion field"
-                    continue
-
-                confidence_raw = parsed.get("confidence", 0.0)
-                try:
-                    confidence = float(confidence_raw)
-                    if not (0.0 <= confidence <= 1.0):
-                        raise ValueError(f"out of range: {confidence}")
-                except (TypeError, ValueError) as ce:
-                    logger.warning(f"Vision model {model} returned invalid confidence={confidence_raw!r}: {ce}")
-                    last_error = "Invalid confidence value"
-                    continue
-
-                return {
-                    "adapter": "groq_vision",
-                    "model_used": model,
-                    "matches_criterion": matches,
-                    "confidence": confidence,
-                    "visual_elements": parsed.get("visual_elements_found", []),
-                    "observation": str(parsed.get("layout_observation", "")),
-                    "citation": str(parsed.get("summary_citation", "Visual inspection completed.")),
-                    "defects": parsed.get("defects_or_gaps", []),
-                    "passed": matches,
-                }
-        except Exception as e:
-            logger.debug(f"Vision model {model} attempt failed: {e}")
-            last_error = str(e)
-            continue
-
-    # All vision models exhausted without a valid response — do NOT fabricate a pass.
-    # Return NEEDS_REVIEW so a human client can inspect the submitted image.
+    # All vision providers exhausted — return NEEDS_REVIEW (never fabricate a pass)
     logger.warning(
         f"All vision models exhausted for criterion '{criterion_title}'. "
         f"Last error: {last_error}. Returning NEEDS_REVIEW."
     )
+    return _needs_review_result(
+        criterion_title,
+        f"Vision inspection could not be completed. All vision models failed (last: {last_error}). Manual review required."
+    )
+
+
+# ==============================================================================
+# Private Helpers
+# ==============================================================================
+
+def _needs_review_result(criterion_title: str, observation: str) -> Dict[str, Any]:
+    """Return a standard NEEDS_REVIEW result when vision inspection cannot proceed."""
     return {
         "adapter": "vision_needs_review",
         "model_used": None,
         "matches_criterion": False,
         "confidence": 0.0,
         "visual_elements": [],
-        "observation": (
-            f"Vision inspection could not be completed for criterion '{criterion_title}'. "
-            f"All vision models failed or returned invalid responses (last: {last_error}). "
-            "Manual review required before criterion can be marked passed."
-        ),
+        "observation": observation,
         "citation": "Screenshot evidence present but uninspected — needs human review",
         "defects": [],
         "passed": False,
         "needs_review": True,
     }
+
+
+def _parse_vision_response(raw: str, model: str) -> Optional[Dict[str, Any]]:
+    """Parse and validate a vision model JSON response. Returns None if invalid."""
+    try:
+        # Strip markdown code fences if any
+        text = raw.strip()
+        if text.startswith("```json"):
+            text = text.removeprefix("```json").removesuffix("```").strip()
+        elif text.startswith("```"):
+            text = text.removeprefix("```").removesuffix("```").strip()
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, KeyError) as parse_err:
+        logger.warning(f"Vision model {model} returned malformed JSON: {parse_err}")
+        return None
+
+    matches = parsed.get("matches_criterion")
+    if not isinstance(matches, bool):
+        logger.warning(f"Vision model {model} returned invalid matches_criterion={matches!r} — skipping")
+        return None
+
+    confidence_raw = parsed.get("confidence", 0.0)
+    try:
+        confidence = float(confidence_raw)
+        if not (0.0 <= confidence <= 1.0):
+            raise ValueError(f"out of range: {confidence}")
+    except (TypeError, ValueError) as ce:
+        logger.warning(f"Vision model {model} returned invalid confidence={confidence_raw!r}: {ce}")
+        return None
+
+    return {
+        "matches": matches,
+        "confidence": confidence,
+        "parsed": parsed,
+    }
+
+
+def _try_groq_vision(
+    model: str,
+    system_prompt: str,
+    user_content: List[Dict[str, Any]],
+    api_key: str,
+) -> Optional[Dict[str, Any]]:
+    """Attempt vision inference on a single Groq model.
+
+    Returns:
+        - A success dict (no 'error' key) on success
+        - A dict with 'error' key on soft failure (try next model)
+        - None on hard failure
+    """
+    try:
+        with httpx.Client(timeout=25.0) as client:
+            resp = client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.1,
+                },
+            )
+
+            if resp.status_code == 429:
+                logger.warning(f"Groq vision model {model} rate-limited (429) — trying next model")
+                return {"error": f"Rate limited (429) on Groq/{model}"}
+
+            if resp.status_code != 200:
+                logger.warning(f"Groq vision model {model} returned HTTP {resp.status_code}: {resp.text[:200]}")
+                return {"error": f"HTTP {resp.status_code} on Groq/{model}"}
+
+            raw = resp.json()["choices"][0]["message"]["content"]
+            validated = _parse_vision_response(raw, model)
+            if validated is None:
+                return {"error": f"Invalid response from Groq/{model}"}
+
+            logger.info(f"✅ Groq vision [{model}] completed criterion assessment")
+            return {
+                "adapter": "groq_vision",
+                "model_used": model,
+                "matches_criterion": validated["matches"],
+                "confidence": validated["confidence"],
+                "visual_elements": validated["parsed"].get("visual_elements_found", []),
+                "observation": str(validated["parsed"].get("layout_observation", "")),
+                "citation": str(validated["parsed"].get("summary_citation", "Visual inspection completed.")),
+                "defects": validated["parsed"].get("defects_or_gaps", []),
+                "passed": validated["matches"],
+            }
+    except Exception as e:
+        logger.debug(f"Groq vision model {model} attempt failed: {e}")
+        return {"error": str(e)}
+
+
+def _try_openrouter_vision(
+    model: str,
+    system_prompt: str,
+    user_content: List[Dict[str, Any]],
+    api_key: str,
+) -> Optional[Dict[str, Any]]:
+    """Attempt vision inference on a single OpenRouter model.
+
+    Returns:
+        - A success dict (no 'error' key) on success
+        - A dict with 'error' key on soft failure (try next model)
+        - None on hard failure
+    """
+    try:
+        with httpx.Client(timeout=40.0) as client:
+            resp = client.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "HTTP-Referer": "https://trustbroker-ai-frontend-bx9a.onrender.com",
+                    "X-Title": "TrustBroker AI",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.1,
+                },
+            )
+
+            if resp.status_code in (401, 403):
+                logger.warning(f"OpenRouter vision authentication failed (HTTP {resp.status_code})")
+                return {"error": f"Auth failed on OpenRouter/{model}"}
+
+            if resp.status_code == 429:
+                logger.warning(f"OpenRouter vision model {model} rate-limited (429) — trying next model")
+                return {"error": f"Rate limited (429) on OpenRouter/{model}"}
+
+            if resp.status_code != 200:
+                logger.warning(f"OpenRouter vision model {model} returned HTTP {resp.status_code}: {resp.text[:200]}")
+                return {"error": f"HTTP {resp.status_code} on OpenRouter/{model}"}
+
+            data = resp.json()
+            if "error" in data:
+                logger.warning(f"OpenRouter vision [{model}] returned error body: {data['error']}")
+                return {"error": f"API error from OpenRouter/{model}"}
+
+            choices = data.get("choices", [])
+            if not choices:
+                logger.warning(f"OpenRouter vision [{model}] returned empty choices")
+                return {"error": f"Empty choices from OpenRouter/{model}"}
+
+            raw = choices[0]["message"]["content"]
+            validated = _parse_vision_response(raw, model)
+            if validated is None:
+                return {"error": f"Invalid response from OpenRouter/{model}"}
+
+            logger.info(f"✅ OpenRouter vision [{model}] completed criterion assessment")
+            return {
+                "adapter": "openrouter_vision",
+                "model_used": model,
+                "matches_criterion": validated["matches"],
+                "confidence": validated["confidence"],
+                "visual_elements": validated["parsed"].get("visual_elements_found", []),
+                "observation": str(validated["parsed"].get("layout_observation", "")),
+                "citation": str(validated["parsed"].get("summary_citation", "Visual inspection completed.")),
+                "defects": validated["parsed"].get("defects_or_gaps", []),
+                "passed": validated["matches"],
+            }
+    except Exception as e:
+        logger.debug(f"OpenRouter vision model {model} attempt failed: {e}")
+        return {"error": str(e)}
