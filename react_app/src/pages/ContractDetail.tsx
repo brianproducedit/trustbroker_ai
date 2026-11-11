@@ -43,7 +43,8 @@ import {
   Download,
   FileCode,
   Users,
-  RefreshCw
+  RefreshCw,
+  Layers,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -124,6 +125,8 @@ export const ContractDetail: React.FC = () => {
   const [copiedHash, setCopiedHash] = useState(false)
 
   // Dialog States
+  const [fundingDialogOpen, setFundingDialogOpen] = useState(false)
+  const [fundingMilestone, setFundingMilestone] = useState<Milestone | null>(null)
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false)
   const [revisionDialogOpen, setRevisionDialogOpen] = useState(false)
   const [addMilestoneOpen, setAddMilestoneOpen] = useState(false)
@@ -140,6 +143,11 @@ export const ContractDetail: React.FC = () => {
     navigator.clipboard.writeText(text)
     setCopiedPayId(idKey)
     setTimeout(() => setCopiedPayId(null), 2000)
+  }
+
+  const handleOpenFundingModal = (milestone: Milestone) => {
+    setFundingMilestone(milestone)
+    setFundingDialogOpen(true)
   }
 
   // Add Milestone Form State (Client Only)
@@ -225,9 +233,25 @@ export const ContractDetail: React.FC = () => {
     (m) => m.status === 'verified' && m.paymentStatus !== 'released'
   )
 
-  const nextFundMilestone = contract.milestones.find(
-    (m) => !['staged_in_sandbox', 'release_authorized', 'released'].includes(m.paymentStatus)
+  // Sequential Staging Protection:
+  // Detect if any milestone on this contract is currently funded and active (staged/authorized, but not yet settled/released)
+  const activeFundedMilestone = contract.milestones.find(
+    (m) =>
+      ['staged_in_sandbox', 'release_authorized'].includes(m.paymentStatus) &&
+      m.status !== 'settled' &&
+      m.paymentStatus !== 'released'
   )
+
+  // Next milestone eligible for funding (ONLY eligible if no prior milestone is currently active and uncompleted)
+  const eligibleFundMilestone = activeFundedMilestone
+    ? null
+    : contract.milestones.find(
+        (m) =>
+          !['staged_in_sandbox', 'release_authorized', 'released'].includes(m.paymentStatus) &&
+          m.status !== 'settled'
+      ) || null
+
+  const nextFundMilestone = eligibleFundMilestone
 
   // Lifecycle Progression Steps
   const lifecycleSteps = [
@@ -758,9 +782,10 @@ export const ContractDetail: React.FC = () => {
                 {contract.status !== 'draft' && contract.status !== 'open' && (
                   <TabsTrigger
                     value="payments"
-                    className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5"
+                    className="text-xs font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:bg-[#1F2942] py-2 px-3.5 flex items-center gap-1.5"
                   >
-                    PayPal
+                    <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Milestone Funding &amp; PayPal</span>
                   </TabsTrigger>
                 )}
                 <TabsTrigger
@@ -1221,18 +1246,33 @@ export const ContractDetail: React.FC = () => {
                                   ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                                   : isStaged
                                     ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
-                                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                                    : m.id === eligibleFundMilestone?.id
+                                      ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                                      : 'bg-slate-900 text-slate-500 border-slate-800'
                                   }`}
                               >
                                 {isReleased
                                   ? 'Disbursed to Freelancer'
                                   : isStaged
                                     ? 'Staged in Sandbox'
-                                    : 'Pending Funding'}
+                                    : m.id === eligibleFundMilestone?.id
+                                      ? 'Ready for Funding'
+                                      : 'Locked (Prior in progress)'}
                               </Badge>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
+                              {/* CLIENT: Fund with PayPal for Eligible Milestone */}
+                              {isClient && contract.status === 'active' && m.id === eligibleFundMilestone?.id && !isStaged && !isReleased && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleOpenFundingModal(m)}
+                                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs gap-1.5 h-8 font-semibold shadow-sm"
+                                >
+                                  <CreditCard className="w-3.5 h-3.5" />
+                                  <span>Fund with PayPal</span>
+                                </Button>
+                              )}
                               {/* FREELANCER: Submit Work Action — unlocked only once funded */}
                               {isFreelancer && (m.status === 'in_progress' || m.status === 'pending' || m.status === 'revision_requested') && (
                                 isStaged ? (
@@ -1384,90 +1424,256 @@ export const ContractDetail: React.FC = () => {
               </TabsContent>
 
               <TabsContent value="payments" className="space-y-5 outline-none">
-                {/* 1. Milestone Funding Card */}
+                {/* 1. Milestone Staging & Payment Hub Overview */}
                 <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#222A3D]">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
                         <CreditCard className="w-4 h-4" />
-                        <span>PayPal Orders v2 &bull; Milestone Funding</span>
+                        <span>PayPal Sandbox &bull; Staged Milestone Funding Hub</span>
                       </div>
-                      <h3 className="text-base font-bold text-white">Milestone Staging Allocation</h3>
+                      <h3 className="text-base font-bold text-white">Milestone Funding &amp; Disbursements</h3>
                       <p className="text-xs text-slate-400">
-                        The client funds one milestone at a time into PayPal sandbox staging. Funds remain staged until deliverables are verified.
+                        Funds are staged milestone-by-milestone in PayPal Sandbox. Payouts are disbursed to the freelancer upon verified delivery.
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs font-mono bg-[#0B1326] px-3.5 py-2 rounded-lg border border-[#222A3D]">
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-mono bg-[#0B1326] px-4 py-2.5 rounded-xl border border-[#222A3D]">
                       <div>
-                        <span className="text-slate-400 block text-[10px]">STAGED IN SANDBOX</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Total SOW</span>
+                        <strong className="text-white font-bold">{formatCurrency(totalAmount, contract.currency)}</strong>
+                      </div>
+                      <div className="border-l border-slate-700 pl-3">
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Staged</span>
                         <strong className="text-blue-400 font-bold">{formatCurrency(stagedAmount, contract.currency)}</strong>
                       </div>
-                      <div className="border-l border-slate-700 pl-4">
-                        <span className="text-slate-400 block text-[10px]">RELEASED PAYOUTS</span>
+                      <div className="border-l border-slate-700 pl-3">
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Disbursed</span>
                         <strong className="text-emerald-400 font-bold">{formatCurrency(releasedAmount, contract.currency)}</strong>
+                      </div>
+                      <div className="border-l border-slate-700 pl-3">
+                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Unfunded</span>
+                        <strong className="text-amber-300 font-bold">{formatCurrency(Math.max(0, totalAmount - stagedAmount - releasedAmount), contract.currency)}</strong>
                       </div>
                     </div>
                   </div>
 
-                  {/* Contextual Funding View */}
-                  {isClient ? (
-                    contract.status === 'active' ? (
-                      nextFundMilestone ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-xs p-3 rounded-lg bg-[#0B1326] border border-blue-900/40">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center text-xs">
-                                M{contract.milestones.findIndex((m) => m.id === nextFundMilestone.id) + 1}
-                              </span>
-                              <div>
-                                <span className="font-semibold text-white block">{nextFundMilestone.title}</span>
-                                <span className="text-slate-400 text-[11px]">Next unfunded milestone deliverable</span>
-                              </div>
-                            </div>
-                            <span className="font-mono font-bold text-emerald-400 text-sm">
-                              {formatCurrency(nextFundMilestone.amount, contract.currency)}
-                            </span>
-                          </div>
+                  {/* Progress bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Funding Progress</span>
+                      <span className="font-mono text-white font-semibold">
+                        {totalAmount > 0 ? Math.min(100, Math.round(((stagedAmount + releasedAmount) / totalAmount) * 100)) : 0}% Staged or Disbursed
+                      </span>
+                    </div>
+                    <Progress
+                      value={totalAmount > 0 ? Math.min(100, Math.round(((stagedAmount + releasedAmount) / totalAmount) * 100)) : 0}
+                      className="h-2 bg-[#0B1326]"
+                    />
+                  </div>
 
-                          <PayPalCheckout
-                            contractId={contract.id}
-                            contractCode={contract.code}
-                            milestoneId={nextFundMilestone.id}
-                            amount={nextFundMilestone.amount}
-                            currency={contract.currency}
-                            paymentStatus={nextFundMilestone.paymentStatus}
-                            onPaymentSuccess={handlePaymentSuccess}
-                          />
-                        </div>
-                      ) : (
-                        <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 flex items-center gap-3 text-xs text-emerald-300">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                          <span>All milestones on this contract are funded or fully disbursed.</span>
-                        </div>
-                      )
-                    ) : (
-                      <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] flex items-center gap-3 text-xs text-slate-300">
-                        <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                        <div>
-                          <strong className="text-white block font-semibold">Contract not yet active</strong>
-                          <span className="text-slate-400 text-[11px]">
-                            Milestone funding unlocks as soon as the awarded freelancer accepts the digital agreement.
+                  {/* Sequential Staging Protection Status Banner */}
+                  {activeFundedMilestone ? (
+                    <div className="p-4 bg-[#0F1C36] border border-blue-800/60 rounded-xl flex items-start gap-3.5 text-xs text-slate-300">
+                      <ShieldCheck className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-white text-sm">
+                            Sequential Staging Protected
+                          </span>
+                          <span className="bg-blue-900/60 text-blue-300 text-[10px] px-2 py-0.5 rounded-full border border-blue-700/50 font-mono">
+                            M{contract.milestones.findIndex(m => m.id === activeFundedMilestone.id) + 1} Currently Active
                           </span>
                         </div>
-                      </div>
-                    )
-                  ) : (
-                    <div className="p-4 rounded-xl bg-[#0B1326] border border-[#222A3D] flex items-center gap-3 text-xs text-slate-300">
-                      <ShieldCheck className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                      <div>
-                        <strong className="text-white block font-semibold">Freelancer View</strong>
-                        <span className="text-slate-400 text-[11px]">
-                          Client funds milestones directly via PayPal. Once a milestone is funded, you may submit evidence for automated AI verification.
-                        </span>
+                        <p className="leading-relaxed text-slate-300">
+                          <strong className="text-white">{formatCurrency(activeFundedMilestone.amount, contract.currency)}</strong> is currently staged for <strong className="text-white">{activeFundedMilestone.title}</strong>. To protect client funds and enable easy refunds if needed, each milestone is funded strictly one at a time. Milestone {contract.milestones.findIndex(m => m.id === activeFundedMilestone.id) + 2} will unlock as soon as this milestone is verified and disbursed.
+                        </p>
                       </div>
                     </div>
+                  ) : eligibleFundMilestone ? (
+                    <div className="p-4 bg-emerald-950/30 border border-emerald-800/50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white text-sm">
+                              Milestone {contract.milestones.findIndex(m => m.id === eligibleFundMilestone.id) + 1} Ready for Funding
+                            </span>
+                            <span className="bg-emerald-900/60 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-700/50 font-mono font-bold">
+                              {formatCurrency(eligibleFundMilestone.amount, contract.currency)}
+                            </span>
+                          </div>
+                          <p className="text-slate-300 mt-0.5">
+                            Stage funds via PayPal Sandbox to authorize the freelancer to begin working on <strong className="text-white">{eligibleFundMilestone.title}</strong>.
+                          </p>
+                        </div>
+                      </div>
+                      {isClient && contract.status === 'active' && (
+                        <Button
+                          onClick={() => handleOpenFundingModal(eligibleFundMilestone)}
+                          className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs h-9 px-4 gap-2 whitespace-nowrap shadow-sm"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Fund with PayPal</span>
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-emerald-950/20 border border-emerald-800/40 rounded-xl flex items-center gap-3 text-xs text-emerald-300">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                      <span>All contract milestones are fully funded or disbursed to the freelancer.</span>
+                    </div>
                   )}
+                </Card>
+
+                {/* 2. Grouped Milestone Staging Matrix */}
+                <Card className="border-[#222A3D] bg-[#131B2E] text-white p-5 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#222A3D]">
+                    <div className="space-y-0.5">
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-blue-400" />
+                        <span>Contract Milestone Staging Matrix</span>
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Review all contract deliverables and fund upcoming milestones via PayPal Sandbox.
+                      </p>
+                    </div>
+                    <span className="text-xs font-mono text-slate-400 bg-[#0B1326] px-2.5 py-1 rounded-md border border-[#222A3D]">
+                      {contract.milestones.filter(m => m.paymentStatus === 'released' || m.status === 'settled').length} / {contract.milestones.length} Completed
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {contract.milestones.map((m, idx) => {
+                      const isSettled = m.status === 'settled' || m.paymentStatus === 'released'
+                      const isFundedAndActive = ['staged_in_sandbox', 'release_authorized'].includes(m.paymentStatus) && !isSettled
+                      const isEligible = eligibleFundMilestone?.id === m.id
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`p-4 rounded-xl border transition-all ${
+                            isFundedAndActive
+                              ? 'bg-[#0E1C33] border-blue-700/60 shadow-sm'
+                              : isEligible
+                                ? 'bg-[#0D1E2A] border-emerald-700/60 shadow-sm'
+                                : isSettled
+                                  ? 'bg-[#0D1B17] border-emerald-900/40 opacity-90'
+                                  : 'bg-[#0B1326] border-[#222A3D] opacity-75'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5 ${
+                                  isSettled
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                    : isFundedAndActive
+                                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                                      : isEligible
+                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                                }`}
+                              >
+                                {isSettled ? '✓' : `M${idx + 1}`}
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="font-bold text-sm text-white">{m.title}</h4>
+                                  {isSettled ? (
+                                    <Badge variant="outline" className="text-[10px] bg-emerald-950/60 text-emerald-300 border-emerald-700/50">
+                                      Completed &amp; Disbursed
+                                    </Badge>
+                                  ) : isFundedAndActive ? (
+                                    <Badge variant="outline" className="text-[10px] bg-blue-950/60 text-blue-300 border-blue-700/50 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                      Staged in Sandbox
+                                    </Badge>
+                                  ) : isEligible ? (
+                                    <Badge variant="outline" className="text-[10px] bg-amber-950/60 text-amber-300 border-amber-700/50">
+                                      Ready for Funding
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[10px] bg-slate-900 text-slate-400 border-slate-800 flex items-center gap-1">
+                                      <Lock className="w-2.5 h-2.5 text-slate-500" />
+                                      Locked
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-400 line-clamp-1">{m.description || 'No description provided.'}</p>
+                                <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-0.5">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3 text-slate-500" />
+                                    Target: {formatDate(m.deadline)}
+                                  </span>
+                                  <span>&bull;</span>
+                                  <span>{(m.acceptanceCriteria || []).length} Acceptance Criteria</span>
+                                  {isFundedAndActive && (
+                                    <>
+                                      <span>&bull;</span>
+                                      <span className="text-blue-300 capitalize">
+                                        Work: {m.status.replace('_', ' ')}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
+                              <div className="font-mono text-right">
+                                <span className="text-[10px] text-slate-500 block uppercase">Amount</span>
+                                <strong className="text-sm font-bold text-emerald-400">
+                                  {formatCurrency(m.amount, contract.currency)}
+                                </strong>
+                              </div>
+
+                              {isClient && contract.status === 'active' && (
+                                isEligible ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleOpenFundingModal(m)}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs h-8 px-3 gap-1.5 shadow-sm"
+                                  >
+                                    <CreditCard className="w-3.5 h-3.5" />
+                                    <span>Fund with PayPal</span>
+                                  </Button>
+                                ) : isFundedAndActive ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setActiveTab('contract')
+                                      setSearchParams({ tab: 'contract' })
+                                    }}
+                                    className="border-blue-700/60 text-blue-300 hover:bg-blue-950/40 text-xs h-8 px-2.5"
+                                  >
+                                    <span>View Deliverable</span>
+                                  </Button>
+                                ) : isSettled ? (
+                                  <span className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Disbursed</span>
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled
+                                    className="bg-slate-900/60 border-slate-800 text-slate-500 text-xs h-8 px-2.5 cursor-not-allowed"
+                                    title="Complete prior milestone before funding this milestone."
+                                  >
+                                    <Lock className="w-3 h-3 mr-1" />
+                                    <span>Locked</span>
+                                  </Button>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </Card>
 
                 {/* 2. PayPal Staging Orders & Captures Table */}
@@ -1818,18 +2024,46 @@ export const ContractDetail: React.FC = () => {
                         <span>Disburse Payout</span>
                       </Button>
                     </>
-                  ) : stagedAmount < totalAmount ? (
+                  ) : activeFundedMilestone ? (
                     <>
-                      <div className="text-sm font-bold text-white">Fund next milestone</div>
+                      <div className="flex items-center gap-1.5 text-blue-400 text-xs font-semibold">
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Active Milestone Staged</span>
+                      </div>
+                      <div className="text-sm font-bold text-white">
+                        M{contract.milestones.findIndex(m => m.id === activeFundedMilestone.id) + 1}: {activeFundedMilestone.title}
+                      </div>
                       <p className="text-xs text-slate-300">
-                        Remaining unfunded: {formatCurrency(totalAmount - stagedAmount)} USD.
+                        {formatCurrency(activeFundedMilestone.amount, contract.currency)} staged in Sandbox. Freelancer is working on active deliverables.
+                      </p>
+                      <div className="p-2.5 rounded-lg bg-[#0B1326] border border-blue-900/40 text-[11px] text-slate-300 space-y-1">
+                        <p className="text-blue-300 font-semibold">Sequential Staging Protected</p>
+                        <p className="text-slate-400 text-[10px]">
+                          Subsequent milestones unlock only after this milestone deliverable is verified &amp; disbursed.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setActiveTab('contract')
+                          setSearchParams({ tab: 'contract' })
+                        }}
+                        className="w-full border-blue-800 text-blue-300 hover:bg-blue-950/50 text-xs h-8"
+                      >
+                        <span>View Milestone Deliverables</span>
+                      </Button>
+                    </>
+                  ) : eligibleFundMilestone ? (
+                    <>
+                      <div className="text-sm font-bold text-white">
+                        Fund Milestone {contract.milestones.findIndex(m => m.id === eligibleFundMilestone.id) + 1}
+                      </div>
+                      <p className="text-xs text-slate-300">
+                        {eligibleFundMilestone.title} ({formatCurrency(eligibleFundMilestone.amount, contract.currency)}).
                       </p>
                       <Button
-                        onClick={() => {
-                          setActiveTab('payments')
-                          setSearchParams({ tab: 'payments' })
-                        }}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5"
+                        onClick={() => handleOpenFundingModal(eligibleFundMilestone)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5 shadow-sm"
                       >
                         <CreditCard className="w-4 h-4" />
                         <span>Fund with PayPal</span>
@@ -1838,7 +2072,7 @@ export const ContractDetail: React.FC = () => {
                   ) : (
                     <>
                       <div className="text-sm font-bold text-white">Milestones funded</div>
-                      <p className="text-xs text-slate-300">Freelancer is working on active deliverables.</p>
+                      <p className="text-xs text-slate-300">All deliverables are funded or completed.</p>
                     </>
                   )}
                 </div>
@@ -2318,6 +2552,60 @@ export const ContractDetail: React.FC = () => {
                 {isDeletingContract ? 'Deleting…' : 'Delete Contract'}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* DIALOG 6: FUND MILESTONE WITH PAYPAL MODAL */}
+        <Dialog open={fundingDialogOpen} onOpenChange={(open) => {
+          setFundingDialogOpen(open)
+          if (!open) setFundingMilestone(null)
+        }}>
+          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-w-xl max-h-[92vh] overflow-y-auto p-6 shadow-2xl">
+            <DialogHeader className="space-y-1.5 pb-3 border-b border-[#222A3D]">
+              <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold">
+                <ShieldCheck className="w-4 h-4 text-blue-400" />
+                <span>PayPal Sandbox &bull; Milestone Staging Coordination</span>
+              </div>
+              <DialogTitle className="text-base font-bold text-white leading-tight">
+                Fund Milestone {fundingMilestone ? contract.milestones.findIndex(m => m.id === fundingMilestone.id) + 1 : ''}: {fundingMilestone?.title}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-400">
+                Agreement {contract.code} &bull; Funds remain safely staged in Sandbox until deliverable is verified &amp; approved.
+              </DialogDescription>
+            </DialogHeader>
+
+            {fundingMilestone && (
+              <div className="space-y-4 pt-2">
+                <div className="bg-[#0B1326] p-3.5 rounded-xl border border-blue-900/40 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase tracking-wider font-semibold">Staging Amount</span>
+                    <strong className="text-emerald-400 font-mono text-base font-bold">
+                      {formatCurrency(fundingMilestone.amount, contract.currency)}
+                    </strong>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 block text-[10px] uppercase tracking-wider font-semibold">Buyer Protection</span>
+                    <span className="text-blue-300 font-medium text-xs">Disbursed Only After AI Verification</span>
+                  </div>
+                </div>
+
+                <PayPalCheckout
+                  contractId={contract.id}
+                  contractCode={contract.code}
+                  milestoneId={fundingMilestone.id}
+                  amount={fundingMilestone.amount}
+                  currency={contract.currency}
+                  paymentStatus={fundingMilestone.paymentStatus}
+                  onPaymentSuccess={(details) => {
+                    handlePaymentSuccess(details)
+                    setTimeout(() => {
+                      setFundingDialogOpen(false)
+                      setFundingMilestone(null)
+                    }, 2200)
+                  }}
+                />
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

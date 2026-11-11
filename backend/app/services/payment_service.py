@@ -23,7 +23,8 @@ from app.utils import paypal_client
 from app.utils.security import require_client, require_contract_party
 
 
-def _next_unfunded_milestone(session: Session, contract_id: uuid.UUID) -> Optional[Milestone]:
+def _active_funded_milestone(session: Session, contract_id: uuid.UUID) -> Optional[Milestone]:
+    """Find any milestone on this contract that has staged funds and is not yet settled/released."""
     rows = list(
         session.exec(
             select(Milestone)
@@ -31,14 +32,53 @@ def _next_unfunded_milestone(session: Session, contract_id: uuid.UUID) -> Option
             .order_by(Milestone.sort_order.asc(), Milestone.created_at.asc())
         ).all()
     )
-    funded = {
-        PaymentStatus.STAGED_IN_SANDBOX,
-        PaymentStatus.RELEASE_AUTHORIZED,
-        PaymentStatus.RELEASED,
-    }
     for row in rows:
-        if row.payment_status not in funded:
+        if (
+            row.payment_status in (PaymentStatus.STAGED_IN_SANDBOX, PaymentStatus.RELEASE_AUTHORIZED)
+            and row.status != MilestoneStatus.SETTLED
+            and row.payment_status != PaymentStatus.RELEASED
+        ):
             return row
+    return None
+
+
+def _next_unfunded_milestone(session: Session, contract_id: uuid.UUID) -> Optional[Milestone]:
+    """Return the next unfunded milestone eligible for funding.
+    
+    Sequential Staging Protection:
+    Clients fund milestones one at a time. If an earlier milestone is currently funded
+    and active (in progress, submitted, or verifying, but not yet settled/released),
+    no subsequent milestone can be funded until that milestone is completed and disbursed.
+    """
+    rows = list(
+        session.exec(
+            select(Milestone)
+            .where(Milestone.contract_id == contract_id)
+            .order_by(Milestone.sort_order.asc(), Milestone.created_at.asc())
+        ).all()
+    )
+    for row in rows:
+        # If this milestone is funded and not yet completed/settled, it is currently active.
+        # No subsequent milestone is eligible for funding.
+        if (
+            row.payment_status in (PaymentStatus.STAGED_IN_SANDBOX, PaymentStatus.RELEASE_AUTHORIZED)
+            and row.status != MilestoneStatus.SETTLED
+            and row.payment_status != PaymentStatus.RELEASED
+        ):
+            return None
+
+        # If this milestone is completely settled or released, we move to the next.
+        if row.status == MilestoneStatus.SETTLED or row.payment_status == PaymentStatus.RELEASED:
+            continue
+
+        # Found the first milestone that is NOT funded and all previous milestones are settled.
+        if row.payment_status not in (
+            PaymentStatus.STAGED_IN_SANDBOX,
+            PaymentStatus.RELEASE_AUTHORIZED,
+            PaymentStatus.RELEASED,
+        ):
+            return row
+
     return None
 
 
@@ -133,11 +173,21 @@ async def create_milestone_funding_order(
     if not target_milestone or target_milestone.contract_id != contract.id:
         raise HTTPException(status_code=404, detail="Milestone not found for this contract")
 
+    active_m = _active_funded_milestone(session, contract.id)
+    if active_m and active_m.id != target_milestone.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"Milestone '{active_m.title}' is currently funded and in progress. "
+                "Deliverables must be verified and settled before funding subsequent milestones."
+            ),
+        )
+
     next_open = _next_unfunded_milestone(session, contract.id)
     if not next_open or next_open.id != target_milestone.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the next unfunded milestone can be funded.",
+            detail="Only the next eligible unfunded milestone can be funded.",
         )
 
     fund_policy = PolicyEngine.can_fund(client, contract, target_milestone)

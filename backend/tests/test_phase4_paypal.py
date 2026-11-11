@@ -206,6 +206,58 @@ async def test_paypal_sandbox_oauth():
         print("  (If offline or credentials are dummy, backend unit tests still pass.)")
 
 
+def test_sequential_funding_protection():
+    """Verify that milestone 2 cannot be funded while milestone 1 is funded and in-progress."""
+    print("\n--- Testing Sequential Milestone Funding Protection ---")
+    setup_test_db()
+    from app.services.payment_service import _next_unfunded_milestone, _active_funded_milestone
+
+    with Session(test_engine) as session:
+        contract_id = uuid.uuid4()
+        m1 = Milestone(
+            id=uuid.uuid4(),
+            contract_id=contract_id,
+            title="Milestone 1",
+            sort_order=1,
+            amount=Decimal("800.00"),
+            status=MilestoneStatus.IN_PROGRESS,
+            payment_status=PaymentStatus.STAGED_IN_SANDBOX,
+        )
+        m2 = Milestone(
+            id=uuid.uuid4(),
+            contract_id=contract_id,
+            title="Milestone 2",
+            sort_order=2,
+            amount=Decimal("700.00"),
+            status=MilestoneStatus.PENDING,
+            payment_status=PaymentStatus.NOT_STARTED,
+        )
+        session.add(m1)
+        session.add(m2)
+        session.commit()
+
+        # When M1 is funded and in-progress, active funded milestone should be M1
+        active = _active_funded_milestone(session, contract_id)
+        assert active is not None and active.id == m1.id
+        print("  [PASS] Active funded milestone detected: Milestone 1")
+
+        # Next unfunded milestone must be None because M1 is not settled
+        next_open = _next_unfunded_milestone(session, contract_id)
+        assert next_open is None, "Next unfunded milestone should be None while M1 is in progress"
+        print("  [PASS] Milestone 2 funding is blocked while Milestone 1 is in progress")
+
+        # Now simulate M1 is settled and released
+        m1.status = MilestoneStatus.SETTLED
+        m1.payment_status = PaymentStatus.RELEASED
+        session.add(m1)
+        session.commit()
+
+        # Now M2 should become eligible for funding
+        next_open = _next_unfunded_milestone(session, contract_id)
+        assert next_open is not None and next_open.id == m2.id
+        print("  [PASS] Milestone 2 unlocks for funding after Milestone 1 is settled")
+
+
 def print_phase_4_summary():
     print("\n=======================================================")
     print("  Phase 4 PayPal Fund & Payout Suite Completed")
