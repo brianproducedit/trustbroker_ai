@@ -92,7 +92,25 @@ export const DeliveryVerification: React.FC = () => {
     setIsFetchingDeliveries(true)
     try {
       const data = await api.deliveries.listMilestoneDeliveries(msId)
-      setFetchedDeliveries(Array.isArray(data) ? data : [])
+      const list = Array.isArray(data) ? data : []
+      setFetchedDeliveries(list)
+      if (list.length > 0) {
+        const latest = list[0]
+        if (latest.repo_url) setRepoUrl(latest.repo_url)
+        if (latest.live_url) setLiveUrl(latest.live_url)
+        if (latest.description) setNotes(latest.description)
+        if (Array.isArray(latest.files) && latest.files.length > 0) {
+          setFileAttachments(
+            latest.files.map((f: any) => ({
+              name: f.file_name,
+              url: f.storage_path,
+              id: f.id,
+              sizeBytes: f.size_bytes || 0,
+              mimeType: f.mime_type || 'application/octet-stream',
+            }))
+          )
+        }
+      }
     } catch (err) {
       console.warn('Failed to fetch milestone deliveries from backend:', err)
       setFetchedDeliveries([])
@@ -102,6 +120,20 @@ export const DeliveryVerification: React.FC = () => {
   }, [])
 
   useEffect(() => {
+    if (selectedMilestone?.submittedEvidence) {
+      const ev = selectedMilestone.submittedEvidence
+      if (ev.repoUrl) setRepoUrl(ev.repoUrl)
+      if (ev.liveUrl) setLiveUrl(ev.liveUrl)
+      if (ev.description) setNotes(ev.description)
+      if (ev.fileAttachments?.length) {
+        setFileAttachments(ev.fileAttachments)
+      }
+    } else {
+      setRepoUrl('')
+      setLiveUrl('')
+      setNotes('')
+      setFileAttachments([])
+    }
     if (selectedMilestone?.id) {
       loadMilestoneDeliveries(selectedMilestone.id)
     }
@@ -153,6 +185,19 @@ export const DeliveryVerification: React.FC = () => {
 
   const handleRemoveAttachment = (idx: number) => {
     setFileAttachments(fileAttachments.filter((_, i) => i !== idx))
+  }
+
+  const handleViewFile = async (f: { id?: string; url?: string; name: string }) => {
+    if (f.id) {
+      try {
+        const url = await api.deliveries.downloadFile(f.id)
+        window.open(url, '_blank', 'noopener,noreferrer')
+      } catch (err: any) {
+        toast.error(err?.detail || err?.message || 'Failed to open file')
+      }
+    } else if (f.url) {
+      window.open(f.url, '_blank', 'noopener,noreferrer')
+    }
   }
 
   // ── Drag-and-drop + file picker helpers ──────────────────────────────────
@@ -379,7 +424,7 @@ export const DeliveryVerification: React.FC = () => {
     repoUrl?: string
     liveUrl?: string
     description?: string
-    fileAttachments?: Array<{ name: string; url: string; sizeBytes: number; mimeType: string }>
+    fileAttachments?: Array<{ name: string; url: string; id?: string; sizeBytes: number; mimeType: string }>
     submittedAt?: string
     version?: number
   }
@@ -392,6 +437,7 @@ export const DeliveryVerification: React.FC = () => {
       fileAttachments: (latestDelivery.files || []).map((f: any) => ({
         name: f.file_name,
         url: f.storage_path,
+        id: f.id,
         sizeBytes: f.size_bytes || 0,
         mimeType: f.mime_type || 'application/octet-stream',
       })),
@@ -749,16 +795,14 @@ export const DeliveryVerification: React.FC = () => {
                                         <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${badgeColor}`}>
                                           {typeBadge}
                                         </span>
-                                        {f.url && (
-                                          <a
-                                            href={f.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                        {(f.url || f.id) && (
+                                          <button
+                                            onClick={() => handleViewFile(f)}
                                             className="text-blue-400 hover:text-blue-300 text-[10px] font-medium hover:underline flex items-center gap-0.5"
                                           >
                                             <span>View</span>
                                             <ExternalLink className="w-2.5 h-2.5" />
-                                          </a>
+                                          </button>
                                         )}
                                       </div>
                                     </div>
@@ -810,6 +854,7 @@ export const DeliveryVerification: React.FC = () => {
                       </Label>
                       <Input
                         id="repo"
+                        name="repo"
                         type="url"
                         required
                         value={repoUrl}
@@ -827,6 +872,7 @@ export const DeliveryVerification: React.FC = () => {
                       </Label>
                       <Input
                         id="live"
+                        name="live"
                         type="url"
                         value={liveUrl}
                         onChange={(e) => setLiveUrl(e.target.value)}
@@ -843,6 +889,7 @@ export const DeliveryVerification: React.FC = () => {
                       </Label>
                       <Textarea
                         id="notes"
+                        name="notes"
                         rows={3}
                         required
                         value={notes}
@@ -889,14 +936,27 @@ export const DeliveryVerification: React.FC = () => {
                                 <div className="flex items-center gap-2 truncate flex-1 min-w-0">
                                   <FileCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                   <span className="text-slate-200 font-mono text-[11px] truncate">{file.name}</span>
-                                  <span className="text-[10px] text-slate-500 font-mono shrink-0">
-                                    ({Math.round(file.sizeBytes / 1024)} KB)
-                                  </span>
+                                  {file.sizeBytes > 0 && (
+                                    <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                      ({Math.round(file.sizeBytes / 1024)} KB)
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                   <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${badgeColor}`}>
                                     {typeBadge}
                                   </span>
+                                  {(file.url || (file as any).id) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewFile(file as any)}
+                                      className="text-blue-400 hover:text-blue-300 text-[10px] font-medium hover:underline flex items-center gap-0.5"
+                                      title="View / Download file"
+                                    >
+                                      <span>View</span>
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveAttachment(idx)}
@@ -912,984 +972,996 @@ export const DeliveryVerification: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Drag-and-Drop Upload Zone */}
-                      <div
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${isDragging
-                          ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
-                          : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
-                          }`}
-                      >
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          multiple
-                          accept="image/*,.pdf,.zip,.txt,.md"
-                          className="sr-only"
-                          onChange={handleFilePickerChange}
-                        />
-                        <div className="flex flex-col items-center justify-center gap-2 py-6 px-4 pointer-events-none select-none">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isUploadingFile ? 'bg-blue-500/20' : isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
-                            {isUploadingFile ? (
-                              <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
-                            ) : isDragging ? (
-                              <FolderOpen className="w-5 h-5 text-blue-400" />
-                            ) : (
-                              <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                            )}
-                          </div>
-                          <div className="text-center">
-                            <p className={`text-xs font-semibold transition-colors ${isUploadingFile || isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
-                              {isUploadingFile ? 'Uploading to secure server storage...' : isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
-                            </p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">
-                              {isUploadingFile ? 'Bytes are saved directly to server' : <>or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer</>}
-                            </p>
-                            <p className="text-[10px] text-slate-600 mt-1">
-                              PNG, JPG, GIF, WebP, PDF, ZIP, TXT · Max 25 MB per file
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Manual URL entry (still available as fallback) */}
-                      <details className="group">
-                        <summary className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer select-none list-none flex items-center gap-1 pt-1">
-                          <Plus className="w-3 h-3" />
-                          Add file by URL instead
-                        </summary>
-                        <div className="pt-2 space-y-2">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input
-                              placeholder="File name (e.g. proof.png)"
-                              value={newFileName}
-                              onChange={(e) => setNewFileName(e.target.value)}
-                              className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                            />
-                            <input
-                              placeholder="Evidence URL or storage link"
-                              value={newFileUrl}
-                              onChange={(e) => setNewFileUrl(e.target.value)}
-                              className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleAddAttachment}
-                            disabled={!newFileName.trim()}
-                            className="w-full bg-[#1A2338] hover:bg-[#222D47] text-slate-200 text-xs h-7 gap-1 font-medium border border-[#2D3449]"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add by URL</span>
-                          </Button>
-                        </div>
-                      </details>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      disabled={isEvaluating || isUploadingFile || isSettled || isLocked}
-                      className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${isLocked
-                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                    >
-                      {isLocked ? (
-                        <>
-                          <Lock className="w-3.5 h-3.5 text-slate-500" />
-                          Milestone Locked (Client PayPal Funding Required)
-                        </>
-                      ) : isEvaluating ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          AI is inspecting evidence across multimodal adapters...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Run AI Verification Check
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Column 2: AI Verification Results */}
-          <div className={`${activeRole === 'client' ? 'lg:col-span-4' : 'lg:col-span-6'} space-y-4`}>
-            <Card className="border-[#222A3D] bg-[#131B2E] text-white">
-              <CardHeader className="pb-3 border-b border-[#222A3D]">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
-                    <Sparkles className="w-4 h-4 text-indigo-400" />
-                    AI Verification Assessment
-                  </CardTitle>
-                  {assessment && (
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-mono">
-                        Score: {assessment.overallScore}/100
-                      </Badge>
-                      {assessment.passed ? (
-                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px]">
-                          PASS
-                        </Badge>
-                      ) : assessment.requiresHumanReview ? (
-                        <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px]">
-                          NEEDS REVIEW
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px]">
-                          FAIL
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <CardDescription className="text-xs text-slate-400">
-                  Multimodal inspection against agreed acceptance criteria.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="p-4 space-y-4">
-                {assessment ? (
-                  <div className="space-y-4">
-                    {/* Score Bar & Model Used Badge */}
-                    {!assessment.modelUsed?.includes('Offline') && (
-                      <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-400">Overall Verification Score</span>
-                          <span className="font-mono font-bold text-emerald-400">{assessment.overallScore}%</span>
-                        </div>
-                        <Progress value={assessment.overallScore} className="h-2" />
-                        <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
-                          <span>Engine: <span className="text-blue-300 font-mono">{assessment.modelUsed || 'Groq LPU (llama-3.3-70b)'}</span></span>
-                          <span>Status: <span className="font-semibold text-slate-200">{assessment.passed ? 'Verified' : 'Pending Action'}</span></span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Human Review Banner if triggered */}
-                    {assessment.requiresHumanReview && (
-                      <div className={`p-3 rounded-lg border space-y-1.5 text-xs ${assessment.modelUsed?.includes('Offline')
-                        ? 'bg-rose-950/30 border-rose-800/40 animate-pulse'
-                        : 'bg-amber-950/30 border-amber-800/40'
-                        }`}>
-                        <div className={`flex items-center gap-1.5 font-semibold ${assessment.modelUsed?.includes('Offline') ? 'text-rose-300' : 'text-amber-300'
-                          }`}>
-                          <AlertCircle className={`w-4 h-4 ${assessment.modelUsed?.includes('Offline') ? 'text-rose-400' : 'text-amber-400'}`} />
-                          <span>
-                            {assessment.modelUsed?.includes('Offline')
-                              ? '⚠ AI Engine Unavailable — Use Manual Review'
-                              : 'Human Review Recommended'}
-                          </span>
-                        </div>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">
-                          {assessment.modelUsed?.includes('Offline')
-                            ? 'The AI verification engine could not be reached. Use the Manual Review panel to inspect the freelancer\'s submitted evidence and approve or request revision.'
-                            : 'One or more acceptance criteria involve subjective design or ambiguous scope. Client discretion is required to approve or request revision.'}
-                        </p>
-                        {assessment.modelUsed?.includes('Offline') && activeRole === 'client' && (
-                          <div className="text-[10px] text-rose-300 font-mono bg-rose-950/40 p-1.5 rounded border border-rose-900/60">
-                            → Check the "Client Manual Review" panel on the right →
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Criteria Results */}
-                    <div className="space-y-2.5">
-                      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                        Criterion-by-Criterion Results ({assessment.criteriaResults?.length || 0}):
-                      </span>
-                      {(assessment.criteriaResults || []).map((c: any) => {
-                        const isPass = c.status === 'pass'
-                        const isFail = c.status === 'fail'
-
-                        return (
-                          <div
-                            key={c.id}
-                            className="p-3 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-1.5 text-xs"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-white">{c.title}</span>
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] font-mono uppercase ${isPass
-                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                  : isFail
-                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                  }`}
-                              >
-                                {c.status ? c.status.toUpperCase() : 'PENDING'}
-                              </Badge>
-                            </div>
-                            <p className="text-[11px] text-slate-300 leading-relaxed">
-                              {c.description}
-                            </p>
-                            {c.feedback && (
-                              <div className="text-[10px] text-blue-300 font-mono bg-blue-950/40 p-1.5 rounded">
-                                {c.feedback}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Summary Analysis */}
-                    <div className="p-3 rounded-lg bg-[#0E1528] border border-[#222A3D] space-y-1 text-xs">
-                      <span className="text-[11px] text-slate-400 font-semibold block">Summary Analysis:</span>
-                      <p className="text-slate-300 text-[11px] leading-relaxed">
-                        {assessment.summaryAnalysis}
-                      </p>
-                    </div>
-
-                    {/* Status & Verification Guidance for Client in Column 2 */}
-                    {activeRole === 'client' && !isSettled && (
-                      <div className="pt-2">
-                        {isRevisionRequested ? (
-                          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
-                                <RotateCcw className="w-4 h-4 text-amber-400" />
-                                <span>Revision Requested — Auto-Release Frozen</span>
-                              </div>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                Clock Paused
-                              </span>
-                            </div>
-
-                            <p className="text-slate-300 text-[11px] leading-relaxed">
-                              You have requested adjustments on this milestone deliverable. The 7-day auto-disbursal clock is strictly suspended. The freelancer ({contract.freelancer?.name || 'Freelancer'}) has been notified to address your feedback.
-                            </p>
-
-                            {selectedMilestone.revisionNotes && (
-                              <div className="p-2.5 rounded-lg bg-[#0B1326] border border-amber-500/30 space-y-1">
-                                <span className="text-[10px] text-amber-400 font-semibold block uppercase tracking-wider">Your Revision Notes:</span>
-                                <p className="text-slate-200 text-xs font-mono">{selectedMilestone.revisionNotes}</p>
-                              </div>
-                            )}
-
-                            {/* Buyer Protection Inactivity Guarantee */}
-                            <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
-                              <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>Buyer Protection: 7-Day Inactivity Guarantee</span>
-                              </div>
-                              <p className="text-slate-400 text-[10px] leading-relaxed">
-                                Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded in the PayPal Sandbox. Manage settlement or reclamation in the <strong>Client Manual Review</strong> panel on the right.
-                              </p>
-                            </div>
-                          </div>
-                        ) : isVerified ? (
-                          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                <span>AI Multimodal Inspection Passed</span>
-                              </div>
-                              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-mono">
-                                Score: {assessment.overallScore}/100
-                              </Badge>
-                            </div>
-                            <p className="text-slate-300 text-[11px] leading-relaxed">
-                              All agreed milestone criteria have passed automated inspection. Proceed to the <strong>Client Manual Review</strong> panel on the right to review the live deliverable outside the system and authorize payment disbursement.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-2.5">
-                            <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
-                              <AlertCircle className="w-4 h-4 text-amber-400" />
-                              <span>Criteria Review or Flagged Items</span>
-                            </div>
-                            <p className="text-slate-300 text-[11px] leading-relaxed">
-                              Some criteria require subjective or visual confirmation. You can manually inspect the deliverables and override approval or request changes in the <strong>Client Manual Review</strong> panel on the right.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Notice & Status for Freelancer after verification */}
-                    {activeRole === 'freelancer' && !isSettled && (
-                      <div className="pt-2">
-                        {isRevisionRequested ? (
-                          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
-                                <RotateCcw className="w-4 h-4 text-amber-400" />
-                                <span>Revision Requested by Client — Auto-Release Clock Frozen</span>
-                              </div>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                Clock Paused
-                              </span>
-                            </div>
-
-                            <p className="text-slate-300 text-[11px] leading-relaxed">
-                              The client ({contract.client?.name || 'Client'}) has reviewed your deliverable and requested adjustments. While in revision status, the 7-day auto-disbursal clock is strictly suspended. Staged funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) remain securely held in PayPal sandbox.
-                            </p>
-
-                            {selectedMilestone.revisionNotes && (
-                              <div className="p-2.5 rounded-lg bg-[#0B1326] border border-amber-500/30 space-y-1">
-                                <span className="text-[10px] text-amber-400 font-semibold block uppercase tracking-wider">Client Revision Feedback:</span>
-                                <p className="text-slate-200 text-xs font-mono">{selectedMilestone.revisionNotes}</p>
-                              </div>
-                            )}
-
-                            {/* 7-Day Freelancer Response Deadline */}
-                            <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
-                              <div className="flex items-center gap-1.5 font-semibold text-amber-400">
-                                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                                <span>7-Day Freelancer Response Deadline (Buyer Protection Active)</span>
-                              </div>
-                              <p className="text-slate-400 text-[10px] leading-relaxed">
-                                You have 7 days to address the client's revision notes and submit updated deliverables using the form on the left. If no revision or response is provided within 7 days, the client is protected and may reclaim their staged funds.
-                              </p>
-                            </div>
-
-                            <div className="pt-2 flex flex-col gap-2">
-                              <Button
-                                onClick={() => {
-                                  window.scrollTo({ top: 300, behavior: 'smooth' })
-                                  const notesEl = document.getElementById('delivery-notes')
-                                  if (notesEl) notesEl.focus()
-                                }}
-                                className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md cursor-pointer"
-                              >
-                                <UploadCloud className="w-3.5 h-3.5" />
-                                Submit Revised Deliverables
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => setDisputeDialogOpen(true)}
-                                className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
-                              >
-                                <Scale className="w-3.5 h-3.5" />
-                                Request AI Dispute Mediation
-                              </Button>
-                            </div>
-                          </div>
-                        ) : isVerified ? (
-                          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                <span>AI Verification Passed — Awaiting Client Release</span>
-                              </div>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Payment Staged
-                              </span>
-                            </div>
-
-                            <p className="text-slate-300 text-[11px] leading-relaxed">
-                              All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely staged in PayPal Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
-                            </p>
-
-                            {/* TrustBroker Seller Protection Policy */}
-                            <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
-                              <div className="flex items-center gap-1.5 font-semibold text-blue-400">
-                                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                                <span>TrustBroker Buyer &amp; Seller Protection Active</span>
-                              </div>
-                              <p className="text-slate-400 text-[10px] leading-relaxed">
-                                Clients have a standard 7-day review window following AI verification to inspect deliverables and release staged funds. If the client requests revisions, the timer freezes. If the client takes no action within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
-                              </p>
-                            </div>
-
-                            <div className="pt-2 flex flex-col gap-2">
-                              <Button
-                                onClick={handleNudgeClient}
-                                disabled={isNudged}
-                                className={`w-full text-xs gap-1.5 h-9 font-semibold transition-all cursor-pointer ${isNudged
-                                  ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
-                                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
-                                  }`}
-                              >
-                                {isNudged ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                    Disbursal Reminder Sent to Client
-                                  </>
-                                ) : (
-                                  <>
-                                    <BellRing className="w-3.5 h-3.5" />
-                                    Send Disbursal Reminder to Client
-                                  </>
-                                )}
-                              </Button>
-
-                              <Link
-                                to={ROUTES.FREELANCER_PAYOUTS}
-                                className="w-full inline-flex items-center justify-center px-3.5 py-2 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-xs font-medium text-slate-300 border border-[#222A3D] transition-colors"
-                              >
-                                View Earnings Ledger →
-                              </Link>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-xs text-amber-300 space-y-1.5">
-                            <div className="flex items-center gap-1.5 font-semibold text-amber-400">
-                              <AlertCircle className="w-4 h-4 text-amber-400" />
-                              <span>Verification Score Below Threshold ({assessment.overallScore}/100)</span>
-                            </div>
-                            <p className="text-slate-300 text-[11px] leading-relaxed">
-                              Some criteria require adjustments. Review the itemized criterion feedback above, make the necessary corrections and re-run verification.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {isSettled && (
-                      <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-center text-xs text-emerald-300 flex items-center justify-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span>Milestone payment of ${selectedMilestone.amount} has been disbursed via PayPal.</span>
-                      </div>
-                    )}
-                  </div>
+          {/* Drag-and-Drop Upload Zone */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative rounded-xl border-2 border-dashed transition-all cursor-pointer group ${isDragging
+              ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
+              : 'border-[#2D3449] bg-[#0B1326]/60 hover:border-blue-500/60 hover:bg-blue-500/5'
+              }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="file-upload-input"
+              name="file-upload-input"
+              multiple
+              accept="image/*,.pdf,.zip,.txt,.md"
+              className="sr-only"
+              onChange={handleFilePickerChange}
+            />
+            <div className="flex flex-col items-center justify-center gap-2 py-6 px-4 pointer-events-none select-none">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isUploadingFile ? 'bg-blue-500/20' : isDragging ? 'bg-blue-500/20' : 'bg-[#131B2E] group-hover:bg-blue-500/10'}`}>
+                {isUploadingFile ? (
+                  <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                ) : isDragging ? (
+                  <FolderOpen className="w-5 h-5 text-blue-400" />
                 ) : (
-                  <div className="text-center py-12 space-y-3">
-                    <ShieldCheck className="w-10 h-10 text-slate-500 mx-auto" />
-                    <div className="text-xs text-slate-400 max-w-xs mx-auto">
-                      No verification report generated yet for this milestone. Submit artifacts on the left to run evaluation.
-                    </div>
-                  </div>
+                  <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
                 )}
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-center">
+                <p className={`text-xs font-semibold transition-colors ${isUploadingFile || isDragging ? 'text-blue-300' : 'text-slate-300 group-hover:text-white'}`}>
+                  {isUploadingFile ? 'Uploading to secure server storage...' : isDragging ? 'Drop files to attach' : 'Drag & drop evidence files here'}
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  {isUploadingFile ? 'Bytes are saved directly to server' : <>or <span className="text-blue-400 group-hover:underline">click to browse</span> your computer</>}
+                </p>
+                <p className="text-[10px] text-slate-600 mt-1">
+                  PNG, JPG, GIF, WebP, PDF, ZIP, TXT · Max 25 MB per file
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Column 3: Client Manual Review (Visible to Clients) */}
-          {activeRole === 'client' && (
-            <div className="lg:col-span-4 space-y-4">
-              <Card className="border-[#222A3D] bg-[#131B2E] text-white">
-                <CardHeader className="pb-3 border-b border-[#222A3D]">
-                  <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
-                    <UserCheck className="w-4 h-4 text-teal-400" />
-                    Client Manual Review
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-400">
-                    Review submitted evidence and approve or request changes directly — outside AI verification.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 space-y-4">
-                  {effectiveEvidence ? (
-                    <div className="space-y-3">
-                      {/* Submitted Evidence Display */}
-                      <div className="p-3 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2.5">
-                        <div className="flex items-center justify-between pb-1 border-b border-[#222A3D]">
-                          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                            Freelancer Submission
-                          </span>
-                          <Badge className="bg-blue-500/15 text-blue-300 border-blue-500/30 text-[9px] font-mono">
-                            v{effectiveEvidence.version || 1}
-                          </Badge>
-                        </div>
+          {/* Manual URL entry (still available as fallback) */}
+          <details className="group">
+            <summary className="text-[10px] text-slate-500 hover:text-slate-300 cursor-pointer select-none list-none flex items-center gap-1 pt-1">
+              <Plus className="w-3 h-3" />
+              Add file by URL instead
+            </summary>
+            <div className="pt-2 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  id="new-file-name"
+                  name="new-file-name"
+                  placeholder="File name (e.g. proof.png)"
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                />
+                <input
+                  id="new-file-url"
+                  name="new-file-url"
+                  placeholder="Evidence URL or storage link"
+                  value={newFileUrl}
+                  onChange={(e) => setNewFileUrl(e.target.value)}
+                  className="bg-[#131B2E] border border-[#2D3449] rounded-md px-2 py-1 text-white text-[11px] h-7 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleAddAttachment}
+                disabled={!newFileName.trim()}
+                className="w-full bg-[#1A2338] hover:bg-[#222D47] text-slate-200 text-xs h-7 gap-1 font-medium border border-[#2D3449]"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add by URL</span>
+              </Button>
+            </div>
+          </details>
+        </div>
 
-                        {effectiveEvidence.repoUrl && (
-                          <div className="flex items-start gap-2 text-xs">
-                            <GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
-                            <div className="min-w-0">
-                              <span className="text-slate-400 block text-[10px]">Repository</span>
-                              <a
-                                href={effectiveEvidence.repoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300 hover:underline truncate block font-mono text-[10px]"
-                              >
-                                {effectiveEvidence.repoUrl.replace('https://', '')}
-                              </a>
-                            </div>
-                          </div>
-                        )}
+        <Button
+          type="submit"
+          disabled={isEvaluating || isUploadingFile || isSettled || isLocked}
+          className={`w-full text-xs gap-2 h-9 font-semibold shadow-sm ${isLocked
+            ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed hover:bg-slate-800'
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+        >
+          {isLocked ? (
+            <>
+              <Lock className="w-3.5 h-3.5 text-slate-500" />
+              Milestone Locked (Client PayPal Funding Required)
+            </>
+          ) : isEvaluating ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              AI is inspecting evidence across multimodal adapters...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5" />
+              Run AI Verification Check
+            </>
+          )}
+        </Button>
+      </form>
+                )}
+    </CardContent>
+            </Card >
+          </div >
 
-                        {effectiveEvidence.liveUrl && (
-                          <div className="flex items-start gap-2 text-xs">
-                            <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                            <div className="min-w-0">
-                              <span className="text-slate-400 block text-[10px]">Live Preview</span>
-                              <a
-                                href={effectiveEvidence.liveUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-emerald-400 hover:text-emerald-300 hover:underline truncate block font-mono text-[10px]"
-                              >
-                                {effectiveEvidence.liveUrl.replace('https://', '')}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {effectiveEvidence.description && (
-                          <div className="flex items-start gap-2 text-xs">
-                            <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                            <div className="min-w-0">
-                              <span className="text-slate-400 block text-[10px]">Delivery Notes</span>
-                              <p className="text-slate-300 text-[11px] leading-relaxed mt-0.5 line-clamp-4">
-                                {effectiveEvidence.description}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {(effectiveEvidence.fileAttachments?.length ?? 0) > 0 && (
-                          <div className="flex items-start gap-2 text-xs">
-                            <FileCheck className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                            <div className="min-w-0 w-full">
-                              <span className="text-slate-400 block text-[10px]">
-                                Attached Files ({effectiveEvidence.fileAttachments!.length})
-                              </span>
-                              <div className="mt-1 space-y-1">
-                                {effectiveEvidence.fileAttachments!.map((f: any, i: number) => (
-                                  <div key={i} className="flex items-center gap-1.5 p-1.5 rounded bg-[#131B2E] border border-[#222A3D]">
-                                    <span className="text-[9px] font-mono text-slate-400 truncate">{f.name}</span>
-                                    {f.sizeBytes > 0 && (
-                                      <span className="text-[9px] text-slate-600 ml-auto shrink-0">
-                                        {Math.round(f.sizeBytes / 1024)}KB
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {effectiveEvidence.submittedAt && (
-                          <div className="text-[10px] text-slate-500 font-mono border-t border-[#222A3D] pt-2 mt-1">
-                            Submitted: {new Date(effectiveEvidence.submittedAt).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action Buttons for Client Manual Review */}
-                      {isRevisionRequested ? (
-                        <div className="space-y-2.5">
-                          <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/40 text-xs text-amber-300 flex items-center gap-2">
-                            <RotateCcw className="w-4 h-4 text-amber-400 shrink-0" />
-                            <span>Revision requested — auto-release paused.</span>
-                          </div>
-                          <Button
-                            onClick={() => setOverrideDialogOpen(true)}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-10 font-bold shadow-md cursor-pointer"
-                          >
-                            <ShieldCheck className="w-4 h-4" />
-                            Override &amp; Approve (${selectedMilestone.amount})
-                          </Button>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => setReclaimDialogOpen(true)}
-                              className="w-full border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
-                            >
-                              <Undo2 className="w-3.5 h-3.5 shrink-0" />
-                              <span>Reclaim Staged Funds</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setDisputeDialogOpen(true)}
-                              className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
-                            >
-                              <Scale className="w-3.5 h-3.5 shrink-0" />
-                              <span>AI Dispute</span>
-                            </Button>
-                          </div>
-                        </div>
-                      ) : !isSettled && selectedMilestone.status !== 'verified' ? (
-                        <div className="space-y-2.5">
-                          <Button
-                            onClick={() => setManualApproveOpen(true)}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-10 font-bold shadow-md cursor-pointer"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                            Approve Deliverables Manually
-                          </Button>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => setRevisionDialogOpen(true)}
-                              className="w-full border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              <span>Request Revision</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setDisputeDialogOpen(true)}
-                              className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
-                            >
-                              <Scale className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                              <span>AI Dispute</span>
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {(isSettled || selectedMilestone.status === 'verified') && !isRevisionRequested && (
-                        <div className="space-y-2.5">
-                          <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300 flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
-                            <span>
-                              {isSettled ? 'Payment disbursed via PayPal.' : 'Milestone verified — ready to disburse.'}
-                            </span>
-                          </div>
-                          {!isSettled && (
-                            <div className="space-y-2.5">
-                              <Button
-                                onClick={handleAuthorizeRelease}
-                                disabled={isReleasing}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-2 h-10 font-bold shadow-lg shadow-emerald-950/40 cursor-pointer transition-all"
-                              >
-                                <DollarSign className="w-4 h-4" />
-                                {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
-                              </Button>
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setRevisionDialogOpen(true)}
-                                  className="w-full border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer transition-all"
-                                >
-                                  <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                  <span>Request Revision</span>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setDisputeDialogOpen(true)}
-                                  className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer transition-all"
-                                >
-                                  <Scale className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                                  <span>AI Dispute</span>
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 space-y-2">
-                      <Eye className="w-8 h-8 text-slate-600 mx-auto" />
-                      <p className="text-xs text-slate-500 leading-relaxed max-w-[200px] mx-auto">
-                        No submission yet. This panel will display the freelancer's evidence once submitted for manual review.
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+  {/* Column 2: AI Verification Results */ }
+  < div className = {`${activeRole === 'client' ? 'lg:col-span-4' : 'lg:col-span-6'} space-y-4`}>
+    <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+      <CardHeader className="pb-3 border-b border-[#222A3D]">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            AI Verification Assessment
+          </CardTitle>
+          {assessment && (
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-mono">
+                Score: {assessment.overallScore}/100
+              </Badge>
+              {assessment.passed ? (
+                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px]">
+                  PASS
+                </Badge>
+              ) : assessment.requiresHumanReview ? (
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px]">
+                  NEEDS REVIEW
+                </Badge>
+              ) : (
+                <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px]">
+                  FAIL
+                </Badge>
+              )}
             </div>
           )}
         </div>
+        <CardDescription className="text-xs text-slate-400">
+          Multimodal inspection against agreed acceptance criteria.
+        </CardDescription>
+      </CardHeader>
 
-        {/* Revision Request Dialog */}
-        <Dialog open={revisionDialogOpen} onOpenChange={setRevisionDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-white">Request Milestone Revision</DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                Provide actionable notes for the freelancer to address before re-submitting for verification.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-2 py-2">
-              <Label htmlFor="rev-text" className="text-xs text-slate-300">
-                Actionable Feedback
-              </Label>
-              <Textarea
-                id="rev-text"
-                rows={3}
-                value={revisionNotes}
-                onChange={(e) => setRevisionNotes(e.target.value)}
-                placeholder="Specify required code fixes, missing criteria or layout fixes..."
-                className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
-              />
-            </div>
-
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRevisionDialogOpen(false)}
-                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!revisionNotes.trim()}
-                onClick={handleConfirmRevision}
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Send Revision Request
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Client Human Review Override Dialog */}
-        <Dialog open={overrideDialogOpen} onOpenChange={setOverrideDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-white">Human Review Approval Override</DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                As the client, you may manually approve this milestone deliverable even if AI flags subjective criteria. An immutable audit record will log your rationale.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-2 py-2">
-              <Label htmlFor="override-text" className="text-xs text-slate-300">
-                Approval Rationale (Required)
-              </Label>
-              <Textarea
-                id="override-text"
-                rows={3}
-                value={overrideReason}
-                onChange={(e) => setOverrideReason(e.target.value)}
-                placeholder="Explain why the deliverables satisfy your requirements..."
-                className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
-              />
-            </div>
-
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOverrideDialogOpen(false)}
-                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!overrideReason.trim()}
-                onClick={handleConfirmOverride}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Confirm Override & Approve
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Manual Approval Dialog */}
-        <Dialog open={manualApproveOpen} onOpenChange={setManualApproveOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-white flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-teal-400" />
-                Manual Milestone Approval
-              </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                You are approving this milestone outside AI verification. Provide your review rationale — this is recorded in the immutable audit trail.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-2 py-2">
-              <Label htmlFor="manual-rationale" className="text-xs text-slate-300">
-                Approval Rationale (Required)
-              </Label>
-              <Textarea
-                id="manual-rationale"
-                rows={4}
-                value={manualRationale}
-                onChange={(e) => setManualRationale(e.target.value)}
-                placeholder="Describe how you verified the deliverables satisfy the milestone requirements (e.g., 'Reviewed repository, verified live URL, all criteria met satisfactorily...')"
-                className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
-              />
-            </div>
-
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { setManualApproveOpen(false); setManualRationale('') }}
-                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!manualRationale.trim() || isManualApproving}
-                onClick={handleManualApprove}
-                className="bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5"
-              >
-                {isManualApproving ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />Approving…</>
-                ) : (
-                  <><UserCheck className="w-3.5 h-3.5" />Confirm Manual Approval</>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Staged Funds Reclaim Dialog (Buyer Protection) */}
-        <Dialog open={reclaimDialogOpen} onOpenChange={setReclaimDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-white flex items-center gap-2">
-                <Undo2 className="w-4 h-4 text-rose-400" />
-                Reclaim Staged Funds — Buyer Protection
-              </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                You are reclaiming your staged milestone funds due to freelancer inactivity or failure to address revision feedback. This action is permanently logged in the contract audit trail.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 py-2">
-              <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-500/30 text-xs text-rose-300 space-y-1">
-                <p className="font-semibold">Amount to reclaim: <span className="text-rose-200">{formatCurrency(selectedMilestone.amount, contract.currency)}</span></p>
-                <p>Milestone: <span className="text-slate-200">{selectedMilestone.title}</span></p>
+      <CardContent className="p-4 space-y-4">
+        {assessment ? (
+          <div className="space-y-4">
+            {/* Score Bar & Model Used Badge */}
+            {!assessment.modelUsed?.includes('Offline') && (
+              <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Overall Verification Score</span>
+                  <span className="font-mono font-bold text-emerald-400">{assessment.overallScore}%</span>
+                </div>
+                <Progress value={assessment.overallScore} className="h-2" />
+                <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+                  <span>Engine: <span className="text-blue-300 font-mono">{assessment.modelUsed || 'Groq LPU (llama-3.3-70b)'}</span></span>
+                  <span>Status: <span className="font-semibold text-slate-200">{assessment.passed ? 'Verified' : 'Pending Action'}</span></span>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="reclaim-reason" className="text-xs text-slate-300">
-                  Reason for Reclaiming (Required)
-                </Label>
-                <Textarea
-                  id="reclaim-reason"
-                  rows={3}
-                  value={reclaimReason}
-                  onChange={(e) => setReclaimReason(e.target.value)}
-                  placeholder="e.g., Freelancer did not submit revisions within 7 days..."
-                  className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
-                />
-              </div>
-              <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-300">
-                <strong>Note:</strong> The freelancer will be notified and the milestone will reset to pending status. They may resubmit deliverables if the contract remains active.
-              </div>
-            </div>
+            )}
 
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setReclaimDialogOpen(false)}
-                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!reclaimReason.trim() || isReclaiming}
-                onClick={handleConfirmReclaim}
-                className="bg-rose-600 hover:bg-rose-700 text-white text-xs gap-1.5"
-              >
-                {isReclaiming ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />Reclaiming…</>
-                ) : (
-                  <><Undo2 className="w-3.5 h-3.5" />Confirm Reclaim</>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* AI Dispute Mediation Dialog */}
-        <Dialog open={disputeDialogOpen} onOpenChange={setDisputeDialogOpen}>
-          <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-white flex items-center gap-2">
-                <Scale className="w-4 h-4 text-blue-400" />
-                AI Dispute Mediation
-              </DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs">
-                TrustBroker provides impartial AI-assisted dispute resolution based on contract SOW, acceptance criteria and submitted evidence.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              {/* Mediation Protocol */}
-              <div className="p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/30 space-y-3 text-xs">
-                <div className="flex items-center gap-2 font-semibold text-blue-300">
-                  <Scale className="w-4 h-4 text-blue-400" />
-                  <span>TrustBroker Dispute Mediation Protocol</span>
+            {/* Human Review Banner if triggered */}
+            {assessment.requiresHumanReview && (
+              <div className={`p-3 rounded-lg border space-y-1.5 text-xs ${assessment.modelUsed?.includes('Offline')
+                ? 'bg-rose-950/30 border-rose-800/40 animate-pulse'
+                : 'bg-amber-950/30 border-amber-800/40'
+                }`}>
+                <div className={`flex items-center gap-1.5 font-semibold ${assessment.modelUsed?.includes('Offline') ? 'text-rose-300' : 'text-amber-300'
+                  }`}>
+                  <AlertCircle className={`w-4 h-4 ${assessment.modelUsed?.includes('Offline') ? 'text-rose-400' : 'text-amber-400'}`} />
+                  <span>
+                    {assessment.modelUsed?.includes('Offline')
+                      ? '⚠ AI Engine Unavailable — Use Manual Review'
+                      : 'Human Review Recommended'}
+                  </span>
                 </div>
                 <p className="text-slate-300 text-[11px] leading-relaxed">
-                  When a revision request is disputed, TrustBroker AI conducts an independent evidence audit: re-evaluating the original SOW acceptance criteria, submitted deliverables, the client's revision notes and the freelancer's response — rendering an impartial recommendation.
+                  {assessment.modelUsed?.includes('Offline')
+                    ? 'The AI verification engine could not be reached. Use the Manual Review panel to inspect the freelancer\'s submitted evidence and approve or request revision.'
+                    : 'One or more acceptance criteria involve subjective design or ambiguous scope. Client discretion is required to approve or request revision.'}
                 </p>
-                <div className="space-y-1.5">
-                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span className="text-blue-400 font-bold mt-0.5">1.</span>
-                    <span><strong className="text-white">Evidence Re-audit:</strong> AI re-scores all original deliverables against the milestone acceptance criteria independently of prior verification runs.</span>
+                {assessment.modelUsed?.includes('Offline') && activeRole === 'client' && (
+                  <div className="text-[10px] text-rose-300 font-mono bg-rose-950/40 p-1.5 rounded border border-rose-900/60">
+                    → Check the "Client Manual Review" panel on the right →
                   </div>
-                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span className="text-blue-400 font-bold mt-0.5">2.</span>
-                    <span><strong className="text-white">Revision Notes Assessment:</strong> AI evaluates whether the client's revision request is specific, within-scope of the original SOW and reasonable.</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span className="text-blue-400 font-bold mt-0.5">3.</span>
-                    <span><strong className="text-white">Binding Recommendation:</strong> AI issues a recommendation — Release funds (freelancer wins), Revise further (client wins) or Partial settlement — recorded in the immutable audit trail.</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span className="text-blue-400 font-bold mt-0.5">4.</span>
-                    <span><strong className="text-white">Human Escalation:</strong> Either party may request a manual TrustBroker administrator review if unsatisfied with the AI recommendation.</span>
-                  </div>
-                </div>
+                )}
               </div>
+            )}
 
-              {/* Timeline & Current State */}
-              <div className="p-3 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-2 text-xs">
-                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] block">Dispute Timeline</span>
-                <div className="flex items-center gap-3 text-[11px]">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <div className="w-px h-5 bg-slate-700" />
-                    <div className="w-2 h-2 rounded-full bg-amber-400" />
-                    <div className="w-px h-5 bg-slate-700" />
-                    <div className="w-2 h-2 rounded-full bg-blue-400" />
-                  </div>
-                  <div className="space-y-3 text-slate-300">
-                    <p><span className="text-emerald-400 font-semibold">AI Verified</span> — Milestone passed initial verification ({assessment?.overallScore ?? 'N/A'}/100)</p>
-                    <p><span className="text-amber-400 font-semibold">Revision Requested</span> — Client flagged issues for freelancer to address</p>
-                    <p><span className="text-blue-400 font-semibold">Mediation Requested</span> — Awaiting AI dispute evidence re-audit</p>
-                  </div>
-                </div>
-              </div>
+            {/* Criteria Results */}
+            <div className="space-y-2.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                Criterion-by-Criterion Results ({assessment.criteriaResults?.length || 0}):
+              </span>
+              {(assessment.criteriaResults || []).map((c: any) => {
+                const isPass = c.status === 'pass'
+                const isFail = c.status === 'fail'
 
-              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/40 text-[10px] text-slate-400 italic">
-                <strong className="text-slate-300">Hackathon Demo Note:</strong> In production, this triggers a background AI re-audit task. For demonstration, run a fresh AI verification check using the left panel submission form to simulate a mediation re-score.
-              </div>
+                return (
+                  <div
+                    key={c.id}
+                    className="p-3 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-1.5 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-white">{c.title}</span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-mono uppercase ${isPass
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : isFail
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          }`}
+                      >
+                        {c.status ? c.status.toUpperCase() : 'PENDING'}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      {c.description}
+                    </p>
+                    {c.feedback && (
+                      <div className="text-[10px] text-blue-300 font-mono bg-blue-950/40 p-1.5 rounded">
+                        {c.feedback}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDisputeDialogOpen(false)}
-                className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
-              >
-                Close
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setDisputeDialogOpen(false)
-                  toast.info('AI Dispute Mediation initiated. Both parties will be notified of the outcome within 24 hours.')
-                  addNotification({
-                    title: 'Dispute Mediation Initiated',
-                    description: `AI dispute mediation requested for milestone "${selectedMilestone.title}". Evidence re-audit in progress.`,
-                    type: 'verification',
-                    link: activeRole === 'client' ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id),
-                  })
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5"
-              >
-                <Scale className="w-3.5 h-3.5" />
-                Initiate AI Mediation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            {/* Summary Analysis */}
+            <div className="p-3 rounded-lg bg-[#0E1528] border border-[#222A3D] space-y-1 text-xs">
+              <span className="text-[11px] text-slate-400 font-semibold block">Summary Analysis:</span>
+              <p className="text-slate-300 text-[11px] leading-relaxed">
+                {assessment.summaryAnalysis}
+              </p>
+            </div>
+
+            {/* Status & Verification Guidance for Client in Column 2 */}
+            {activeRole === 'client' && !isSettled && (
+              <div className="pt-2">
+                {isRevisionRequested ? (
+                  <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+                        <RotateCcw className="w-4 h-4 text-amber-400" />
+                        <span>Revision Requested — Auto-Release Frozen</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        Clock Paused
+                      </span>
+                    </div>
+
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      You have requested adjustments on this milestone deliverable. The 7-day auto-disbursal clock is strictly suspended. The freelancer ({contract.freelancer?.name || 'Freelancer'}) has been notified to address your feedback.
+                    </p>
+
+                    {selectedMilestone.revisionNotes && (
+                      <div className="p-2.5 rounded-lg bg-[#0B1326] border border-amber-500/30 space-y-1">
+                        <span className="text-[10px] text-amber-400 font-semibold block uppercase tracking-wider">Your Revision Notes:</span>
+                        <p className="text-slate-200 text-xs font-mono">{selectedMilestone.revisionNotes}</p>
+                      </div>
+                    )}
+
+                    {/* Buyer Protection Inactivity Guarantee */}
+                    <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Buyer Protection: 7-Day Inactivity Guarantee</span>
+                      </div>
+                      <p className="text-slate-400 text-[10px] leading-relaxed">
+                        Staged funds of {formatCurrency(selectedMilestone.amount, contract.currency)} are completely safeguarded in the PayPal Sandbox. Manage settlement or reclamation in the <strong>Client Manual Review</strong> panel on the right.
+                      </p>
+                    </div>
+                  </div>
+                ) : isVerified ? (
+                  <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>AI Multimodal Inspection Passed</span>
+                      </div>
+                      <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-mono">
+                        Score: {assessment.overallScore}/100
+                      </Badge>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      All agreed milestone criteria have passed automated inspection. Proceed to the <strong>Client Manual Review</strong> panel on the right to review the live deliverable outside the system and authorize payment disbursement.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-2.5">
+                    <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      <span>Criteria Review or Flagged Items</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Some criteria require subjective or visual confirmation. You can manually inspect the deliverables and override approval or request changes in the <strong>Client Manual Review</strong> panel on the right.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Notice & Status for Freelancer after verification */}
+            {activeRole === 'freelancer' && !isSettled && (
+              <div className="pt-2">
+                {isRevisionRequested ? (
+                  <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-300 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+                        <RotateCcw className="w-4 h-4 text-amber-400" />
+                        <span>Revision Requested by Client — Auto-Release Clock Frozen</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        Clock Paused
+                      </span>
+                    </div>
+
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      The client ({contract.client?.name || 'Client'}) has reviewed your deliverable and requested adjustments. While in revision status, the 7-day auto-disbursal clock is strictly suspended. Staged funds ({formatCurrency(selectedMilestone.amount, contract.currency)}) remain securely held in PayPal sandbox.
+                    </p>
+
+                    {selectedMilestone.revisionNotes && (
+                      <div className="p-2.5 rounded-lg bg-[#0B1326] border border-amber-500/30 space-y-1">
+                        <span className="text-[10px] text-amber-400 font-semibold block uppercase tracking-wider">Client Revision Feedback:</span>
+                        <p className="text-slate-200 text-xs font-mono">{selectedMilestone.revisionNotes}</p>
+                      </div>
+                    )}
+
+                    {/* 7-Day Freelancer Response Deadline */}
+                    <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 font-semibold text-amber-400">
+                        <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                        <span>7-Day Freelancer Response Deadline (Buyer Protection Active)</span>
+                      </div>
+                      <p className="text-slate-400 text-[10px] leading-relaxed">
+                        You have 7 days to address the client's revision notes and submit updated deliverables using the form on the left. If no revision or response is provided within 7 days, the client is protected and may reclaim their staged funds.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex flex-col gap-2">
+                      <Button
+                        onClick={() => {
+                          window.scrollTo({ top: 300, behavior: 'smooth' })
+                          const notesEl = document.getElementById('delivery-notes')
+                          if (notesEl) notesEl.focus()
+                        }}
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 h-9 font-semibold shadow-md cursor-pointer"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        Submit Revised Deliverables
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setDisputeDialogOpen(true)}
+                        className="w-full border-[#2D3449] text-blue-400 hover:text-white hover:bg-blue-950/40 text-xs gap-1.5 h-8.5 font-medium cursor-pointer"
+                      >
+                        <Scale className="w-3.5 h-3.5" />
+                        Request AI Dispute Mediation
+                      </Button>
+                    </div>
+                  </div>
+                ) : isVerified ? (
+                  <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-300 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-semibold text-emerald-400 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>AI Verification Passed — Awaiting Client Release</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Payment Staged
+                      </span>
+                    </div>
+
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely staged in PayPal Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
+                    </p>
+
+                    {/* TrustBroker Seller Protection Policy */}
+                    <div className="p-2.5 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 font-semibold text-blue-400">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                        <span>TrustBroker Buyer &amp; Seller Protection Active</span>
+                      </div>
+                      <p className="text-slate-400 text-[10px] leading-relaxed">
+                        Clients have a standard 7-day review window following AI verification to inspect deliverables and release staged funds. If the client requests revisions, the timer freezes. If the client takes no action within 7 days, platform protection policies allow automated milestone settlement or dispute mediation.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex flex-col gap-2">
+                      <Button
+                        onClick={handleNudgeClient}
+                        disabled={isNudged}
+                        className={`w-full text-xs gap-1.5 h-9 font-semibold transition-all cursor-pointer ${isNudged
+                          ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 cursor-default'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                          }`}
+                      >
+                        {isNudged ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            Disbursal Reminder Sent to Client
+                          </>
+                        ) : (
+                          <>
+                            <BellRing className="w-3.5 h-3.5" />
+                            Send Disbursal Reminder to Client
+                          </>
+                        )}
+                      </Button>
+
+                      <Link
+                        to={ROUTES.FREELANCER_PAYOUTS}
+                        className="w-full inline-flex items-center justify-center px-3.5 py-2 rounded-lg bg-[#171F33] hover:bg-[#222A3D] text-xs font-medium text-slate-300 border border-[#222A3D] transition-colors"
+                      >
+                        View Earnings Ledger →
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-xs text-amber-300 space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-semibold text-amber-400">
+                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      <span>Verification Score Below Threshold ({assessment.overallScore}/100)</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Some criteria require adjustments. Review the itemized criterion feedback above, make the necessary corrections and re-run verification.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isSettled && (
+              <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-center text-xs text-emerald-300 flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Milestone payment of ${selectedMilestone.amount} has been disbursed via PayPal.</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-12 space-y-3">
+            <ShieldCheck className="w-10 h-10 text-slate-500 mx-auto" />
+            <div className="text-xs text-slate-400 max-w-xs mx-auto">
+              No verification report generated yet for this milestone. Submit artifacts on the left to run evaluation.
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+          </div >
+
+  {/* Column 3: Client Manual Review (Visible to Clients) */ }
+{
+  activeRole === 'client' && (
+    <div className="lg:col-span-4 space-y-4">
+      <Card className="border-[#222A3D] bg-[#131B2E] text-white">
+        <CardHeader className="pb-3 border-b border-[#222A3D]">
+          <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
+            <UserCheck className="w-4 h-4 text-teal-400" />
+            Client Manual Review
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-400">
+            Review submitted evidence and approve or request changes directly — outside AI verification.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 space-y-4">
+          {effectiveEvidence ? (
+            <div className="space-y-3">
+              {/* Submitted Evidence Display */}
+              <div className="p-3 rounded-xl bg-[#0B1326] border border-[#222A3D] space-y-2.5">
+                <div className="flex items-center justify-between pb-1 border-b border-[#222A3D]">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Freelancer Submission
+                  </span>
+                  <Badge className="bg-blue-500/15 text-blue-300 border-blue-500/30 text-[9px] font-mono">
+                    v{effectiveEvidence.version || 1}
+                  </Badge>
+                </div>
+
+                {effectiveEvidence.repoUrl && (
+                  <div className="flex items-start gap-2 text-xs">
+                    <GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-slate-400 block text-[10px]">Repository</span>
+                      <a
+                        href={effectiveEvidence.repoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 hover:underline truncate block font-mono text-[10px]"
+                      >
+                        {effectiveEvidence.repoUrl.replace('https://', '')}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {effectiveEvidence.liveUrl && (
+                  <div className="flex items-start gap-2 text-xs">
+                    <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-slate-400 block text-[10px]">Live Preview</span>
+                      <a
+                        href={effectiveEvidence.liveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 hover:text-emerald-300 hover:underline truncate block font-mono text-[10px]"
+                      >
+                        {effectiveEvidence.liveUrl.replace('https://', '')}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {effectiveEvidence.description && (
+                  <div className="flex items-start gap-2 text-xs">
+                    <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-slate-400 block text-[10px]">Delivery Notes</span>
+                      <p className="text-slate-300 text-[11px] leading-relaxed mt-0.5 line-clamp-4">
+                        {effectiveEvidence.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {(effectiveEvidence.fileAttachments?.length ?? 0) > 0 && (
+                  <div className="flex items-start gap-2 text-xs">
+                    <FileCheck className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0 w-full">
+                      <span className="text-slate-400 block text-[10px]">
+                        Attached Files ({effectiveEvidence.fileAttachments!.length})
+                      </span>
+                      <div className="mt-1 space-y-1">
+                        {effectiveEvidence.fileAttachments!.map((f: any, i: number) => (
+                          <div key={i} className="flex items-center gap-1.5 p-1.5 rounded bg-[#131B2E] border border-[#222A3D]">
+                            <span className="text-[9px] font-mono text-slate-400 truncate">{f.name}</span>
+                            {f.sizeBytes > 0 && (
+                              <span className="text-[9px] text-slate-600 ml-auto shrink-0">
+                                {Math.round(f.sizeBytes / 1024)}KB
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {effectiveEvidence.submittedAt && (
+                  <div className="text-[10px] text-slate-500 font-mono border-t border-[#222A3D] pt-2 mt-1">
+                    Submitted: {new Date(effectiveEvidence.submittedAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons for Client Manual Review */}
+              {isRevisionRequested ? (
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/40 text-xs text-amber-300 flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Revision requested — auto-release paused.</span>
+                  </div>
+                  <Button
+                    onClick={() => setOverrideDialogOpen(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5 h-10 font-bold shadow-md cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Override &amp; Approve (${selectedMilestone.amount})
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setReclaimDialogOpen(true)}
+                      className="w-full border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
+                    >
+                      <Undo2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Reclaim Staged Funds</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDisputeDialogOpen(true)}
+                      className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
+                    >
+                      <Scale className="w-3.5 h-3.5 shrink-0" />
+                      <span>AI Dispute</span>
+                    </Button>
+                  </div>
+                </div>
+              ) : !isSettled && selectedMilestone.status !== 'verified' ? (
+                <div className="space-y-2.5">
+                  <Button
+                    onClick={() => setManualApproveOpen(true)}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5 h-10 font-bold shadow-md cursor-pointer"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    Approve Deliverables Manually
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setRevisionDialogOpen(true)}
+                      className="w-full border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Request Revision</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDisputeDialogOpen(true)}
+                      className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer"
+                    >
+                      <Scale className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <span>AI Dispute</span>
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              {(isSettled || selectedMilestone.status === 'verified') && !isRevisionRequested && (
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
+                    <span>
+                      {isSettled ? 'Payment disbursed via PayPal.' : 'Milestone verified — ready to disburse.'}
+                    </span>
+                  </div>
+                  {!isSettled && (
+                    <div className="space-y-2.5">
+                      <Button
+                        onClick={handleAuthorizeRelease}
+                        disabled={isReleasing}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-2 h-10 font-bold shadow-lg shadow-emerald-950/40 cursor-pointer transition-all"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        {isReleasing ? 'Executing PayPal Disbursement...' : `Authorize PayPal Payout (${formatCurrency(selectedMilestone.amount, contract.currency)})`}
+                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setRevisionDialogOpen(true)}
+                          className="w-full border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer transition-all"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>Request Revision</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setDisputeDialogOpen(true)}
+                          className="w-full border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 hover:text-white text-xs gap-1.5 h-9 font-medium cursor-pointer transition-all"
+                        >
+                          <Scale className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                          <span>AI Dispute</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 space-y-2">
+              <Eye className="w-8 h-8 text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-500 leading-relaxed max-w-[200px] mx-auto">
+                No submission yet. This panel will display the freelancer's evidence once submitted for manual review.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+        </div >
+
+  {/* Revision Request Dialog */ }
+  < Dialog open = { revisionDialogOpen } onOpenChange = { setRevisionDialogOpen } >
+    <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-white">Request Milestone Revision</DialogTitle>
+        <DialogDescription className="text-slate-400 text-xs">
+          Provide actionable notes for the freelancer to address before re-submitting for verification.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 py-2">
+        <Label htmlFor="rev-text" className="text-xs text-slate-300">
+          Actionable Feedback
+        </Label>
+        <Textarea
+          id="rev-text"
+          name="rev-text"
+          rows={3}
+          value={revisionNotes}
+          onChange={(e) => setRevisionNotes(e.target.value)}
+          placeholder="Specify required code fixes, missing criteria or layout fixes..."
+          className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+        />
       </div>
-    </DashboardLayout>
+
+      <DialogFooter className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setRevisionDialogOpen(false)}
+          className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!revisionNotes.trim()}
+          onClick={handleConfirmRevision}
+          className="bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Send Revision Request
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+        </Dialog >
+
+  {/* Client Human Review Override Dialog */ }
+  < Dialog open = { overrideDialogOpen } onOpenChange = { setOverrideDialogOpen } >
+    <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-white">Human Review Approval Override</DialogTitle>
+        <DialogDescription className="text-slate-400 text-xs">
+          As the client, you may manually approve this milestone deliverable even if AI flags subjective criteria. An immutable audit record will log your rationale.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 py-2">
+        <Label htmlFor="override-text" className="text-xs text-slate-300">
+          Approval Rationale (Required)
+        </Label>
+        <Textarea
+          id="override-text"
+          name="override-text"
+          rows={3}
+          value={overrideReason}
+          onChange={(e) => setOverrideReason(e.target.value)}
+          placeholder="Explain why the deliverables satisfy your requirements..."
+          className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+        />
+      </div>
+
+      <DialogFooter className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setOverrideDialogOpen(false)}
+          className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!overrideReason.trim()}
+          onClick={handleConfirmOverride}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
+        >
+          <Check className="w-3.5 h-3.5" />
+          Confirm Override & Approve
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+        </Dialog >
+
+  {/* Manual Approval Dialog */ }
+  < Dialog open = { manualApproveOpen } onOpenChange = { setManualApproveOpen } >
+    <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-white flex items-center gap-2">
+          <UserCheck className="w-4 h-4 text-teal-400" />
+          Manual Milestone Approval
+        </DialogTitle>
+        <DialogDescription className="text-slate-400 text-xs">
+          You are approving this milestone outside AI verification. Provide your review rationale — this is recorded in the immutable audit trail.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2 py-2">
+        <Label htmlFor="manual-rationale" className="text-xs text-slate-300">
+          Approval Rationale (Required)
+        </Label>
+        <Textarea
+          id="manual-rationale"
+          name="manual-rationale"
+          rows={4}
+          value={manualRationale}
+          onChange={(e) => setManualRationale(e.target.value)}
+          placeholder="Describe how you verified the deliverables satisfy the milestone requirements (e.g., 'Reviewed repository, verified live URL, all criteria met satisfactorily...')"
+          className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+        />
+      </div>
+
+      <DialogFooter className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => { setManualApproveOpen(false); setManualRationale('') }}
+          className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!manualRationale.trim() || isManualApproving}
+          onClick={handleManualApprove}
+          className="bg-teal-600 hover:bg-teal-700 text-white text-xs gap-1.5"
+        >
+          {isManualApproving ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" />Approving…</>
+          ) : (
+            <><UserCheck className="w-3.5 h-3.5" />Confirm Manual Approval</>
+          )}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+        </Dialog >
+
+  {/* Staged Funds Reclaim Dialog (Buyer Protection) */ }
+  < Dialog open = { reclaimDialogOpen } onOpenChange = { setReclaimDialogOpen } >
+    <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-white flex items-center gap-2">
+          <Undo2 className="w-4 h-4 text-rose-400" />
+          Reclaim Staged Funds — Buyer Protection
+        </DialogTitle>
+        <DialogDescription className="text-slate-400 text-xs">
+          You are reclaiming your staged milestone funds due to freelancer inactivity or failure to address revision feedback. This action is permanently logged in the contract audit trail.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-3 py-2">
+        <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-500/30 text-xs text-rose-300 space-y-1">
+          <p className="font-semibold">Amount to reclaim: <span className="text-rose-200">{formatCurrency(selectedMilestone.amount, contract.currency)}</span></p>
+          <p>Milestone: <span className="text-slate-200">{selectedMilestone.title}</span></p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="reclaim-reason" className="text-xs text-slate-300">
+            Reason for Reclaiming (Required)
+          </Label>
+          <Textarea
+            id="reclaim-reason"
+            name="reclaim-reason"
+            rows={3}
+            value={reclaimReason}
+            onChange={(e) => setReclaimReason(e.target.value)}
+            placeholder="e.g., Freelancer did not submit revisions within 7 days..."
+            className="bg-[#0B1326] border-[#2D3449] text-white text-xs"
+          />
+        </div>
+        <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 text-[11px] text-amber-300">
+          <strong>Note:</strong> The freelancer will be notified and the milestone will reset to pending status. They may resubmit deliverables if the contract remains active.
+        </div>
+      </div>
+
+      <DialogFooter className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setReclaimDialogOpen(false)}
+          className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!reclaimReason.trim() || isReclaiming}
+          onClick={handleConfirmReclaim}
+          className="bg-rose-600 hover:bg-rose-700 text-white text-xs gap-1.5"
+        >
+          {isReclaiming ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" />Reclaiming…</>
+          ) : (
+            <><Undo2 className="w-3.5 h-3.5" />Confirm Reclaim</>
+          )}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+        </Dialog >
+
+  {/* AI Dispute Mediation Dialog */ }
+  < Dialog open = { disputeDialogOpen } onOpenChange = { setDisputeDialogOpen } >
+    <DialogContent className="bg-[#131B2E] border-[#222A3D] text-white max-h-[88vh] overflow-y-auto max-w-lg">
+      <DialogHeader>
+        <DialogTitle className="text-white flex items-center gap-2">
+          <Scale className="w-4 h-4 text-blue-400" />
+          AI Dispute Mediation
+        </DialogTitle>
+        <DialogDescription className="text-slate-400 text-xs">
+          TrustBroker provides impartial AI-assisted dispute resolution based on contract SOW, acceptance criteria and submitted evidence.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4 py-2">
+        {/* Mediation Protocol */}
+        <div className="p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/30 space-y-3 text-xs">
+          <div className="flex items-center gap-2 font-semibold text-blue-300">
+            <Scale className="w-4 h-4 text-blue-400" />
+            <span>TrustBroker Dispute Mediation Protocol</span>
+          </div>
+          <p className="text-slate-300 text-[11px] leading-relaxed">
+            When a revision request is disputed, TrustBroker AI conducts an independent evidence audit: re-evaluating the original SOW acceptance criteria, submitted deliverables, the client's revision notes and the freelancer's response — rendering an impartial recommendation.
+          </p>
+          <div className="space-y-1.5">
+            <div className="flex items-start gap-2 text-[11px] text-slate-300">
+              <span className="text-blue-400 font-bold mt-0.5">1.</span>
+              <span><strong className="text-white">Evidence Re-audit:</strong> AI re-scores all original deliverables against the milestone acceptance criteria independently of prior verification runs.</span>
+            </div>
+            <div className="flex items-start gap-2 text-[11px] text-slate-300">
+              <span className="text-blue-400 font-bold mt-0.5">2.</span>
+              <span><strong className="text-white">Revision Notes Assessment:</strong> AI evaluates whether the client's revision request is specific, within-scope of the original SOW and reasonable.</span>
+            </div>
+            <div className="flex items-start gap-2 text-[11px] text-slate-300">
+              <span className="text-blue-400 font-bold mt-0.5">3.</span>
+              <span><strong className="text-white">Binding Recommendation:</strong> AI issues a recommendation — Release funds (freelancer wins), Revise further (client wins) or Partial settlement — recorded in the immutable audit trail.</span>
+            </div>
+            <div className="flex items-start gap-2 text-[11px] text-slate-300">
+              <span className="text-blue-400 font-bold mt-0.5">4.</span>
+              <span><strong className="text-white">Human Escalation:</strong> Either party may request a manual TrustBroker administrator review if unsatisfied with the AI recommendation.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline & Current State */}
+        <div className="p-3 rounded-lg bg-[#0B1326] border border-[#222A3D] space-y-2 text-xs">
+          <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] block">Dispute Timeline</span>
+          <div className="flex items-center gap-3 text-[11px]">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <div className="w-px h-5 bg-slate-700" />
+              <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <div className="w-px h-5 bg-slate-700" />
+              <div className="w-2 h-2 rounded-full bg-blue-400" />
+            </div>
+            <div className="space-y-3 text-slate-300">
+              <p><span className="text-emerald-400 font-semibold">AI Verified</span> — Milestone passed initial verification ({assessment?.overallScore ?? 'N/A'}/100)</p>
+              <p><span className="text-amber-400 font-semibold">Revision Requested</span> — Client flagged issues for freelancer to address</p>
+              <p><span className="text-blue-400 font-semibold">Mediation Requested</span> — Awaiting AI dispute evidence re-audit</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/40 text-[10px] text-slate-400 italic">
+          <strong className="text-slate-300">Hackathon Demo Note:</strong> In production, this triggers a background AI re-audit task. For demonstration, run a fresh AI verification check using the left panel submission form to simulate a mediation re-score.
+        </div>
+      </div>
+
+      <DialogFooter className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDisputeDialogOpen(false)}
+          className="border-[#2D3449] text-slate-400 hover:text-white hover:bg-[#171F33] text-xs"
+        >
+          Close
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => {
+            setDisputeDialogOpen(false)
+            toast.info('AI Dispute Mediation initiated. Both parties will be notified of the outcome within 24 hours.')
+            addNotification({
+              title: 'Dispute Mediation Initiated',
+              description: `AI dispute mediation requested for milestone "${selectedMilestone.title}". Evidence re-audit in progress.`,
+              type: 'verification',
+              link: activeRole === 'client' ? ROUTES.CLIENT_REVIEW(contract.id) : ROUTES.DELIVERY_VERIFICATION(contract.id),
+            })
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs gap-1.5"
+        >
+          <Scale className="w-3.5 h-3.5" />
+          Initiate AI Mediation
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+        </Dialog >
+      </div >
+    </DashboardLayout >
   )
 }
 

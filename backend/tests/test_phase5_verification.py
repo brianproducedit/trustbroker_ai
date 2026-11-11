@@ -257,7 +257,8 @@ class TestPhase5Adapters(unittest.TestCase):
         # Even when keywords match, heuristic fallback without AI must not pass automatically.
         # Mock AI unavailable so the heuristic path runs (not a live AI pass).
         with patch("app.services.ai_provider.call_groq", return_value=(None, None)), \
-             patch("app.services.ai_provider.call_openrouter", return_value=(None, None)):
+             patch("app.services.ai_provider.call_openrouter", return_value=(None, None)), \
+             patch("app.services.ai_provider.call_deepseek", return_value=(None, None)):
             res = document.inspect_document(
                 file_name="spec.txt",
                 criterion_title="Architecture Specification",

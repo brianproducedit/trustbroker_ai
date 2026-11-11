@@ -67,7 +67,7 @@ def _validate_delivery_evaluation(
 #
 # OPENROUTER (Secondary — free tier fallback when Groq is rate-limited):
 #   1. google/gemma-4-27b-it:free        → Excellent instruction-following & JSON schema adherence
-#   2. nvidia/nemotron-3-super-120b-a12b:free → Agentic workflows, strict output formatting
+#   2. google/gemini-2.0-flash-exp:free  → Fast, capable Google model on free tier
 #   3. meta-llama/llama-3.3-70b-instruct:free → Proven general-purpose reasoning
 #   4. openrouter/auto                   → Meta-router, auto-selects available free model
 # ==============================================================================
@@ -80,14 +80,13 @@ GROQ_MODELS = [
 
 OPENROUTER_MODELS = [
     "google/gemma-4-27b-it:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
+    "google/gemini-2.0-flash-exp:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "openrouter/auto",
 ]
 
 DEEPSEEK_MODELS = [
     "deepseek-chat",
-    "deepseek-flash",
     "deepseek-reasoner",
 ]
 
@@ -367,7 +366,7 @@ def call_ai_with_fallbacks(system_prompt: str, user_prompt: str) -> Tuple[Option
     Priority:
       1. Groq (openai/gpt-oss-120b → qwen/qwen3.8-27b → openai/gpt-oss-20b)
       2. OpenRouter (gemma-4-27b → nemotron-3-super → llama-3.3-70b → auto)
-      3. DeepSeek Official API (deepseek-chat → deepseek-flash → deepseek-reasoner)
+      3. DeepSeek Official API (deepseek-chat → deepseek-reasoner)
       4. Returns None — caller handles deterministic fallback
     """
     # 1. Groq — fastest, free tier
@@ -385,6 +384,8 @@ def call_ai_with_fallbacks(system_prompt: str, user_prompt: str) -> Tuple[Option
     logger.info("⚠️ OpenRouter models exhausted, falling back to Official DeepSeek API...")
 
     # 3. DeepSeek Official API — paid robust fallback
+    if settings.deepseek_api_key and settings.deepseek_api_key.strip():
+        logger.info("🔑 DeepSeek (paid fallback) engaged for critical AI request")
     deepseek_res, deepseek_model = call_deepseek(system_prompt, user_prompt)
     if deepseek_res:
         return deepseek_res, f"deepseek:{deepseek_model}"

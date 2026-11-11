@@ -153,6 +153,8 @@ def inspect_document(
     result_json, model_used = ai_provider.call_groq(system_prompt, user_prompt)
     if not result_json:
         result_json, model_used = ai_provider.call_openrouter(system_prompt, user_prompt)
+    if not result_json:
+        result_json, model_used = ai_provider.call_deepseek(system_prompt, user_prompt)
 
     if result_json:
         passed = bool(result_json.get("passed", False))

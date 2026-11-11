@@ -25,6 +25,7 @@ from app.services.payment_service import (
     create_milestone_funding_order,
     capture_milestone_funding_payment,
     release_milestone_payout,
+    _apply_payout_status,
 )
 from app.services.policy_engine import PolicyEngine
 from app.utils.paypal_client import verify_webhook_signature
@@ -634,6 +635,61 @@ async def test_existing_payout_is_idempotent_after_revision_request(
     assert res["paypal_batch_id"] == "BATCH-RETRY-001"
 
 
+def test_unclaimed_sandbox_payout_settles_milestone(
+    session: Session, client_user: UserProfile
+):
+    """Sandbox UNCLAIMED payouts represent a completed disbursement for lifecycle purposes."""
+    freelancer = UserProfile(
+        id=uuid.uuid4(),
+        email="freelancer.unclaimed@example.com",
+        full_name="Unclaimed Freelancer",
+        role="freelancer",
+        paypal_payout_email="freelancer.unclaimed@sandbox.paypal.com",
+    )
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-UNCLAIMED-001",
+        title="Sandbox Payout Contract",
+        client_id=client_user.id,
+        freelancer_id=freelancer.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("300.00"),
+        staged_amount=Decimal("300.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("300.00"),
+        status=MilestoneStatus.VERIFIED,
+        payment_status=PaymentStatus.RELEASE_AUTHORIZED,
+    )
+    payout = Payout(
+        contract_id=contract.id,
+        milestone_id=milestone.id,
+        freelancer_id=freelancer.id,
+        amount=milestone.amount,
+        currency="USD",
+        paypal_payout_email=freelancer.paypal_payout_email,
+        status=PayoutStatus.PROCESSING.value,
+        idempotency_key=f"payout:{milestone.id}",
+    )
+    session.add_all([freelancer, contract, milestone, payout])
+    session.commit()
+
+    _apply_payout_status(session, payout, "UNCLAIMED")
+    session.commit()
+    session.refresh(milestone)
+    session.refresh(contract)
+
+    assert payout.status == PayoutStatus.UNCLAIMED.value
+    assert milestone.status == MilestoneStatus.SETTLED
+    assert milestone.payment_status == PaymentStatus.RELEASED
+    assert contract.released_amount == Decimal("300.00")
+    assert contract.staged_amount == Decimal("0.00")
+
+
 def test_apply_payout_status_unknown_status_maps_to_reconciliation_required(session: Session):
     """Unknown provider status strings must map to reconciliation_required, never fabricated success."""
     from app.services.payment_service import _apply_payout_status
@@ -821,4 +877,3 @@ async def test_unresolved_webhook_retry_reuses_original_payload(
     ).one()
     assert attempt.paypal_capture_id == "CAP-RETRY"
     assert attempt.paypal_status == "COMPLETED"
-

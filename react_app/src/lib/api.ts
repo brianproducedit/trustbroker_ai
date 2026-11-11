@@ -331,6 +331,32 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ reason }),
       }),
+    downloadFile: async (fileId: string): Promise<string> => {
+      const token = useAuthStore.getState().getAccessToken()
+      const res = await fetch(`${API_BASE}/deliveries/files/${fileId}/download`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+      if (!res.ok) {
+        let errMsg = 'Failed to download file'
+        try {
+          const err = await res.json()
+          errMsg = err.detail || errMsg
+        } catch (_) {}
+        throw new ApiError(res.status, errMsg)
+      }
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await res.json()
+        if (data.download_url) {
+          return data.download_url as string
+        }
+      }
+      // Binary / FileResponse: return object URL from blob
+      const blob = await res.blob()
+      return URL.createObjectURL(blob)
+    },
   },
 
   // Payments & Staged Funds

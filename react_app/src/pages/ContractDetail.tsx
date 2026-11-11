@@ -402,20 +402,27 @@ export const ContractDetail: React.FC = () => {
         milestone_id: selectedMilestone.id,
       })
       if (id) {
-        fetchContractById(id)
+        await api.payments.payouts(id).then(setPayouts).catch(() => { })
+        await fetchContractById(id)
         api.payments.getHistory(id).then(setPaymentAttempts).catch(() => { })
-        api.payments.payouts(id).then(setPayouts).catch(() => { })
       }
       setReleaseDialogOpen(false)
-      toast.success(
-        `PayPal payout ${result?.paypal_batch_id || result?.status || 'sent'}: ${formatCurrency(selectedMilestone.amount)} USD`
-      )
-      addNotification({
-        title: 'PayPal payout sent',
-        description: `${formatCurrency(selectedMilestone.amount)} USD · batch ${result?.paypal_batch_id || 'processed'}.`,
-        type: 'payment',
-        link: ROUTES.CONTRACT_DETAIL(contract.id),
-      })
+      const payoutStatus = String(result?.status || '').toLowerCase()
+      if (payoutStatus === 'success') {
+        toast.success(
+          `PayPal confirmed payout ${result?.paypal_batch_id || 'success'}: ${formatCurrency(selectedMilestone.amount)} USD`
+        )
+        addNotification({
+          title: 'PayPal payout confirmed',
+          description: `${formatCurrency(selectedMilestone.amount)} USD was confirmed as transferred.`,
+          type: 'payment',
+          link: ROUTES.CONTRACT_DETAIL(contract.id),
+        })
+      } else {
+        toast.info(
+          `PayPal accepted the payout request (${result?.paypal_batch_id || payoutStatus || 'processing'}). Funds are still processing.`
+        )
+      }
     } catch (err: any) {
       toast.error(err?.detail || 'PayPal payout failed. No duplicate send was assumed.')
     } finally {

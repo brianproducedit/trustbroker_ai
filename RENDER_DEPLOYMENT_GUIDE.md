@@ -120,6 +120,42 @@ The repository root includes a complete [`render.yaml`](./render.yaml) Blueprint
 | `VITE_SUPABASE_URL` | `https://fgdvlrfbpzkaetwwjhxq.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Supabase $\rightarrow$ Project Settings $\rightarrow$ API $\rightarrow$ `anon` public key |
 | `VITE_PAYPAL_CLIENT_ID` | PayPal Sandbox Client ID |
+| `VITE_AG_STUDIO_LICENSE_KEY` | AG Grid account $\rightarrow$ AG Studio trial/license key |
+
+### AG Studio trial key configuration
+
+AG Studio is part of the **frontend static site**, so its license key must be
+configured on the Render service named `trustbroker-ai-frontend`. Vite embeds
+`VITE_*` variables during the frontend build; adding the key only to
+`trustbroker-ai-api` will not remove the AG Studio watermark.
+
+1. Open Render Dashboard and select **`trustbroker-ai-frontend`**.
+2. Open **Environment** and add or edit:
+   - **Key:** `VITE_AG_STUDIO_LICENSE_KEY`
+   - **Value:** paste the AG Studio trial/license key exactly as provided by AG Grid.
+3. Save the environment change and choose **Save and deploy** (or manually trigger
+   a new deploy). A restart without rebuilding the static site is not sufficient.
+4. Open the deployed app in a private window, sign in, and open both **Client
+   Studio** and **Freelancer Studio**. Confirm the AG Studio watermark is gone.
+
+The key is optional at build time. While it is valid, it is passed to AG Studio
+for the full licensed experience. If the trial expires, becomes invalid, or is
+temporarily unavailable, the application still builds and the standalone
+contract/payment ledgers remain available through AG Grid Community. AG Studio
+itself may display the watermark imposed by the AG Studio SDK after expiry;
+there is no supported client-side way to turn an expired AG Studio license into
+a licensed Studio experience.
+
+The key is intentionally exposed in the browser bundle because AG Studio runs in
+the browser. It is not a backend secret. Do not put it in the API service as a
+replacement for the frontend variable, and do not commit it to `.env`,
+`.env.local`, or source control. Render's environment value remains the
+canonical production configuration.
+
+`VITE_AG_STUDIO_LICENSE_KEY` licenses AG Studio and its built-in widgets only.
+The optional `VITE_AG_GRID_LICENSE_KEY` is a separate AG Grid Enterprise license
+for standalone enterprise grids. TrustBroker uses AG Grid Community for those
+ledgers when that second key is absent or unusable.
 
 ---
 

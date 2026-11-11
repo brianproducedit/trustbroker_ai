@@ -132,7 +132,7 @@ def _apply_payout_status(session: Session, payout: Payout, status_value: str) ->
     payout.status = aliases.get(mapped, PayoutStatus.RECONCILIATION_REQUIRED.value)
     payout.updated_at = datetime.now(timezone.utc)
     session.add(payout)
-    if payout.status == PayoutStatus.SUCCESS.value:
+    if payout.status in (PayoutStatus.SUCCESS.value, PayoutStatus.UNCLAIMED.value):
         milestone = session.get(Milestone, payout.milestone_id)
         contract = session.get(Contract, payout.contract_id)
         if milestone and milestone.payment_status != PaymentStatus.RELEASED:
@@ -459,12 +459,16 @@ async def release_milestone_payout(
         PayoutStatus.UNCLAIMED.value,
         PayoutStatus.RECONCILIATION_REQUIRED.value,
     ):
+        # For UNCLAIMED, ensure milestone is settled even on duplicate requests
+        if existing.status == PayoutStatus.UNCLAIMED.value:
+            _apply_payout_status(session, existing, existing.status)
+            session.commit()
         return {
             "status": existing.status,
             "milestone_id": str(milestone.id),
             "requested_amount": str(milestone.amount),
             "payout_amount": str(milestone.amount),
-            "released_amount": str(milestone.amount) if existing.status == PayoutStatus.SUCCESS.value else "0.00",
+            "released_amount": str(milestone.amount) if existing.status in (PayoutStatus.SUCCESS.value, PayoutStatus.UNCLAIMED.value) else "0.00",
             "paypal_batch_id": existing.paypal_batch_id,
             "paypal_item_id": existing.paypal_item_id,
             "payout": PayoutRead.model_validate(existing).model_dump(mode="json"),
@@ -611,6 +615,27 @@ async def release_milestone_payout(
     session.commit()
     session.refresh(payout)
 
+    # In PayPal sandbox, payout batches process to UNCLAIMED or SUCCESS within 1-2 seconds.
+    # Probe once so the response immediately confirms the settled milestone state.
+    if payout.paypal_batch_id and payout.status == PayoutStatus.PROCESSING.value:
+        try:
+            import asyncio
+            await asyncio.sleep(1.0)
+            batch = await paypal_client.get_payout_batch(payout.paypal_batch_id)
+            b_header = batch.get("batch_header") or {}
+            b_items = batch.get("items") or []
+            b_item = next(
+                (entry for entry in b_items if entry.get("payout_item_id") == payout.paypal_item_id),
+                b_items[0] if b_items else {},
+            )
+            updated_status = b_item.get("transaction_status") or b_header.get("batch_status")
+            if updated_status:
+                _apply_payout_status(session, payout, updated_status)
+                session.commit()
+                session.refresh(payout)
+        except Exception as poll_err:
+            logger.debug("Quick payout status probe: %s", poll_err)
+
     log_audit_event(
         session=session,
         action="payout_batch_created",
@@ -746,6 +771,16 @@ def list_contract_payouts(session: Session, contract_id: uuid.UUID, user: UserPr
             select(Payout).where(Payout.contract_id == contract_id).order_by(Payout.created_at.desc())
         ).all()
     )
+    # Self-healing: ensure any completed or unclaimed payouts have their milestone settled
+    changed = False
+    for p in rows:
+        if p.status in (PayoutStatus.SUCCESS.value, PayoutStatus.UNCLAIMED.value) and p.milestone_id:
+            m = session.get(Milestone, p.milestone_id)
+            if m and (m.status != MilestoneStatus.SETTLED or m.payment_status != PaymentStatus.RELEASED):
+                _apply_payout_status(session, p, p.status)
+                changed = True
+    if changed:
+        session.commit()
     return [PayoutRead.model_validate(p) for p in rows]
 
 
@@ -778,6 +813,27 @@ async def refresh_my_payouts(session: Session, freelancer: UserProfile) -> List[
             .order_by(Payout.created_at.desc())
         ).all()
     )
+    # --- Reconcile already-UNCLAIMED payouts where the milestone was never settled ---
+    unclaimed_rows = list(
+        session.exec(
+            select(Payout)
+            .where(
+                Payout.freelancer_id == freelancer.id,
+                Payout.status == PayoutStatus.UNCLAIMED.value,
+            )
+        ).all()
+    )
+    for payout in unclaimed_rows:
+        if payout.milestone_id:
+            milestone = session.get(Milestone, payout.milestone_id)
+            if milestone and milestone.status != MilestoneStatus.SETTLED:
+                _apply_payout_status(session, payout, "unclaimed")
+                logger.info(
+                    "Reconciled stuck UNCLAIMED payout %s: milestone %s now SETTLED",
+                    payout.id,
+                    payout.milestone_id,
+                )
+    session.commit()
     for payout in rows:
         if not payout.paypal_batch_id:
             continue
@@ -1057,7 +1113,7 @@ async def process_paypal_webhook(
                 if payout.status == PayoutStatus.SUCCESS.value
                 else "payout_item_updated"
             )
-            if payout.status == PayoutStatus.SUCCESS.value:
+            if payout.status in (PayoutStatus.SUCCESS.value, PayoutStatus.UNCLAIMED.value):
                 contract = session.get(Contract, payout.contract_id)
                 if contract and contract.freelancer_id:
                     queue_notification(
