@@ -13,11 +13,28 @@
  * Keys are supplied via environment variables so they are never committed to git
  * (see react_app/.env.example). Vite inlines them into the client bundle at build time.
  */
-const rawStudioKey = (import.meta.env.VITE_AG_STUDIO_LICENSE_KEY ?? '').trim()
-const rawGridKey = (import.meta.env.VITE_AG_GRID_LICENSE_KEY ?? '').trim()
+const rawStudioKey = (
+  import.meta.env.VITE_AG_STUDIO_LICENSE_KEY ||
+  import.meta.env.AG_STUDIO_LICENSE_KEY ||
+  import.meta.env.VITE_AG_STUDIO_PRO_LICENSE_KEY ||
+  import.meta.env.AG_STUDIO_PRO_LICENSE_KEY ||
+  ''
+).trim()
+
+const rawGridKey = (
+  import.meta.env.VITE_AG_GRID_LICENSE_KEY ||
+  import.meta.env.AG_GRID_LICENSE_KEY ||
+  ''
+).trim()
 
 function isUsableKey(key: string): boolean {
-  return key.length > 0 && !key.startsWith('YOUR_') && key !== 'undefined'
+  return (
+    key.length > 10 &&
+    !key.startsWith('YOUR_') &&
+    key !== 'undefined' &&
+    key !== 'null' &&
+    key !== 'placeholder'
+  )
 }
 
 /** AG Studio trial/enterprise key (STUDIO-* license type). */
@@ -31,6 +48,14 @@ export const HAS_STUDIO_LICENSE = AG_STUDIO_LICENSE_KEY !== undefined
 
 /**
  * True when a standalone AG Grid Enterprise key is configured.
- * Without it the ledgers run on AG Grid Community (free, no watermark, no license needed).
+ * Without it the ledgers run on AG Grid Community (free, 100% watermark-free, no license required).
  */
 export const HAS_GRID_ENTERPRISE_LICENSE = AG_GRID_LICENSE_KEY !== undefined
+
+if (typeof window !== 'undefined') {
+  if (HAS_STUDIO_LICENSE) {
+    console.info('[TrustBroker AI] AG Studio Pro license initialized successfully.')
+  } else {
+    console.info('[TrustBroker AI] AG Studio running in Community fallback mode (watermark-free Community ledgers active).')
+  }
+}
