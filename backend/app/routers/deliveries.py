@@ -299,7 +299,12 @@ def get_delivery_verification_status(
         }
 
     criterion_rows = session.exec(
-        select(CriterionResult, AcceptanceCriterion.title)
+        select(
+            CriterionResult,
+            AcceptanceCriterion.title,
+            AcceptanceCriterion.status,
+            AcceptanceCriterion.evidence_match_snippet,
+        )
         .join(AcceptanceCriterion, AcceptanceCriterion.id == CriterionResult.criterion_id)
         .where(CriterionResult.report_id == report.id)
     ).all()
@@ -308,13 +313,13 @@ def get_delivery_verification_status(
         {
             "criterion_id": str(cr.criterion_id),
             "title": title or "Verified criterion",
-            "status": "pass" if cr.passed else "fail",
+            "status": criterion_status.value if hasattr(criterion_status, "value") else criterion_status,
             "passed": cr.passed,
             "score": cr.score,
             "explanation": cr.explanation,
-            "evidence_match_snippet": "",
+            "evidence_match_snippet": evidence_match_snippet or "",
         }
-        for cr, title in criterion_rows
+        for cr, title, criterion_status, evidence_match_snippet in criterion_rows
     ]
 
     terminal_status = "needs_review" if report.requires_human_review else ("completed" if report.passed else "failed")

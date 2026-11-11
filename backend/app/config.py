@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # AI Engine Configuration (Groq → OpenRouter → DeepSeek → Deterministic Fallback)
     ai_provider: str = "auto"
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     openrouter_api_key: str = ""
     openrouter_model: str = "meta-llama/llama-3.3-70b-instruct:free"
     deepseek_api_key: str = ""

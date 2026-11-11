@@ -4,12 +4,10 @@ Inspects UI renders, screenshots and visual assets via Groq Vision + OpenRouter 
 
 Model chain (Nov 2026):
   Groq (primary):
-    1. qwen/qwen3.8-27b          — 27B multimodal, vision + JSON mode, 3 images/req
-    2. meta-llama/llama-4-scout-17b-16e-instruct — Llama 4 Scout, strong vision
+    1. qwen/qwen3.8-27b          — 27B multimodal, vision + JSON mode
   OpenRouter free (secondary):
-    3. nvidia/nemotron-3.5-super-vl:free  — 1M context, GUI/screenshot specialist
-    4. google/gemma-4-31b-it:free        — Gemma 4 multimodal
-    5. openrouter/free                   — auto-routes to any available free vision model
+    2. openrouter/free                   — auto-routes to any available free vision model
+    3. Other configured multimodal models
 """
 import base64
 import json
@@ -21,7 +19,8 @@ from app.config import settings
 
 logger = logging.getLogger("trustbroker.verification.vision")
 
-# Groq vision models (current as of Nov 2026 — no llama-3.2 preview, those are decommissioned)
+# Groq vision models. This account currently exposes one image-capable model;
+# text-only Groq models must not be sent image content.
 GROQ_VISION_MODELS = [
     "qwen/qwen3.8-27b",
 ]
@@ -119,7 +118,12 @@ def inspect_screenshot_with_vision(
                     continue
                 return result
             last_error = last_error or f"Groq {model} failed"
-        logger.warning(f"All Groq vision models exhausted for criterion '{criterion_title}' — trying OpenRouter vision")
+        logger.warning(
+            "Groq vision unavailable for criterion '%s' after trying %d model(s) "
+            "— trying OpenRouter vision",
+            criterion_title,
+            len(GROQ_VISION_MODELS),
+        )
     else:
         logger.info(f"Groq API key not configured — skipping Groq vision for criterion '{criterion_title}'")
 
@@ -137,7 +141,7 @@ def inspect_screenshot_with_vision(
     else:
         logger.info(f"OpenRouter API key not configured — skipping OpenRouter vision for criterion '{criterion_title}'")
 
-    # --- TERTIARY: DeepSeek Paid Fallback (text-only review) ---
+    # --- TERTIARY: DeepSeek Paid Fallback (image-capable review) ---
     # DeepSeek Flash supports image input through the official OpenAI-compatible
     # API. Send the actual image data, never only its storage path.
     if settings.deepseek_api_key and settings.deepseek_api_key.strip():
@@ -321,11 +325,23 @@ def _try_groq_vision(
             )
 
             if resp.status_code == 429:
-                logger.warning(f"Groq vision model {model} rate-limited (429) — trying next model")
+                logger.warning(
+                    "Groq vision model %s rate-limited (429). retry_after=%s "
+                    "requests_remaining=%s reset=%s",
+                    model,
+                    resp.headers.get("retry-after", "not-provided"),
+                    resp.headers.get("x-ratelimit-remaining-requests", "not-provided"),
+                    resp.headers.get("x-ratelimit-reset-requests", "not-provided"),
+                )
                 return {"error": f"Rate limited (429) on Groq/{model}"}
 
             if resp.status_code != 200:
-                logger.warning(f"Groq vision model {model} returned HTTP {resp.status_code}: {resp.text[:200]}")
+                logger.warning(
+                    "Groq vision model %s returned HTTP %s: %s",
+                    model,
+                    resp.status_code,
+                    resp.text[:200],
+                )
                 return {"error": f"HTTP {resp.status_code} on Groq/{model}"}
 
             raw = resp.json()["choices"][0]["message"]["content"]

@@ -104,7 +104,7 @@ graph TD
 
 - **PayPal Platform:** Orders v2 API, Payments Capture API, Payouts API, Webhooks.
 - **AG Studio & AG Grid:** `ag-studio-react`, `@ag-grid-community/react`, custom financial cell renderers.
-- **Groq:** Fast LPU inference running open-weight LLMs (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`, `openai/gpt-oss-20b`).
+- **Groq:** Fast LPU inference running the account-supported open-weight models (`openai/gpt-oss-120b`, `openai/gpt-oss-20b`, and `qwen/qwen3.8-27b` when available). Vision checks use only the multimodal Qwen model; text-only models are never used for image evidence.
 - **OpenRouter:** Secondary free-tier fallback models (`google/gemma-4-27b-it:free`).
 - **DeepSeek:** Optional paid tier-3 fallback (`deepseek-chat`) for maximum uptime.
 - **Render:** Cloud hosting for static SPA and containerized Python API.

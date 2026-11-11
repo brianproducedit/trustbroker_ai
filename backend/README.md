@@ -11,7 +11,7 @@ FastAPI backend engine for **TrustBroker AI**: contract lifecycle, policy-govern
 - **Migrations:** Alembic
 - **Identity & Auth:** Supabase Auth (JWT validation)
 - **Storage:** Supabase Storage (Deliverables bucket)
-- **AI Verification & Drafting:** Groq LPU (`llama-3.3-70b-versatile`) with OpenRouter and DeepSeek fallbacks
+- **AI Verification & Drafting:** Groq LPU (`openai/gpt-oss-120b`, `openai/gpt-oss-20b`, and `qwen/qwen3.8-27b` when available) with OpenRouter and DeepSeek fallbacks. Screenshot checks use only the multimodal Qwen model.
 - **Payments:** PayPal Orders v2 (Milestone Staging) and PayPal Payouts API (Milestone Disbursement)
 - **Deployment:** Render (Python Web Service / Docker)
 

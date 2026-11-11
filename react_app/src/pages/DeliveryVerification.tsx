@@ -466,7 +466,7 @@ export const DeliveryVerification: React.FC = () => {
       description: ce.explanation || ce.title,
       status: ce.status,
       aiConfidence: (ce.score ?? 0) / 100,
-      feedback: ce.explanation,
+      evidenceMatchSnippet: ce.evidence_match_snippet || undefined,
     })),
     summaryAnalysis: backendReport.summary_analysis,
     assessedAt: backendReport.assessed_at,
@@ -487,6 +487,10 @@ export const DeliveryVerification: React.FC = () => {
     (selectedMilestone as any).paymentStatus === 'staged'
   const isReleased = selectedMilestone.paymentStatus === 'released'
   const isLocked = !isFunded && !isReleased
+  const isClientViewer = activeRole === 'client'
+  const assessmentAudienceText = isClientViewer
+    ? 'Client view: use these findings to decide whether the submitted work is ready for payment or needs changes.'
+    : 'Freelancer view: use these findings to see what the evidence proved, what needs attention, and what to submit next.'
 
   return (
     <DashboardLayout>
@@ -1125,7 +1129,10 @@ export const DeliveryVerification: React.FC = () => {
       <CardContent className="p-4 space-y-4">
         {assessment ? (
           <div className="space-y-4">
-            {/* Score Bar & Model Used Badge */}
+          <div className="rounded-lg border border-indigo-500/30 bg-indigo-950/20 px-3 py-2 text-[11px] leading-relaxed text-indigo-100">
+            {assessmentAudienceText}
+          </div>
+          {/* Score Bar & Model Used Badge */}
             {!assessment.modelUsed?.includes('Offline') && (
               <div className="p-3.5 rounded-xl bg-[#0B1326] border border-[#2D3449] space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -1176,6 +1183,9 @@ export const DeliveryVerification: React.FC = () => {
               {(assessment.criteriaResults || []).map((c: any) => {
                 const isPass = c.status === 'pass'
                 const isFail = c.status === 'fail'
+                const explanation = String(c.feedback || c.description || '').trim()
+                const evidenceSnippet = String(c.evidenceMatchSnippet || '').trim()
+                const showEvidenceSnippet = evidenceSnippet && evidenceSnippet.toLowerCase() !== explanation.toLowerCase()
 
                 return (
                   <div
@@ -1196,12 +1206,15 @@ export const DeliveryVerification: React.FC = () => {
                         {c.status ? c.status.toUpperCase() : 'PENDING'}
                       </Badge>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      {c.description}
-                    </p>
-                    {c.feedback && (
+                    {explanation && (
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        {explanation}
+                      </p>
+                    )}
+                    {showEvidenceSnippet && (
                       <div className="text-[11px] text-blue-200 leading-relaxed bg-blue-950/40 p-2 rounded">
-                        {c.feedback}
+                        <span className="font-semibold text-blue-300">Evidence found: </span>
+                        {evidenceSnippet}
                       </div>
                     )}
                   </div>
