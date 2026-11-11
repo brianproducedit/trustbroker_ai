@@ -91,6 +91,25 @@ const EVIDENCE_TYPES = [
   { value: 'text', label: 'Text / notes' },
 ]
 
+const SKILL_SUGGESTIONS = [
+  'React', 'React Native', 'Vue.js', 'Angular', 'Next.js', 'Nuxt.js', 'Node.js',
+  'Express.js', 'Python', 'FastAPI', 'Django', 'Flask', 'Java', 'Spring Boot',
+  'C#', '.NET', 'PHP', 'Laravel', 'Ruby on Rails', 'Go', 'Rust', 'TypeScript',
+  'JavaScript', 'HTML', 'CSS', 'Tailwind CSS', 'Bootstrap', 'Shadcn/UI',
+  'REST APIs', 'GraphQL', 'API Integration', 'WebSockets', 'Microservices',
+  'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'SQL', 'Supabase', 'Firebase',
+  'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes', 'Terraform', 'CI/CD',
+  'Git', 'GitHub', 'Vercel', 'Figma', 'UI/UX Design', 'Design Systems',
+  'User Research', 'Wireframing', 'Prototyping', 'Accessibility', 'SEO',
+  'Content Writing', 'Copywriting', 'Social Media Marketing', 'Brand Strategy',
+  'Data Analysis', 'Data Visualization', 'Power BI', 'Tableau', 'Excel',
+  'Machine Learning', 'Artificial Intelligence', 'LLM Applications',
+  'Prompt Engineering', 'Computer Vision', 'Cybersecurity', 'Penetration Testing',
+  'Smart Contracts', 'Solidity', 'Shopify', 'WooCommerce', 'Stripe',
+  'PayPal API', 'Payment Integration', 'Technical Writing', 'Research',
+  'Video Editing', 'Motion Graphics', 'Translation', 'Project Management',
+]
+
 const STEPS = [
   { num: 1, label: '1. Brief' },
   { num: 2, label: '2. Clarify' },
@@ -212,6 +231,14 @@ export const CreateProject: React.FC = () => {
   const handleRemoveSkill = (skillToRemove: string) => {
     setRequiredSkills((prev) => prev.filter((s) => s !== skillToRemove))
   }
+
+  const visibleSkillSuggestions = useMemo(() => {
+    const query = newSkill.trim().toLowerCase()
+    return SKILL_SUGGESTIONS
+      .filter((skill) => !requiredSkills.includes(skill))
+      .filter((skill) => !query || skill.toLowerCase().includes(query))
+      .slice(0, 10)
+  }, [newSkill, requiredSkills])
 
   useEffect(() => {
     if (searchParams.get('fresh') === '1') {
@@ -603,13 +630,14 @@ export const CreateProject: React.FC = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-slate-300">Required Skills & Stack</Label>
-                  <span className="text-[11px] text-slate-500">AI will evaluate applicants against these</span>
+                  <span className="text-[11px] text-slate-500">Selected skills stay attached to this contract</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input
                     placeholder="Type skill & press Enter (e.g. React, Next.js, Python)..."
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
+                    list="trustbroker-skill-suggestions"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
@@ -627,6 +655,24 @@ export const CreateProject: React.FC = () => {
                     <Plus className="w-3.5 h-3.5 mr-1" /> Add
                   </Button>
                 </div>
+                {visibleSkillSuggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-500 self-center">Suggestions:</span>
+                    {visibleSkillSuggestions.map((skill) => (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => handleAddSkill(skill)}
+                        className="rounded-full border border-[#33415F] bg-[#111C35] px-2 py-0.5 text-[10px] text-blue-300 hover:border-blue-400 hover:text-white"
+                      >
+                        + {skill}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <datalist id="trustbroker-skill-suggestions">
+                  {SKILL_SUGGESTIONS.map((skill) => <option key={skill} value={skill} />)}
+                </datalist>
                 {requiredSkills.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1.5">
                     {requiredSkills.map((skill) => (

@@ -59,7 +59,7 @@ unseeded deployment:
 
 **PayPal Sandbox:**
 - Buyer email: `sb-buyer@sandbox.paypal.com`
-- Payout recipient: `freelancer-payout@sandbox.paypal.com`
+- Payout recipient: `sb-5jzzm53788146@business.example.com`
 
 ---
 
@@ -219,7 +219,7 @@ The **criterion assessment matrix** shows:
 
 1. In Column 3, click the green **Authorize PayPal Payout ($XXX)** button
 2. A confirmation dialog appears showing:
-   - Recipient: freelancer's registered PayPal email (e.g., `freelancer-payout@sandbox.paypal.com`)
+   - Recipient: freelancer's registered PayPal email (for the demo account: `sb-5jzzm53788146@business.example.com`)
    - Idempotency key: `payout:{milestone_id}` — prevents double-disbursement
 3. Click **Confirm & Disburse Payout**:
    - Backend calls `POST /v1/payments/payouts` (PayPal Payouts API)

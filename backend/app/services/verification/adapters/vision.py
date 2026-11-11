@@ -13,6 +13,8 @@ import base64
 import json
 import logging
 import os
+import re
+import time
 from typing import Any, Dict, List, Optional
 import httpx
 from app.config import settings
@@ -107,53 +109,54 @@ def inspect_screenshot_with_vision(
     ]
 
     last_error: Optional[str] = None
+    groq_rate_limited = False
+    openrouter_rate_limited = False
+    retry_delay = 0.0
 
-    # --- PRIMARY: Groq vision models (fast LPU inference) ---
-    if settings.groq_api_key:
-        for model in GROQ_VISION_MODELS:
-            result = _try_groq_vision(model, system_prompt, user_content, settings.groq_api_key)
-            if result is not None:
-                if result.get("error"):
-                    last_error = result["error"]
-                    continue
-                return result
-            last_error = last_error or f"Groq {model} failed"
-        logger.warning(
-            "Groq vision unavailable for criterion '%s' after trying %d model(s) "
-            "— trying OpenRouter vision",
-            criterion_title,
-            len(GROQ_VISION_MODELS),
-        )
-    else:
-        logger.info(f"Groq API key not configured — skipping Groq vision for criterion '{criterion_title}'")
+    # Give both free providers a first chance, then retry them once after the
+    # longest advertised reset window. This keeps good Groq capacity usable
+    # without spinning on a rate-limited endpoint.
+    for round_number in range(2):
+        if round_number == 1 and (groq_rate_limited or openrouter_rate_limited):
+            if retry_delay > 0:
+                logger.info(
+                    "Waiting %.1fs before retrying rate-limited vision providers for '%s'",
+                    retry_delay,
+                    criterion_title,
+                )
+                time.sleep(retry_delay)
 
-    # --- SECONDARY: OpenRouter free vision models ---
-    if settings.openrouter_api_key and settings.openrouter_api_key.strip():
-        for model in OPENROUTER_VISION_MODELS:
-            result = _try_openrouter_vision(model, system_prompt, user_content, settings.openrouter_api_key.strip())
-            if result is not None:
-                if result.get("error"):
-                    last_error = result["error"]
-                    continue
-                return result
-            last_error = last_error or f"OpenRouter {model} failed"
-        logger.warning(f"All OpenRouter vision models exhausted for criterion '{criterion_title}'")
-    else:
-        logger.info(f"OpenRouter API key not configured — skipping OpenRouter vision for criterion '{criterion_title}'")
+        groq_result, groq_delay = _try_groq_vision_models(system_prompt, user_content)
+        if groq_result and not groq_result.get("error"):
+            return groq_result
+        if groq_result:
+            last_error = groq_result["error"]
+            groq_rate_limited = groq_result.get("rate_limited", False)
+            retry_delay = max(retry_delay, groq_delay)
+
+        openrouter_result, openrouter_delay = _try_openrouter_vision_models(system_prompt, user_content)
+        if openrouter_result and not openrouter_result.get("error"):
+            return openrouter_result
+        if openrouter_result:
+            last_error = openrouter_result["error"]
+            openrouter_rate_limited = openrouter_result.get("rate_limited", False)
+            retry_delay = max(retry_delay, openrouter_delay)
+
+        if round_number == 0 and not (groq_rate_limited or openrouter_rate_limited):
+            break
+        if round_number == 0:
+            logger.warning(
+                "Vision providers were rate-limited for criterion '%s'; "
+                "will retry Groq then OpenRouter after reset",
+                criterion_title,
+            )
 
     # --- TERTIARY: DeepSeek Paid Fallback (image-capable review) ---
     # DeepSeek Flash supports image input through the official OpenAI-compatible
     # API. Send the actual image data, never only its storage path.
     if settings.deepseek_api_key and settings.deepseek_api_key.strip():
-        logger.info(
-            "Engaging DeepSeek paid vision fallback for '%s'",
-            criterion_title,
-        )
-        result = _try_deepseek_vision(
-            system_prompt,
-            user_content,
-            settings.deepseek_api_key.strip(),
-        )
+        logger.info("Engaging DeepSeek paid vision fallback for '%s'", criterion_title)
+        result = _try_deepseek_vision(system_prompt, user_content, settings.deepseek_api_key.strip())
         if result is not None:
             if result.get("error"):
                 last_error = result["error"]
@@ -171,6 +174,65 @@ def inspect_screenshot_with_vision(
         "The image could not be checked automatically. Please open the image yourself "
         "and confirm whether it meets the requirement."
     )
+
+
+def _try_groq_vision_models(
+    system_prompt: str,
+    user_content: List[Dict[str, Any]],
+) -> tuple[Optional[Dict[str, Any]], float]:
+    if not settings.groq_api_key:
+        logger.info("Groq API key not configured — skipping Groq vision")
+        return None, 0.0
+    last_result: Optional[Dict[str, Any]] = None
+    delay = 0.0
+    for model in GROQ_VISION_MODELS:
+        result = _try_groq_vision(model, system_prompt, user_content, settings.groq_api_key)
+        if result is not None and not result.get("error"):
+            return result, delay
+        if result:
+            last_result = result
+            delay = max(delay, float(result.get("retry_after_seconds", 0.0)))
+    return last_result, delay
+
+
+def _try_openrouter_vision_models(
+    system_prompt: str,
+    user_content: List[Dict[str, Any]],
+) -> tuple[Optional[Dict[str, Any]], float]:
+    api_key = settings.openrouter_api_key.strip()
+    if not api_key:
+        logger.info("OpenRouter API key not configured — skipping OpenRouter vision")
+        return None, 0.0
+    last_result: Optional[Dict[str, Any]] = None
+    delay = 0.0
+    for model in OPENROUTER_VISION_MODELS:
+        result = _try_openrouter_vision(model, system_prompt, user_content, api_key)
+        if result is not None and not result.get("error"):
+            return result, delay
+        if result:
+            last_result = result
+            delay = max(delay, float(result.get("retry_after_seconds", 0.0)))
+    return last_result, delay
+
+
+def _parse_retry_delay(headers: httpx.Headers) -> float:
+    """Read common provider reset formats and cap waits to two minutes."""
+    retry_after = headers.get("retry-after", "")
+    reset = headers.get("x-ratelimit-reset-requests", "")
+    value = retry_after or reset
+    if not value:
+        return 0.0
+    try:
+        if value.strip().replace(".", "", 1).isdigit():
+            return min(120.0, max(0.0, float(value)))
+    except ValueError:
+        pass
+    match = re.fullmatch(r"(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?", value.strip())
+    if match:
+        minutes = float(match.group(1) or 0)
+        seconds = float(match.group(2) or 0)
+        return min(120.0, max(0.0, minutes * 60 + seconds))
+    return 0.0
 
 
 # ==============================================================================
@@ -325,6 +387,7 @@ def _try_groq_vision(
             )
 
             if resp.status_code == 429:
+                delay = _parse_retry_delay(resp.headers)
                 logger.warning(
                     "Groq vision model %s rate-limited (429). retry_after=%s "
                     "requests_remaining=%s reset=%s",
@@ -333,7 +396,11 @@ def _try_groq_vision(
                     resp.headers.get("x-ratelimit-remaining-requests", "not-provided"),
                     resp.headers.get("x-ratelimit-reset-requests", "not-provided"),
                 )
-                return {"error": f"Rate limited (429) on Groq/{model}"}
+                return {
+                    "error": f"Rate limited (429) on Groq/{model}",
+                    "rate_limited": True,
+                    "retry_after_seconds": delay,
+                }
 
             if resp.status_code != 200:
                 logger.warning(
@@ -405,8 +472,13 @@ def _try_openrouter_vision(
                 return {"error": f"Auth failed on OpenRouter/{model}"}
 
             if resp.status_code == 429:
+                delay = _parse_retry_delay(resp.headers)
                 logger.warning(f"OpenRouter vision model {model} rate-limited (429) — trying next model")
-                return {"error": f"Rate limited (429) on OpenRouter/{model}"}
+                return {
+                    "error": f"Rate limited (429) on OpenRouter/{model}",
+                    "rate_limited": True,
+                    "retry_after_seconds": delay,
+                }
 
             if resp.status_code != 200:
                 logger.warning(f"OpenRouter vision model {model} returned HTTP {resp.status_code}: {resp.text[:200]}")

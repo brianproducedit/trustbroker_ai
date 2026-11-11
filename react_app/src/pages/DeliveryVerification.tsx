@@ -456,7 +456,7 @@ export const DeliveryVerification: React.FC = () => {
       : null)
 
   const backendReport = latestDelivery?.verification_report
-  const assessment = selectedMilestone?.assessment || (backendReport ? {
+  const rawAssessment = selectedMilestone?.assessment || (backendReport ? {
     id: backendReport.report_id,
     overallScore: backendReport.overall_score ?? 0,
     passed: backendReport.passed ?? false,
@@ -473,6 +473,22 @@ export const DeliveryVerification: React.FC = () => {
     modelUsed: backendReport.model_used,
     requiresHumanReview: backendReport.requires_human_review,
   } : null)
+  const assessment = rawAssessment
+    ? {
+      ...rawAssessment,
+      criteriaResults: (rawAssessment.criteriaResults || []).map((criterion: any) => {
+        const explanation = String(criterion.description || criterion.feedback || '').trim()
+        const evidence = String(criterion.evidenceMatchSnippet || '').trim()
+        const sameText = explanation && evidence && explanation.toLowerCase() === evidence.toLowerCase()
+        return {
+          ...criterion,
+          description: explanation,
+          feedback: undefined,
+          evidenceMatchSnippet: sameText ? '' : evidence,
+        }
+      }),
+    }
+    : null
 
   const isSettled = selectedMilestone.status === 'settled'
   const isRevisionRequested = selectedMilestone.status === 'revision_requested'
@@ -1368,7 +1384,7 @@ export const DeliveryVerification: React.FC = () => {
                     </div>
 
                     <p className="text-slate-300 text-[11px] leading-relaxed">
-                      All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely staged in PayPal Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered account (<code className="text-emerald-400 font-mono">freelancer-payout@sandbox.paypal.com</code>).
+                      All deliverable criteria have passed AI multimodal inspection (Score: {assessment.overallScore}/100). Milestone funds of <strong className="text-emerald-300 font-semibold">{formatCurrency(selectedMilestone.amount, contract.currency)}</strong> are securely staged in PayPal Sandbox. Your client ({contract.client?.name || 'Client'}) has been notified to perform their final manual verification outside the system and authorize release to your registered PayPal account.
                     </p>
 
                     {/* TrustBroker Seller Protection Policy */}

@@ -52,7 +52,7 @@ users = [
             "organization": "DevStudio Zimbabwe",
             "role": "freelancer",
             "primary_workspace": "freelancer",
-            "paypal_payout_email": "freelancer-payout@sandbox.paypal.com",
+            "paypal_payout_email": "sb-5jzzm53788146@business.example.com",
         },
     },
     {
@@ -87,7 +87,7 @@ users = [
             "organization": "DevStudio Zimbabwe",
             "role": "freelancer",
             "primary_workspace": "freelancer",
-            "paypal_payout_email": "freelancer-payout@sandbox.paypal.com",
+            "paypal_payout_email": "sb-5jzzm53788146@business.example.com",
         },
     },
 ]
@@ -135,10 +135,18 @@ async def main():
             if existing:
                 uid = existing["id"]
                 update_url = f"{admin_url}/{uid}"
+                existing_metadata = existing.get("user_metadata") or {}
+                merged_metadata = {
+                    **existing_metadata,
+                    **user_data["user_metadata"],
+                }
+                saved_payout_email = existing_metadata.get("paypal_payout_email")
+                if saved_payout_email and saved_payout_email != "freelancer-payout@sandbox.paypal.com":
+                    merged_metadata["paypal_payout_email"] = existing_metadata["paypal_payout_email"]
                 payload = {
                     "password": user_data["password"],
                     "email_confirm": True,
-                    "user_metadata": user_data["user_metadata"],
+                    "user_metadata": merged_metadata,
                 }
                 res = await client.put(update_url, headers=headers, json=payload)
                 if res.status_code == 200:

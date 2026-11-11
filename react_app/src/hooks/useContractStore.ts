@@ -646,7 +646,6 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               status: ce.status || (ce.passed ? 'pass' : 'fail'),
               aiConfidence: typeof ce.confidence === 'number' ? ce.confidence : 0,
               evidenceMatchSnippet: ce.evidence_match_snippet || '',
-              feedback: ce.explanation || '',
             })),
             summaryAnalysis: verifyRes.summary_analysis || 'AI evaluation complete.',
             assessedAt: new Date().toISOString(),

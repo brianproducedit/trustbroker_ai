@@ -76,6 +76,26 @@ def seed_database():
                     "Docker",
                     "AG Grid",
                     "REST APIs",
+                    "GraphQL",
+                    "Node.js",
+                    "Express.js",
+                    "JavaScript",
+                    "HTML",
+                    "CSS",
+                    "Jest",
+                    "Playwright",
+                    "Git",
+                    "GitHub",
+                    "CI/CD",
+                    "AWS",
+                    "Vercel",
+                    "Supabase",
+                    "Redis",
+                    "SQL",
+                    "System Design",
+                    "API Integration",
+                    "Payment Integration",
+                    "UI/UX Collaboration",
                 ],
                 "portfolio": [
                     {
@@ -101,7 +121,7 @@ def seed_database():
                 ],
                 "profile_completeness": 100,
                 "primary_workspace": "freelancer",
-                "paypal_payout_email": "freelancer-payout@sandbox.paypal.com",
+                "paypal_payout_email": "sb-5jzzm53788146@business.example.com",
             },
             {
                 "id": uuid.UUID("f2b2b247-9690-4a2d-88a6-5a994559dea7"),
@@ -154,7 +174,13 @@ def seed_database():
                 existing_demo.skills = acc["skills"]
                 existing_demo.portfolio = acc["portfolio"]
                 existing_demo.profile_completeness = acc["profile_completeness"]
-                existing_demo.paypal_payout_email = acc["paypal_payout_email"]
+                # Preserve a payout address saved by the account owner. Seed data
+                # must not silently redirect real sandbox payouts on re-runs.
+                if (
+                    existing_demo.paypal_payout_email in (None, "", "freelancer-payout@sandbox.paypal.com")
+                    and acc["paypal_payout_email"]
+                ):
+                    existing_demo.paypal_payout_email = acc["paypal_payout_email"]
                 session.add(existing_demo)
                 session.commit()
                 print(f"  Updated Demo Profile: {acc['full_name']} ({acc['email']})")
@@ -196,7 +222,7 @@ def seed_database():
                 full_name="Tariro Moyo",
                 organization="DevStudio Zimbabwe",
                 primary_workspace="freelancer",
-                paypal_payout_email="freelancer-payout@sandbox.paypal.com",
+                paypal_payout_email="sb-5jzzm53788146@business.example.com",
                 created_at=now - timedelta(days=30),
                 updated_at=now - timedelta(days=30),
             )
@@ -205,6 +231,10 @@ def seed_database():
             print("  Created Freelancer Profile: Tariro Moyo (tariro@devstudio.co.zw)")
         else:
             freelancer_id = freelancer.id
+            if freelancer.paypal_payout_email in (None, "", "freelancer-payout@sandbox.paypal.com"):
+                freelancer.paypal_payout_email = "sb-5jzzm53788146@business.example.com"
+                session.add(freelancer)
+                session.commit()
 
         # 3. Check if Showcase Contract 1 exists
         existing_c1 = session.exec(select(Contract).where(Contract.code == "TB-2026-001")).first()
