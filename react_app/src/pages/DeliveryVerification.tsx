@@ -1200,7 +1200,7 @@ export const DeliveryVerification: React.FC = () => {
                       {c.description}
                     </p>
                     {c.feedback && (
-                      <div className="text-[10px] text-blue-300 font-mono bg-blue-950/40 p-1.5 rounded">
+                      <div className="text-[11px] text-blue-200 leading-relaxed bg-blue-950/40 p-2 rounded">
                         {c.feedback}
                       </div>
                     )}

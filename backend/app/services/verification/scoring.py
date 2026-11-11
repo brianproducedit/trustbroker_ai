@@ -59,8 +59,8 @@ def score_criterion_result(
                 llm_evaluation.get("explanation")
                 if llm_evaluation and llm_evaluation.get("needs_review")
                 else (
-                    f"{adapter_name} confirmed that the evidence is available, but did not inspect "
-                    "enough content to establish semantic completion. Manual review is required."
+                    "The submitted evidence was found, but the automatic check could not confirm "
+                    "that the work meets this requirement. Please review it before approving payment."
                 )
             ),
             "evidence_match_snippet": citation,
@@ -78,7 +78,8 @@ def score_criterion_result(
             "score": 50,
             "confidence": 0.60,
             "explanation": (
-                f"Evidence check via {adapter_name} requires manual verification: {adapter_error or citation or 'Requires human review.'}"
+                "The automatic check could not fully confirm this requirement. "
+                "Please review the submitted evidence manually before approving payment."
             ),
             "evidence_match_snippet": citation or adapter_error or "Requires human review",
             "adapter_used": adapter_name,
@@ -100,9 +101,8 @@ def score_criterion_result(
                 "score": 65,
                 "confidence": 0.60,
                 "explanation": (
-                    f"Live URL probe returned HTTP rate-limit/bot-protection response via {adapter_name}. "
-                    "This typically confirms the deployment exists — edge CDN (Vercel, Cloudflare, GitHub) is blocking automated probes. "
-                    "Manual review recommended to confirm live functionality."
+                    "The website is responding, but an automated security check prevented a full review. "
+                    "Please open the link yourself and confirm that the required feature works."
                 ),
                 "evidence_match_snippet": citation or adapter_error,
                 "adapter_used": adapter_name,
@@ -115,7 +115,10 @@ def score_criterion_result(
             "passed": False,
             "score": 0,
             "confidence": 0.95,
-            "explanation": f"Factual check failed via {adapter_name}: {adapter_error}",
+            "explanation": (
+                "The submitted evidence did not show that this requirement was completed. "
+                "Please correct the missing work and submit the evidence again."
+            ),
             "evidence_match_snippet": citation,
             "adapter_used": adapter_name,
             "requires_review": False,
@@ -148,8 +151,8 @@ def score_criterion_result(
             "score": base_score,
             "confidence": 0.70,
             "explanation": (
-                "Criterion involves subjective visual taste or styling. "
-                "Flagged for human confirmation before automatic fund release."
+                "This requirement depends on human judgment about appearance or presentation. "
+                "Please review it before approving payment."
             ),
             "evidence_match_snippet": citation,
             "adapter_used": adapter_name,
@@ -212,7 +215,10 @@ def score_criterion_result(
             "passed": False,
             "score": 50,
             "confidence": 0.60,
-            "explanation": f"Objective evidence validated via {adapter_name}, but AI evaluation unavailable — manual review required before fund release.",
+            "explanation": (
+                "Some evidence was found, but the automatic reviewer was unavailable. "
+                "Please review the submission manually before approving payment."
+            ),
             "evidence_match_snippet": citation,
             "adapter_used": adapter_name,
             "requires_review": True,
@@ -225,7 +231,9 @@ def score_criterion_result(
             "passed": False,
             "score": 25,
             "confidence": 0.90,
-            "explanation": f"Evidence did not pass verification via {adapter_name}.",
+            "explanation": (
+                "The submitted evidence did not confirm that this requirement was completed."
+            ),
             "evidence_match_snippet": citation,
             "adapter_used": adapter_name,
             "requires_review": False,
@@ -257,24 +265,36 @@ def aggregate_verification_assessment(
     overall_passed = all_passed and (overall_score >= 80)
     requires_human_review = has_needs_review or (not overall_passed and not has_failed)
 
-    # Build summary explanation citing facts
-    citations = [c.get("evidence_match_snippet", "") for c in criterion_evaluations if c.get("evidence_match_snippet")]
-    citation_summary = "; ".join(citations[:3])
+    failed_titles = [
+        c.get("title", "An acceptance requirement")
+        for c in criterion_evaluations
+        if c.get("status") == CriterionStatus.FAIL
+    ]
+    review_titles = [
+        c.get("title", "An acceptance requirement")
+        for c in criterion_evaluations
+        if c.get("status") == CriterionStatus.NEEDS_REVIEW
+    ]
 
     if overall_passed:
         summary_analysis = (
-            f"All {len(criterion_evaluations)} criteria for '{milestone_title}' met or exceeded requirements "
-            f"with an overall score of {overall_score}/100. Verification confirmed: {citation_summary}."
+            f"The submitted work meets all {len(criterion_evaluations)} agreed requirements. "
+            f"It received a score of {overall_score} out of 100. "
+            "The client can review the evidence and approve payment."
         )
     elif requires_human_review:
         summary_analysis = (
-            f"Milestone '{milestone_title}' scored {overall_score}/100. Subjective or pending criteria "
-            "require human confirmation before automated fund release. Evidence: " + citation_summary
+            f"The submitted work received a score of {overall_score} out of 100. "
+            f"{len(review_titles)} requirement(s) need a client to check them personally "
+            "before payment can be approved."
         )
     else:
+        gap_text = ", ".join(failed_titles[:3]) or "one or more requirements"
         summary_analysis = (
-            f"Milestone '{milestone_title}' scored {overall_score}/100 and failed required acceptance criteria. "
-            "A revision has been requested. Identified gaps: " + citation_summary
+            f"The submitted work received a score of {overall_score} out of 100 and "
+            f"did not meet {len(failed_titles)} required item(s). "
+            f"The main item(s) needing attention are: {gap_text}. "
+            "Please request changes and review the new submission before approving payment."
         )
 
     return {
