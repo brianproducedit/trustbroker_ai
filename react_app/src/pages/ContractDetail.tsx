@@ -75,8 +75,10 @@ export const ContractDetail: React.FC = () => {
     : (contracts[0] || null)
 
   // View States
+  const tabParam = searchParams.get('tab')
+  const validTabs = ['contract', 'sow', 'payments', 'activity', 'applicants']
   const [activeTab, setActiveTab] = useState<'contract' | 'sow' | 'payments' | 'activity' | 'applicants'>(
-    searchParams.get('tab') === 'applicants' ? 'applicants' : 'contract'
+    validTabs.includes(tabParam || '') ? (tabParam as any) : 'contract'
   )
   const [applications, setApplications] = useState<any[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
@@ -86,7 +88,10 @@ export const ContractDetail: React.FC = () => {
   const [payouts, setPayouts] = useState<any[]>([])
 
   useEffect(() => {
-    if (searchParams.get('tab') === 'applicants' || location.pathname.endsWith('/applicants')) {
+    const tab = searchParams.get('tab')
+    if (tab && validTabs.includes(tab)) {
+      setActiveTab(tab as any)
+    } else if (location.pathname.endsWith('/applicants')) {
       setActiveTab('applicants')
     }
   }, [searchParams, location.pathname])
@@ -724,11 +729,7 @@ export const ContractDetail: React.FC = () => {
               value={activeTab}
               onValueChange={(v) => {
                 setActiveTab(v as any)
-                if (v === 'applicants') {
-                  setSearchParams({ tab: 'applicants' })
-                } else {
-                  setSearchParams({})
-                }
+                setSearchParams({ tab: v })
               }}
               className="space-y-4 w-full"
             >
@@ -1435,6 +1436,7 @@ export const ContractDetail: React.FC = () => {
                             milestoneId={nextFundMilestone.id}
                             amount={nextFundMilestone.amount}
                             currency={contract.currency}
+                            paymentStatus={nextFundMilestone.paymentStatus}
                             onPaymentSuccess={handlePaymentSuccess}
                           />
                         </div>
@@ -1823,7 +1825,10 @@ export const ContractDetail: React.FC = () => {
                         Remaining unfunded: {formatCurrency(totalAmount - stagedAmount)} USD.
                       </p>
                       <Button
-                        onClick={() => setActiveTab('payments')}
+                        onClick={() => {
+                          setActiveTab('payments')
+                          setSearchParams({ tab: 'payments' })
+                        }}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 gap-1.5"
                       >
                         <CreditCard className="w-4 h-4" />

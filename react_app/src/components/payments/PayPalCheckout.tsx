@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import { formatCurrency } from '@/lib/utils'
-import { CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react'
+import { CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Info } from 'lucide-react'
 import { api } from '@/lib/api'
 
 interface PayPalCheckoutProps {
@@ -10,6 +10,7 @@ interface PayPalCheckoutProps {
   milestoneId: string
   amount: number
   currency?: string
+  paymentStatus?: string
   onPaymentSuccess: (details: any) => void
   onPaymentError?: (error: any) => void
 }
@@ -20,6 +21,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   milestoneId,
   amount,
   currency = 'USD',
+  paymentStatus,
   onPaymentSuccess,
   onPaymentError,
 }) => {
@@ -27,8 +29,38 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   const [capturedOrderId, setCapturedOrderId] = useState<string | null>(null)
   const [captureId, setCaptureId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [forceNewOrder, setForceNewOrder] = useState(false)
+
+  const handleManualCapture = async () => {
+    setIsVerifying(true)
+    setErrorMsg(null)
+    try {
+      const captured = await api.payments.captureOrder({
+        contract_id: contractId,
+        milestone_id: milestoneId,
+      })
+      if (
+        String(captured?.paypal_status || captured?.status || '').toUpperCase() !== 'COMPLETED' &&
+        captured?.status !== 'staged_in_sandbox'
+      ) {
+        throw new Error('PayPal capture was not completed')
+      }
+      setCapturedOrderId(captured?.paypal_order_id || null)
+      setCaptureId(captured?.paypal_capture_id || null)
+      setPaymentCompleted(true)
+      onPaymentSuccess(captured)
+    } catch (err: any) {
+      const message =
+        err?.detail ||
+        err?.message ||
+        'PayPal has not confirmed buyer approval yet. If you completed approval in PayPal, please try again in a moment.'
+      setErrorMsg(message)
+    } finally {
+      setIsVerifying(false)
+    }
+  }
 
   if (paymentCompleted) {
     return (
@@ -76,10 +108,44 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         PayPal captures this milestone only. Closing or cancelling checkout does not mark the milestone funded.
       </p>
 
+      {/* Pending Approval Recovery Banner */}
+      {paymentStatus === 'checkout_created' && (
+        <div className="p-3.5 bg-blue-950/50 border border-blue-700/60 text-blue-200 text-xs rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-semibold text-white">Checkout initiated in PayPal</p>
+              <p className="text-[11px] text-slate-300">
+                If you approved the payment in the PayPal popup and your browser did not refresh automatically, click verify.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleManualCapture}
+            disabled={isVerifying || isProcessing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-xs transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin' : ''}`} />
+            <span>{isVerifying ? 'Verifying...' : 'Verify & Capture'}</span>
+          </button>
+        </div>
+      )}
+
       {errorMsg && (
-        <div className="p-3 bg-blue-950/40 border border-blue-800/50 text-blue-300 text-xs rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
-          <span>{errorMsg}</span>
+        <div className="p-3 bg-amber-950/40 border border-amber-800/50 text-amber-200 text-xs rounded-lg flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <span>{errorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleManualCapture}
+            disabled={isVerifying}
+            className="text-xs text-blue-400 underline hover:text-blue-300 whitespace-nowrap ml-2"
+          >
+            Check again
+          </button>
         </div>
       )}
 
@@ -96,7 +162,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         >
           <PayPalButtons
             style={{ layout: 'horizontal', color: 'gold', shape: 'rect', label: 'paypal', tagline: false, height: 44 }}
-            disabled={isProcessing}
+            disabled={isProcessing || isVerifying}
             createOrder={async () => {
               setErrorMsg(null)
               try {
@@ -125,8 +191,10 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
                   milestone_id: milestoneId,
                   paypal_order_id: data.orderID,
                 })
-                if (String(captured?.paypal_status || captured?.status || '').toUpperCase() !== 'COMPLETED' &&
-                    captured?.status !== 'staged_in_sandbox') {
+                if (
+                  String(captured?.paypal_status || captured?.status || '').toUpperCase() !== 'COMPLETED' &&
+                  captured?.status !== 'staged_in_sandbox'
+                ) {
                   throw new Error('PayPal capture was not completed')
                 }
                 setCapturedOrderId(data.orderID)
@@ -148,11 +216,13 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             }}
             onError={(err) => {
               setForceNewOrder(true)
-              setErrorMsg('PayPal checkout could not complete. The milestone is not funded. Click the PayPal button to try again.')
+              setErrorMsg('PayPal checkout could not complete. If you already completed approval in PayPal, click "Check again" above.')
               if (onPaymentError) onPaymentError(err)
             }}
           />
-          <p className="text-center text-sm text-white">The safer, easier way to pay</p>
+          <p className="text-center text-xs text-slate-400">
+            Strict browser tracking or guest mode? If popup closes after approval, use &ldquo;Verify &amp; Capture&rdquo;.
+          </p>
         </PayPalScriptProvider>
       )}
     </div>

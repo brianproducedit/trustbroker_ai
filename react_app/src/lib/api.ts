@@ -341,9 +341,9 @@ export const api = {
         body: JSON.stringify(data),
       }),
     captureOrder: (data: {
-      contract_id: string
-      milestone_id: string
-      paypal_order_id: string
+      contract_id?: string
+      milestone_id?: string
+      paypal_order_id?: string
     }) =>
       apiFetch<any>('/payments/capture-order', {
         method: 'POST',
