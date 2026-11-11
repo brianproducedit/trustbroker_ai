@@ -209,8 +209,9 @@ def studio_turn(
         "Instructions:\n"
         "1. Answer user questions directly, accurately and authoritatively based on the database context.\n"
         "2. If asked about unpaid funded milestones, earnings, win rates or contract health, quote the exact figures.\n"
-        "3. Provide 2-3 concise, actionable next steps or suggested actions.\n"
-        "4. Format your response strictly as a JSON object with keys:\n"
+        "3. Use simple English for a non-technical client or freelancer. Explain payment and contract terms in plain language.\n"
+        "4. Provide 2-3 concise, actionable next steps or suggested actions.\n"
+        "5. Format your response strictly as a JSON object with keys:\n"
         "   - 'response': string with clear markdown formatted explanation\n"
         "   - 'type': 'text' | 'chart' | 'table'\n"
         "   - 'suggested_actions': list of short action strings\n"
@@ -237,24 +238,24 @@ def studio_turn(
         if "unpaid" in msg_lower or "funded" in msg_lower or "milestone" in msg_lower:
             count = live_context.get("unpaid_funded_milestones_count", 0)
             staged = live_context.get("total_staged_usd", 0.0)
-            text = f"You currently have **{count} funded milestone(s)** staged via PayPal with **${staged:,.2f} USD** staged awaiting verified deliverable inspection."
+            text = f"You currently have **{count} funded milestone(s)** held safely in PayPal with **${staged:,.2f} USD** waiting for the submitted work to be checked."
             actions = ["View Milestone Inspection", "Check PayPal Ledger", "Review Deliveries"]
         elif "payout" in msg_lower or "released" in msg_lower or "spent" in msg_lower:
             released = live_context.get("total_released_usd", 0.0)
             text = f"You have authorized and released **${released:,.2f} USD** in PayPal payouts across all completed milestones."
             actions = ["Export Payment Receipt", "View Contract History"]
         else:
-            text = f"Your client workspace has **{live_context.get('active_contracts_count', 0)} active contract(s)** and **{live_context.get('open_contracts_count', 0)} open listing(s)**. Total funds in staging: **${live_context.get('total_staged_usd', 0.0):,.2f} USD**."
+            text = f"Your client workspace has **{live_context.get('active_contracts_count', 0)} active contract(s)** and **{live_context.get('open_contracts_count', 0)} open project(s)**. Total money currently held for milestones: **${live_context.get('total_staged_usd', 0.0):,.2f} USD**."
             actions = ["Review Open Listings", "Check Milestone Deadlines"]
     else:
         # Freelancer fallback
         if "earn" in msg_lower or "month" in msg_lower or "payout" in msg_lower:
             earned = live_context.get("total_earnings_usd", 0.0)
-            text = f"Your total recorded earnings across verified milestones are **${earned:,.2f} USD**, disbursed via the PayPal Payouts API."
+            text = f"Your total earnings from approved milestones are **${earned:,.2f} USD**. These payments were sent through PayPal."
             actions = ["View Payout History", "Check Sandbox Wallet"]
         elif "deadline" in msg_lower or "upcoming" in msg_lower:
             upcoming = len(live_context.get("upcoming_milestones", []))
-            text = f"You have **{upcoming} upcoming milestone(s)** currently in progress or awaiting deliverable evidence submission."
+            text = f"You have **{upcoming} upcoming milestone(s)** that are in progress or waiting for you to submit your work."
             actions = ["Upload Deliverables", "View Active SOW"]
         else:
             win_rate = live_context.get("win_rate_percent", 0.0)

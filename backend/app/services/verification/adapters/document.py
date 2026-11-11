@@ -132,6 +132,9 @@ def inspect_document(
     system_prompt = (
         "You are TrustBroker AI's Compliance & Technical Specification Auditor. "
         "Evaluate the extracted document text against the acceptance criterion. "
+        "Write the explanation in simple everyday English for a client who may not be technical. "
+        "Explain what the document shows, whether it meets the requirement and what the client should do next. "
+        "Do not mention internal tools, model names, JSON, parsing, tokens or diagnostic details. "
         "Output valid JSON ONLY with schema:\n"
         "{\n"
         '  "passed": true/false,\n'

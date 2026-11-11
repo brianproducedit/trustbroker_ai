@@ -96,8 +96,8 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
       sender: 'assistant',
       text:
         workspace === 'client'
-          ? "👋 Hello! I am your TrustBroker AI Operations Copilot. Ask me about your active contracts, staged funds, milestone verifications or PayPal releases."
-          : "👋 Hello! I am your Freelancer Copilot. Ask me about your active deliverables, earnings, pending AI verifications or marketplace matching.",
+        ? "👋 Hello! I am your TrustBroker AI assistant. Ask me about your active contracts, money held for milestones, work checks or PayPal payments."
+        : "👋 Hello! I am your Freelancer assistant. Ask me about your active work, earnings, pending work checks or marketplace matches.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       suggestedActions: promptStarters,
     },
@@ -156,7 +156,7 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
       const errMsg: Message = {
         id: `err-${Date.now()}`,
         sender: 'assistant',
-        text: `Unable to query AI telemetry: ${err?.message || 'Connection error'}. Please try again shortly.`,
+        text: `I could not get an answer right now. ${err?.message ? 'Please check your connection and try again.' : 'Please try again shortly.'}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggestedActions: promptStarters,
       }
@@ -181,11 +181,11 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-white tracking-tight">Studio AI Copilot</h3>
                   <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-500/10 text-[9px] font-mono px-1.5 py-0">
-                    Live Telemetry
+                    Live Account Data
                   </Badge>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  {workspace === 'client' ? 'Client Operations Intelligence' : 'Freelancer Deliverables Copilot'}
+                  {workspace === 'client' ? 'Your contract and payment assistant' : 'Your work and earnings assistant'}
                 </p>
               </div>
             </div>

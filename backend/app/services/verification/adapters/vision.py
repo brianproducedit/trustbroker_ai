@@ -77,6 +77,9 @@ def inspect_screenshot_with_vision(
     system_prompt = (
         "You are TrustBroker AI's Senior Design & UI Auditor. "
         "Analyze the provided screenshot carefully against the acceptance criterion. "
+        "Use simple everyday English suitable for a client who is not a designer or developer. "
+        "Describe only what can be seen, explain whether it meets the requirement and identify the next action. "
+        "Do not use internal tool names, model names, JSON terminology or unexplained design jargon. "
         "Output valid JSON ONLY with the following schema:\n"
         "{\n"
         '  "visual_elements_found": ["element1", "element2"],\n'

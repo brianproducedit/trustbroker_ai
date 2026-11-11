@@ -138,7 +138,6 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
   const pastDeliveryData = parseDimScore(dims.past_delivery)
   const portfolioData = parseDimScore(dims.portfolio_relevance)
   const commsData = parseDimScore(dims.communication)
-  const riskData = parseDimScore(dims.risk)
 
   return (
     <div className={`bg-[#0B1120] border ${verdict.accentBorder} rounded-xl p-5 space-y-4 shadow-sm`}>
@@ -148,7 +147,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
           <div className="flex items-center gap-2">
             <verdict.Icon className={`w-4 h-4 ${verdict.scoreColor}`} />
             <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
-              Automated AI Compatibility Analysis
+              Candidate Review
             </span>
           </div>
           <h4 className="text-sm font-bold text-white tracking-tight">
@@ -176,7 +175,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
       {/* Visual Match Meter */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-[11px] text-slate-400">
-          <span>Project Conformance Level</span>
+          <span>Match to This Project</span>
           <span className="font-mono text-slate-300 font-medium">
             {score < 50 ? 'Low Conformance (< 50%)' : score < 80 ? 'Moderate Conformance' : 'High Conformance (≥ 80%)'}
           </span>
@@ -195,7 +194,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-blue-400 shrink-0" />
             <span className="text-xs font-semibold text-slate-200 uppercase tracking-wider">
-              Executive AI Evaluation Summary
+              Why This Candidate Received This Score
             </span>
           </div>
           <p className="text-xs text-slate-200 leading-relaxed">
@@ -204,7 +203,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
         </div>
       ) : fallbackPoints.length > 0 ? (
         <div className="bg-[#131B2E] border border-[#222A3D] rounded-lg p-4 space-y-2">
-          <span className="text-xs font-semibold text-slate-300">Key Takeaways:</span>
+          <span className="text-xs font-semibold text-slate-300">Main Points:</span>
           <ul className="list-disc list-inside text-xs text-slate-300 space-y-1">
             {fallbackPoints.map((pt, i) => (
               <li key={i}>{pt}</li>
@@ -218,10 +217,10 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
-              Core Assessment Dimensions (Canonical 40/25/20/15 Weights)
+              Score Breakdown
             </span>
             <span className="text-[10px] font-mono text-slate-500">
-              Deterministic + AI Assisted
+              Based on the project needs and the information provided
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -245,7 +244,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
                 />
               </div>
               <p className="text-[10px] text-slate-400 leading-normal">
-                Alignment between the project brief's required tech stack and the freelancer's profile.
+                How well the freelancer's skills match what this project needs.
               </p>
             </div>
 
@@ -271,7 +270,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
               <p className="text-[10px] text-slate-400 leading-normal">
                 {isNewcomer
                   ? 'First contract on platform. Zero completed milestone history on record.'
-                  : `Verified delivery history across ${pastContracts ?? 'active'} platform milestones. Risk index: ${riskData.scoreText}.`}
+                  : `Delivery history across ${pastContracts ?? 'active'} completed milestones. This helps show how reliably the freelancer has delivered work before.`}
               </p>
             </div>
 
@@ -295,7 +294,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
                 />
               </div>
               <p className="text-[10px] text-slate-400 leading-normal">
-                Direct applicability of the candidate's verified case studies and past deliverables.
+                How closely the freelancer's previous work relates to this project.
               </p>
             </div>
 
@@ -319,7 +318,7 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
                 />
               </div>
               <p className="text-[10px] text-slate-400 leading-normal">
-                Thoroughness, professionalism and technical articulation in the submitted cover proposal.
+                How clearly and thoughtfully the freelancer explained their proposal.
               </p>
             </div>
           </div>
@@ -332,14 +331,14 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
           <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1.5 text-xs">
             <span className="font-semibold text-amber-300 block">
-              💡 Recommended Hiring Strategy: Trial Milestone
+              💡 Suggested Safe Starting Point
             </span>
             <p className="text-slate-200 leading-relaxed">
               {trial.reason || 'Award a small first milestone before funding the rest of the contract.'}
             </p>
             {trial.amount && (
               <div className="flex items-center gap-2 pt-1">
-                <span className="text-[11px] text-slate-400 font-mono">Suggested Trial Staging:</span>
+                <span className="text-[11px] text-slate-400 font-mono">Suggested first milestone:</span>
                 <span className="font-mono text-xs bg-amber-900/50 text-amber-200 px-2.5 py-0.5 rounded border border-amber-800/60 font-bold">
                   ${trial.amount} {trial.currency || 'USD'}
                 </span>
@@ -377,4 +376,3 @@ export const AICompatibilityAssessment: React.FC<AICompatibilityAssessmentProps>
   )
 }
 export default AICompatibilityAssessment
-

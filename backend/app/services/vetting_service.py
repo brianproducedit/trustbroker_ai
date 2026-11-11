@@ -137,6 +137,8 @@ def vet_application(
         "NOT a numeric 0. For strong matches (score >= 90), recommendation must be strong_fit. "
         "If profile_completeness < 40, recommendation must be insufficient_evidence. "
         "If newcomer with strong portfolio (>=70), recommendation new_talent. "
+        "Write the rationale in simple, respectful English that a non-technical client can understand. "
+        "Explain the main strengths, concerns and sensible next step without unexplained jargon. "
         "Return ONLY JSON: {score:int, recommendation:str, rationale:str, newcomer:bool, "
         "dimension_scores:{skills_match:int, portfolio_relevance:int, past_delivery:int|str, "
         "communication:int, risk:int}}"

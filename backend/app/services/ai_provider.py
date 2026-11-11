@@ -73,15 +73,18 @@ def _validate_delivery_evaluation(
 # ==============================================================================
 
 GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
     "openai/gpt-oss-120b",
-    "qwen/qwen3.8-27b",
     "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
 ]
 
 OPENROUTER_MODELS = [
-    "google/gemma-4-27b-it:free",
-    "google/gemini-2.0-flash-exp:free",
     "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
+    "qwen/qwen-2.5-coder-32b-instruct:free",
+    "deepseek/deepseek-r1:free",
     "openrouter/auto",
 ]
 
@@ -406,19 +409,27 @@ def generate_sow_draft(
 ) -> Dict[str, Any]:
     """Generate structured Statement of Work (SOW) with milestones and acceptance criteria."""
     system_instruction = (
-        "You are an elite legal engineering consultant and principal technical architect for TrustBroker AI. "
-        "Your task is to take a client's project description and decompose it into an authoritative, comprehensive "
-        "and production-grade Statement of Work (SOW) with exceptional technical depth.\n\n"
+        "You are a careful contract-planning assistant for TrustBroker AI. "
+        "Turn the client's own request into a clear, fair and practical Statement of Work (SOW). "
+        "Preserve the client's goals, budget and important preferences. Do not quietly change the scope "
+        "or hide important terms from the client or freelancer.\n\n"
         "LINGUISTIC STYLE INSTRUCTIONS (MANDATORY):\n"
-        "- Write in polished, professional English (consistently applied).\n"
+        "- Write in polished, professional English that a non-technical client can understand.\n"
+        "- Explain technical work in everyday language and briefly explain any necessary technical term.\n"
         "- STRICT RULE: Never use the Oxford comma before words like 'and' or 'or' in enumerations of three or more items "
         "(e.g., write 'architecture, development and deployment' instead of 'architecture, development and deployment'; "
         "write 'React, TypeScript or Python' instead of 'React, TypeScript or Python').\n\n"
         "STATEMENT OF WORK SPECIFICATIONS:\n"
-        "- Generate an exhaustive, clear project description (400 to 600 words) defining functional objectives, system architecture and non-functional requirements (security, performance, test coverage and responsive cross-browser compatibility).\n"
-        "- Divide the project into 3 to 5 realistic, sequential milestones with logical deadlines.\n"
+        "- Write a clear project description that explains the intended result, included work and important limits in plain English. "
+        "Only include technical requirements when they are relevant to the client's request.\n"
+        "- Choose the number of milestones based on the project's size, risk, deliverables and natural review points. "
+        "Use 1 milestone for a small, clearly defined piece of work, 2 or 3 for moderate work and more only when the project "
+        "has genuinely separate phases. Do not default to 4 milestones and do not split work just to increase the count.\n"
+        "- Make each milestone represent a meaningful result that the client and freelancer can review. Avoid duplicate or artificial milestones.\n"
         "- Exact Budget Allocation: The sum of all milestone amounts must EXACTLY equal the total budget.\n"
-        "- Verifiable Criteria: Each milestone MUST contain 2 to 4 concrete, testable acceptance criteria with an evidence_type of 'url', 'screenshot', 'file' or 'text'.\n"
+        "- Verifiable Criteria: Each milestone MUST contain 1 to 4 concrete, easy-to-check acceptance criteria with an evidence_type of 'url', 'screenshot', 'file' or 'text'. Choose evidence that fits the type of work.\n"
+        "- Support all kinds of freelancers, including designers, writers, marketers, researchers, photographers, consultants and developers. "
+        "Do not add software terms, repositories or hosting requirements unless the project needs them.\n"
         "- Respond ONLY with valid JSON matching the requested structure."
     )
 
@@ -465,44 +476,44 @@ Generate a JSON object with:
 
     return {
         "title": f"{category.capitalize()} Project: {project_prompt[:40]}...",
-        "description": f"Structured Statement of Work for: {project_prompt}",
+        "description": f"Plain-English statement of work for: {project_prompt}",
         "category": category,
         "total_budget": total_budget,
         "currency": currency,
         "provider_used": "deterministic-fallback-engine",
         "milestones": [
             {
-                "title": "Milestone 1: Core Architecture & Prototype Setup",
-                "description": f"Initial foundation, environment setup and baseline deliverables for: {project_prompt[:50]}.",
+                "title": "Milestone 1: First agreed deliverable",
+                "description": f"Deliver the first clearly reviewable result for: {project_prompt[:50]}.",
                 "amount": half_budget,
                 "deadline_days": 7,
                 "acceptance_criteria": [
                     {
-                        "title": "Repository & Environment Initialization",
-                        "description": "Repository created with clean commit history, configuration templates and README documentation.",
-                        "evidence_type": "url",
+                        "title": "First agreed result delivered",
+                        "description": "The first agreed result is provided in a form the client can review.",
+                        "evidence_type": "file",
                     },
                     {
-                        "title": "Core Module Functional Prototype",
-                        "description": "Initial feature prototype delivered and verifiable through functional demonstration or code submission.",
+                        "title": "Work matches the agreed brief",
+                        "description": "The delivered work matches the first part of the client's request.",
                         "evidence_type": "text",
                     },
                 ],
             },
             {
-                "title": "Milestone 2: Final Implementation, Verification & Handover",
-                "description": "Complete feature completion, integration testing, documentation and live demonstration.",
+                "title": "Milestone 2: Final delivery and handover",
+                "description": "Complete the remaining agreed work and provide the final files or demonstration.",
                 "amount": remainder,
                 "deadline_days": 14,
                 "acceptance_criteria": [
                     {
-                        "title": "End-to-End Feature Complete Verification",
-                        "description": "All requested requirements fully implemented, functional and meeting project criteria.",
+                        "title": "All agreed work is complete",
+                        "description": "The requested work is complete and ready for the client to review.",
                         "evidence_type": "url",
                     },
                     {
-                        "title": "Deliverables & Documentation Handover",
-                        "description": "Comprehensive deployment instructions and handoff documentation verified.",
+                        "title": "Final files and instructions provided",
+                        "description": "The client receives the agreed files, materials or instructions needed to use the result.",
                         "evidence_type": "file",
                     },
                 ],
@@ -522,6 +533,7 @@ def generate_clarify_questions(
         "You are a senior contracting advisor and technical scoping consultant for TrustBroker AI. "
         "Ask 3 to 6 insightful clarification questions a client should answer before a freelance SOW is finalized. "
         "Cover architectural constraints, hosting preferences, credentials and acceptance requirements. "
+        "Use simple, friendly English that a non-technical client can answer. Explain any technical choice briefly. "
         "Do not repeat facts already stated in the brief or in prior answers.\n"
         "STRICT LINGUISTIC RULE: Do NOT use Oxford commas before 'and' or 'or' in any sentence or list. "
         "Return ONLY JSON: {\"questions\": [{\"id\": \"q1\", \"question\": \"...\"}]}"
@@ -553,28 +565,28 @@ Budget: {total_budget} USD
 
     fallback = {
         "software": [
-            "What tech stack or hosting constraints must the freelancer follow?",
-            "Is there an existing repo or design file they should start from?",
-            "Which browsers or devices must be supported?",
-            "What does 'done' look like for the first milestone?",
+            "Are there any tools, websites or services the freelancer must use or avoid?",
+            "Do you already have files, examples or designs that the freelancer should use?",
+            "Who will use the finished result and what should they be able to do?",
+            "What would make you say the first piece of work is complete?",
         ],
         "design": [
-            "Do you already have a brand kit (colors, type, logo)?",
-            "Which formats should be delivered (Figma, SVG, PNG)?",
+            "Do you have preferred colours, fonts, logos or examples you like?",
+            "What files would you like to receive at the end?",
             "Are there examples of styles you like or dislike?",
-            "How many unique screens or assets are in scope?",
+            "How many pages, images or other pieces of work do you need?",
         ],
         "marketing": [
             "Who is the target audience and primary channel?",
-            "Is copywriting included or design/assets only?",
-            "Do you have existing analytics or campaign data to use?",
-            "What conversion event should this work improve?",
+            "Should the freelancer write the words, create the visuals or do both?",
+            "Do you have existing customer information or past results to share?",
+            "What result would make this work successful for you?",
         ],
         "research": [
             "What decision will this research inform?",
-            "Do you have a preferred method (desk research, interviews, survey)?",
+            "Would you prefer written research, conversations with people or a survey?",
             "Are there sources or competitors that must be included?",
-            "What deliverable format do you need (memo, deck, spreadsheet)?",
+            "What form would be most useful to you: a report, presentation or spreadsheet?",
         ],
     }
     picked = fallback.get(category, fallback["software"])
