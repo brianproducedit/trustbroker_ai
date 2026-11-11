@@ -157,7 +157,7 @@ def call_groq(system_prompt: str, user_prompt: str, model_override: str = None) 
         logger.debug("Groq API key not configured, skipping.")
         return None, None
 
-    models_to_try = [model_override] if model_override else GROQ_MODELS
+    models_to_try = ([model_override] + [m for m in GROQ_MODELS if m != model_override]) if model_override else GROQ_MODELS
 
     for model in models_to_try:
         def _attempt():
@@ -220,7 +220,7 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
         logger.debug("OpenRouter API key not configured, skipping.")
         return None, None
 
-    models_to_try = [model_override] if model_override else OPENROUTER_MODELS
+    models_to_try = ([model_override] + [m for m in OPENROUTER_MODELS if m != model_override]) if model_override else OPENROUTER_MODELS
 
     for model in models_to_try:
         auth_failed = False
@@ -305,7 +305,7 @@ def call_deepseek(system_prompt: str, user_prompt: str, model_override: str = No
         logger.debug("DeepSeek API key not configured, skipping.")
         return None, None
 
-    models_to_try = [model_override] if model_override else DEEPSEEK_MODELS
+    models_to_try = ([model_override] + [m for m in DEEPSEEK_MODELS if m != model_override]) if model_override else DEEPSEEK_MODELS
 
     for model in models_to_try:
         def _attempt():

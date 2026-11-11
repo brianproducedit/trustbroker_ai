@@ -79,7 +79,7 @@ def score_criterion_result(
             "confidence": 0.60,
             "explanation": (
                 "The automatic check could not fully confirm this requirement. "
-                "Please review the submitted evidence manually before approving payment."
+                "Manual review is required before approving payment. Please review the submitted evidence."
             ),
             "evidence_match_snippet": citation or adapter_error or "Requires human review",
             "adapter_used": adapter_name,

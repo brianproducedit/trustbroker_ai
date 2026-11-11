@@ -24,14 +24,14 @@ logger = logging.getLogger("trustbroker.verification.vision")
 # Groq vision models (current as of Nov 2026 — no llama-3.2 preview, those are decommissioned)
 GROQ_VISION_MODELS = [
     "qwen/qwen3.8-27b",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
 ]
 
 # OpenRouter free vision models (fallback when Groq is exhausted)
 OPENROUTER_VISION_MODELS = [
-    "nvidia/nemotron-3.5-super-vl:free",
-    "google/gemma-4-31b-it:free",
     "openrouter/free",
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free",
+    "qwen/qwen-2-vl-72b-instruct:free",
 ]
 
 
@@ -137,6 +137,26 @@ def inspect_screenshot_with_vision(
     else:
         logger.info(f"OpenRouter API key not configured — skipping OpenRouter vision for criterion '{criterion_title}'")
 
+    # --- TERTIARY: DeepSeek Paid Fallback (text-only review) ---
+    # DeepSeek Flash supports image input through the official OpenAI-compatible
+    # API. Send the actual image data, never only its storage path.
+    if settings.deepseek_api_key and settings.deepseek_api_key.strip():
+        logger.info(
+            "Engaging DeepSeek paid vision fallback for '%s'",
+            criterion_title,
+        )
+        result = _try_deepseek_vision(
+            system_prompt,
+            user_content,
+            settings.deepseek_api_key.strip(),
+        )
+        if result is not None:
+            if result.get("error"):
+                last_error = result["error"]
+            else:
+                return result
+        last_error = last_error or "DeepSeek could not inspect the image"
+
     # All vision providers exhausted — return NEEDS_REVIEW (never fabricate a pass)
     logger.warning(
         f"All vision models exhausted for criterion '{criterion_title}'. "
@@ -144,7 +164,8 @@ def inspect_screenshot_with_vision(
     )
     return _needs_review_result(
         criterion_title,
-        f"Vision inspection could not be completed. All vision models failed (last: {last_error}). Manual review required."
+        "The image could not be checked automatically. Please open the image yourself "
+        "and confirm whether it meets the requirement."
     )
 
 
@@ -166,6 +187,70 @@ def _needs_review_result(criterion_title: str, observation: str) -> Dict[str, An
         "passed": False,
         "needs_review": True,
     }
+
+
+def _try_deepseek_vision(
+    system_prompt: str,
+    user_content: List[Dict[str, Any]],
+    api_key: str,
+) -> Optional[Dict[str, Any]]:
+    """Run the official DeepSeek Flash image-input fallback."""
+    payload = {
+        "model": "deepseek-flash",
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    f"{system_prompt}\n"
+                    "This is a paid fallback. Use only what is visible in the image. "
+                    "Write observations in simple English for a non-technical client. "
+                    "Do not mention model names, APIs, JSON, HTTP status codes or internal tools."
+                ),
+            },
+            {"role": "user", "content": user_content},
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0.1,
+        "max_tokens": 2000,
+    }
+    try:
+        with httpx.Client(timeout=90.0) as client:
+            response = client.post(
+                "https://api.deepseek.com/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+        if response.status_code != 200:
+            logger.warning("DeepSeek vision returned HTTP %s", response.status_code)
+            return {"error": f"DeepSeek vision request failed ({response.status_code})"}
+
+        choices = response.json().get("choices", [])
+        content = choices[0].get("message", {}).get("content") if choices else None
+        parsed = _parse_vision_response(content or "", "deepseek-flash")
+        if not parsed:
+            return {"error": "DeepSeek vision returned an unreadable assessment"}
+        details = parsed["parsed"]
+        matches = parsed["matches"]
+        parsed["adapter"] = "deepseek_vision_fallback"
+        parsed["model_used"] = "deepseek:deepseek-flash"
+        return {
+            "adapter": parsed["adapter"],
+            "model_used": parsed["model_used"],
+            "matches_criterion": matches,
+            "confidence": parsed["confidence"],
+            "visual_elements": details.get("visual_elements_found", []),
+            "observation": str(details.get("layout_observation", "")),
+            "citation": str(details.get("summary_citation", "Visual evidence was reviewed.")),
+            "defects": details.get("defects_or_gaps", []),
+            "passed": matches,
+            "needs_review": not matches,
+        }
+    except Exception as exc:
+        logger.warning("DeepSeek vision request failed: %s", exc)
+        return {"error": "DeepSeek vision request could not be completed"}
 
 
 def _parse_vision_response(raw: str, model: str) -> Optional[Dict[str, Any]]:
