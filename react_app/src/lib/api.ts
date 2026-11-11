@@ -390,6 +390,10 @@ export const api = {
     payouts: (contractId: string) =>
       apiFetch<any[]>(`/payments/payouts/${contractId}`),
     earnings: () => apiFetch<any[]>('/payments/earnings'),
+    claimSandboxPayout: (payoutId: string) =>
+      apiFetch<any>(`/payments/payouts/${payoutId}/claim-sandbox`, {
+        method: 'POST',
+      }),
     clientLedger: () => apiFetch<{
       payouts: any[]
       payment_attempts: any[]

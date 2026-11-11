@@ -26,6 +26,7 @@ from app.services.payment_service import (
     capture_milestone_funding_payment,
     release_milestone_payout,
     _apply_payout_status,
+    claim_sandbox_payout,
 )
 from app.services.policy_engine import PolicyEngine
 from app.utils.paypal_client import verify_webhook_signature
@@ -688,6 +689,61 @@ def test_unclaimed_sandbox_payout_settles_milestone(
     assert milestone.payment_status == PaymentStatus.RELEASED
     assert contract.released_amount == Decimal("300.00")
     assert contract.staged_amount == Decimal("0.00")
+
+
+def test_claim_sandbox_payout_transitions_to_success(
+    session: Session, client_user: UserProfile
+):
+    """Simulating claim on an UNCLAIMED sandbox payout transitions to SUCCESS and protects against downgrade."""
+    freelancer = UserProfile(
+        id=uuid.uuid4(),
+        email="freelancer.claim@example.com",
+        full_name="Claim Freelancer",
+        role="freelancer",
+        paypal_payout_email="freelancer.claim@sandbox.paypal.com",
+    )
+    contract = Contract(
+        id=uuid.uuid4(),
+        code="TB-CLAIM-001",
+        title="Claim Sandbox Contract",
+        client_id=client_user.id,
+        freelancer_id=freelancer.id,
+        status=ContractStatus.ACTIVE,
+        total_amount=Decimal("500.00"),
+        staged_amount=Decimal("500.00"),
+        currency="USD",
+    )
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        contract_id=contract.id,
+        title="Milestone 1",
+        amount=Decimal("500.00"),
+        status=MilestoneStatus.VERIFIED,
+        payment_status=PaymentStatus.RELEASE_AUTHORIZED,
+    )
+    payout = Payout(
+        contract_id=contract.id,
+        milestone_id=milestone.id,
+        freelancer_id=freelancer.id,
+        amount=milestone.amount,
+        currency="USD",
+        paypal_payout_email=freelancer.paypal_payout_email,
+        status=PayoutStatus.UNCLAIMED.value,
+        idempotency_key=f"payout:{milestone.id}",
+    )
+    session.add_all([freelancer, contract, milestone, payout])
+    session.commit()
+
+    # Claim sandbox payout as the freelancer
+    claimed = claim_sandbox_payout(session, payout.id, freelancer)
+    assert claimed.status == PayoutStatus.SUCCESS.value
+
+    session.refresh(payout)
+    assert payout.status == PayoutStatus.SUCCESS.value
+
+    # Subsequent polling with "unclaimed" must not downgrade SUCCESS
+    _apply_payout_status(session, payout, "UNCLAIMED")
+    assert payout.status == PayoutStatus.SUCCESS.value
 
 
 def test_apply_payout_status_unknown_status_maps_to_reconciliation_required(session: Session):

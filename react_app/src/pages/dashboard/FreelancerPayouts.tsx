@@ -29,6 +29,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { toast } from 'sonner'
 
 export interface PayoutItem {
   id: string
@@ -52,6 +53,7 @@ export const FreelancerPayouts: React.FC = () => {
   const [payouts, setPayouts] = useState<PayoutItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [claimingId, setClaimingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showWebhookModal, setShowWebhookModal] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(true)
@@ -66,6 +68,19 @@ export const FreelancerPayouts: React.FC = () => {
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
+    }
+  }
+
+  const handleClaimSandbox = async (payoutId: string) => {
+    setClaimingId(payoutId)
+    try {
+      await api.payments.claimSandboxPayout(payoutId)
+      toast.success('Sandbox payout marked as claimed. Status updated to SUCCESS.')
+      await loadEarnings()
+    } catch (err: any) {
+      toast.error(err?.detail || err?.message || 'Failed to claim sandbox payout.')
+    } finally {
+      setClaimingId(null)
     }
   }
 
@@ -90,13 +105,16 @@ export const FreelancerPayouts: React.FC = () => {
   const contractMap = new Map(contracts.map((c) => [c.id, c]))
 
   // Calculate real metrics from payouts and active contracts
-  const clearedPayouts = payouts.filter(
-    (p) => p.status?.toLowerCase() === 'success' || p.status?.toLowerCase() === 'succeeded'
-  )
+  // In PayPal Sandbox, payouts to demo/virtual emails stay UNCLAIMED until accepted in Sandbox,
+  // but represent completed, released disbursements from the client escrow.
+  const isCleared = (status: string) =>
+    ['success', 'succeeded', 'completed', 'unclaimed'].includes((status || '').toLowerCase())
+
+  const clearedPayouts = payouts.filter((p) => isCleared(p.status))
   const totalClearedAmount = clearedPayouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
 
   const inFlightPayouts = payouts.filter(
-    (p) => ['pending', 'processing', 'unclaimed'].includes(p.status?.toLowerCase() || '')
+    (p) => ['pending', 'processing', 'submitted'].includes(p.status?.toLowerCase() || '')
   )
   const totalInFlightAmount = inFlightPayouts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
 
@@ -136,9 +154,12 @@ export const FreelancerPayouts: React.FC = () => {
     }
     if (s === 'unclaimed') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-amber-950/80 text-amber-400 border border-amber-800/60">
-          <AlertCircle className="w-3 h-3 text-amber-400" />
-          UNCLAIMED (SANDBOX)
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60"
+          title="Disbursed via PayPal Payouts API. In Sandbox, held until recipient sandbox login."
+        >
+          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+          DISBURSED (SANDBOX)
         </span>
       )
     }
@@ -411,7 +432,24 @@ export const FreelancerPayouts: React.FC = () => {
                         </td>
 
                         <td className="py-3.5 px-4">
-                          {getStatusBadge(p.status)}
+                          <div className="flex flex-col items-start gap-1">
+                            {getStatusBadge(p.status)}
+                            {p.status?.toLowerCase() === 'unclaimed' && (
+                              <button
+                                onClick={() => handleClaimSandbox(p.id)}
+                                disabled={claimingId === p.id}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-300 hover:text-white bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-700/50 transition-colors disabled:opacity-50"
+                                title="Simulate recipient accepting funds in PayPal Sandbox"
+                              >
+                                {claimingId === p.id ? (
+                                  <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                                ) : (
+                                  <Check className="w-2.5 h-2.5" />
+                                )}
+                                <span>Claim in Sandbox</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
 
                         <td className="py-3.5 px-4">
@@ -469,7 +507,23 @@ export const FreelancerPayouts: React.FC = () => {
                 <div key={p.id} className="p-4 space-y-2.5 bg-[#0E1528]">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-semibold text-emerald-400">{contractCode}</span>
-                    {getStatusBadge(p.status)}
+                    <div className="flex items-center gap-1.5">
+                      {getStatusBadge(p.status)}
+                      {p.status?.toLowerCase() === 'unclaimed' && (
+                        <button
+                          onClick={() => handleClaimSandbox(p.id)}
+                          disabled={claimingId === p.id}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-300 hover:text-white bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-700/50 transition-colors disabled:opacity-50"
+                        >
+                          {claimingId === p.id ? (
+                            <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                          ) : (
+                            <Check className="w-2.5 h-2.5" />
+                          )}
+                          <span>Claim</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-white">{milestoneTitle}</h4>
@@ -519,7 +573,10 @@ export const FreelancerPayouts: React.FC = () => {
               Disbursements shown here are executed against the PayPal Developer Sandbox via PayPal Payouts API.
             </p>
             <p className="text-slate-400 text-[11px] leading-relaxed">
-              In live production, PayPal Payouts capabilities are subject to recipient country regulations and regional PayPal account capabilities (e.g., Zimbabwe accounts are currently Send-Only in PayPal production).
+              <strong>PayPal Sandbox UNCLAIMED Status:</strong> Per official PayPal Payouts documentation, payments sent to unconfirmed or demo recipient emails remain held as <code className="text-amber-300 font-mono">UNCLAIMED</code> for 30 days until accepted at <code className="text-blue-300 font-mono">sandbox.paypal.com</code>. TrustBroker treats this as a completed, settled disbursement because client funds were captured and disbursed via PayPal. In live production with registered PayPal accounts, payouts settle immediately with <code className="text-emerald-400 font-mono">SUCCESS</code> status. You can click <em>Claim in Sandbox</em> on any row above to simulate the recipient claiming the payout.
+            </p>
+            <p className="text-slate-500 text-[10px] leading-relaxed">
+              Note: Live production payout capabilities are subject to recipient country regulations and regional PayPal account capabilities (e.g., Zimbabwe accounts are currently Send-Only in PayPal production).
             </p>
           </div>
         </div>

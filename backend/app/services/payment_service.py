@@ -116,6 +116,9 @@ def _mark_milestone_funded(session: Session, attempt: PaymentAttempt) -> None:
 
 def _apply_payout_status(session: Session, payout: Payout, status_value: str) -> None:
     mapped = (status_value or "").strip().lower()
+    # Guard: do not revert an already settled SUCCESS payout back to UNCLAIMED during periodic sandbox polling
+    if payout.status == PayoutStatus.SUCCESS.value and mapped == "unclaimed":
+        return
     aliases = {
         "success": PayoutStatus.SUCCESS.value,
         "succeeded": PayoutStatus.SUCCESS.value,
@@ -870,6 +873,38 @@ def list_client_payouts(session: Session, client: UserProfile) -> List[PayoutRea
         ).all()
     )
     return [PayoutRead.model_validate(p) for p in payouts]
+
+
+def claim_sandbox_payout(session: Session, payout_id: uuid.UUID, user: UserProfile) -> PayoutRead:
+    """Transition an UNCLAIMED sandbox payout to SUCCESS to simulate recipient claiming it."""
+    payout = session.get(Payout, payout_id)
+    if not payout:
+        raise HTTPException(status_code=404, detail="Payout record not found.")
+
+    contract = session.get(Contract, payout.contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Associated contract not found.")
+
+    # Ensure caller is contract party (freelancer, client) or admin
+    if user.id != payout.freelancer_id and user.id != contract.client_id and user.id != contract.freelancer_id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to update this payout.")
+
+    _apply_payout_status(session, payout, PayoutStatus.SUCCESS.value)
+    log_audit_event(
+        session=session,
+        action="payout_claimed_sandbox",
+        details=f"PayPal Sandbox payout {payout.paypal_batch_id or payout.id} claimed simulation completed by {user.email}.",
+        contract_id=payout.contract_id,
+        metadata={
+            "payout_id": str(payout.id),
+            "claimed_by": user.email,
+            "status": payout.status,
+            "amount": str(payout.amount),
+        },
+    )
+    session.commit()
+    session.refresh(payout)
+    return PayoutRead.model_validate(payout)
 
 
 def list_client_ledger(session: Session, client: UserProfile) -> Dict[str, Any]:

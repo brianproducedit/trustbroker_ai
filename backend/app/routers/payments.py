@@ -112,6 +112,16 @@ def list_contract_payouts(
     return payment_service.list_contract_payouts(session, contract_id, current_user)
 
 
+@router.post("/payouts/{payout_id}/claim-sandbox", response_model=PayoutRead, summary="Simulate receiver claiming sandbox payout")
+def claim_sandbox_payout(
+    payout_id: uuid.UUID,
+    current_user: UserProfile = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Transition an UNCLAIMED sandbox payout to SUCCESS to simulate recipient claiming it in sandbox."""
+    return payment_service.claim_sandbox_payout(session=session, payout_id=payout_id, user=current_user)
+
+
 @router.get("/history/{contract_id}", response_model=List[PaymentAttemptRead], summary="Get payment attempts for a contract")
 def get_payment_history(
     contract_id: uuid.UUID,

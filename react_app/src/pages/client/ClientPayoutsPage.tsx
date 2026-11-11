@@ -70,7 +70,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     staged: { label: 'Staged (Sandbox)', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
     staged_in_sandbox: { label: 'Staged (Sandbox)', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
     release_authorized: { label: 'Client Approved Release', cls: 'bg-teal-500/15 text-teal-400 border border-teal-500/30' },
-    unclaimed: { label: 'Unclaimed', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+    unclaimed: { label: 'Disbursed (Sandbox)', cls: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
     failed: { label: 'Failed', cls: 'bg-rose-500/15 text-rose-400 border border-rose-500/30' },
     denied: { label: 'Denied', cls: 'bg-rose-500/15 text-rose-400 border border-rose-500/30' },
     returned: { label: 'Returned', cls: 'bg-purple-500/15 text-purple-400 border border-purple-500/30' },

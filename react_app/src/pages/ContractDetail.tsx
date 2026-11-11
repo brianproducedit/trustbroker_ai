@@ -1822,7 +1822,8 @@ export const ContractDetail: React.FC = () => {
                         <tbody className="divide-y divide-[#222A3D]">
                           {payouts.map((p) => {
                             const isSuccess = p.status?.toLowerCase() === 'success' || p.status?.toLowerCase() === 'succeeded'
-                            const isProcessing = ['pending', 'processing'].includes(p.status?.toLowerCase())
+                            const isUnclaimedSandbox = p.status?.toLowerCase() === 'unclaimed'
+                            const isProcessing = ['pending', 'processing', 'submitted'].includes(p.status?.toLowerCase())
                             return (
                               <tr key={p.id} className="hover:bg-[#172036] transition-colors">
                                 <td className="py-3 px-3 font-mono text-slate-400 text-[11px]">
@@ -1875,6 +1876,11 @@ export const ContractDetail: React.FC = () => {
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
                                       <CheckCircle2 className="w-3 h-3" />
                                       SUCCESS
+                                    </span>
+                                  ) : isUnclaimedSandbox ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60" title="Disbursed via PayPal Payouts API (Sandbox)">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      DISBURSED (SANDBOX)
                                     </span>
                                   ) : isProcessing ? (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-blue-950/80 text-blue-400 border border-blue-800/60">

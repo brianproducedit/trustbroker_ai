@@ -38,9 +38,11 @@ export const FreelancerHome: React.FC = () => {
     ]).finally(() => setLoading(false))
   }, [])
 
-  // Calculate freelancer metrics
+  // Calculate freelancer metrics (in Sandbox, unclaimed payouts represent settled disbursements)
+  const isCleared = (status: string) =>
+    ['success', 'succeeded', 'completed', 'unclaimed'].includes((status || '').toLowerCase())
   const clearedTotal = earnings
-    .filter((p) => p.status?.toLowerCase() === 'success')
+    .filter((p) => isCleared(p.status))
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
 
   const activeWork = contracts.filter((c) => c.status === 'active' || c.status === 'in_verification')
