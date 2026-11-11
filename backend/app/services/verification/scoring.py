@@ -19,6 +19,28 @@ SUBJECTIVE_KEYWORDS = {
 }
 
 
+def _client_facing_evidence(citation: str, facts: Dict[str, Any]) -> str:
+    """Translate adapter diagnostics into useful plain-English evidence."""
+    raw = str(citation or "").strip()
+    status_code = facts.get("status_code")
+    title = str(facts.get("title") or "").lower()
+
+    if status_code in {401, 403, 429} or "security checkpoint" in title:
+        return (
+            "The website responded, but its hosting security check prevented the automatic "
+            "review. The client should open the link manually and confirm the required feature."
+        )
+    if raw.startswith("HTTP ") or "HTTPS/TLS" in raw:
+        if facts.get("passed"):
+            return "The submitted website opened successfully and was available for manual review."
+        return "The submitted website could not be fully checked automatically."
+    if raw.startswith("Timeout"):
+        return "The submitted website did not respond in time. The client should try opening the link manually."
+    if "Security Blocked" in raw or "SSRF" in raw:
+        return "The submitted link was blocked for safety and needs a different, publicly reviewable URL."
+    return raw
+
+
 def is_subjective_criterion(title: str, description: str) -> bool:
     """Detect whether a criterion relies on subjective human judgment."""
     combined = f"{title} {description}".lower()
@@ -39,6 +61,7 @@ def score_criterion_result(
     adapter_passed = adapter_facts.get("passed", False)
     adapter_error = adapter_facts.get("error")
     citation = adapter_facts.get("citation", "")
+    client_evidence = _client_facing_evidence(citation, adapter_facts)
 
     # Metadata-only probes establish availability, not semantic completion.
     # Keep these cases reviewable unless an adapter explicitly supplies bounded
@@ -63,7 +86,7 @@ def score_criterion_result(
                     "that the work meets this requirement. Please review it before approving payment."
                 )
             ),
-            "evidence_match_snippet": citation,
+            "evidence_match_snippet": client_evidence,
             "adapter_used": adapter_name,
             "requires_review": True,
         }
@@ -81,7 +104,7 @@ def score_criterion_result(
                 "The automatic check could not fully confirm this requirement. "
                 "Manual review is required before approving payment. Please review the submitted evidence."
             ),
-            "evidence_match_snippet": citation or adapter_error or "Requires human review",
+            "evidence_match_snippet": client_evidence or "The submitted evidence needs human review.",
             "adapter_used": adapter_name,
             "requires_review": True,
         }
@@ -104,7 +127,7 @@ def score_criterion_result(
                     "The website is responding, but an automated security check prevented a full review. "
                     "Please open the link yourself and confirm that the required feature works."
                 ),
-                "evidence_match_snippet": citation or adapter_error,
+                "evidence_match_snippet": client_evidence or "The submitted evidence needs human review.",
                 "adapter_used": adapter_name,
                 "requires_review": True,
             }
@@ -119,7 +142,7 @@ def score_criterion_result(
                 "The submitted evidence did not show that this requirement was completed. "
                 "Please correct the missing work and submit the evidence again."
             ),
-            "evidence_match_snippet": citation,
+            "evidence_match_snippet": client_evidence,
             "adapter_used": adapter_name,
             "requires_review": False,
         }
@@ -154,7 +177,7 @@ def score_criterion_result(
                 "This requirement depends on human judgment about appearance or presentation. "
                 "Please review it before approving payment."
             ),
-            "evidence_match_snippet": citation,
+            "evidence_match_snippet": client_evidence,
             "adapter_used": adapter_name,
             "requires_review": True,
         }
@@ -165,7 +188,7 @@ def score_criterion_result(
         llm_score = int(llm_evaluation.get("score", 80 if llm_passed else 30))
         llm_conf = float(llm_evaluation.get("confidence", 0.85))
         llm_expl = str(llm_evaluation.get("explanation", ""))
-        llm_snip = str(llm_evaluation.get("cited_snippet", citation))
+        llm_snip = str(llm_evaluation.get("cited_snippet", client_evidence))
 
         if llm_passed and adapter_passed and llm_score >= 75:
             return {
@@ -219,7 +242,7 @@ def score_criterion_result(
                 "Some evidence was found, but the automatic reviewer was unavailable. "
                 "Please review the submission manually before approving payment."
             ),
-            "evidence_match_snippet": citation,
+            "evidence_match_snippet": client_evidence,
             "adapter_used": adapter_name,
             "requires_review": True,
         }
@@ -278,15 +301,20 @@ def aggregate_verification_assessment(
 
     if overall_passed:
         summary_analysis = (
-            f"The submitted work meets all {len(criterion_evaluations)} agreed requirements. "
-            f"It received a score of {overall_score} out of 100. "
-            "The client can review the evidence and approve payment."
+            f"The submitted work meets all {len(criterion_evaluations)} agreed requirements "
+            f"and received a score of {overall_score} out of 100. "
+            "The evidence supports the agreed scope and no required item was left unresolved. "
+            "The client should complete the final review and may approve payment if the work also "
+            "meets their expectations."
         )
     elif requires_human_review:
         summary_analysis = (
             f"The submitted work received a score of {overall_score} out of 100. "
-            f"{len(review_titles)} requirement(s) need a client to check them personally "
-            "before payment can be approved."
+            f"{len(review_titles)} requirement(s) still need a personal check by the client: "
+            f"{', '.join(review_titles[:4]) or 'the items marked for review'}. "
+            "The automatic checks found useful evidence but could not safely confirm everything. "
+            "The freelancer should provide any missing proof, while the client should review the "
+            "links or files before approving payment."
         )
     else:
         gap_text = ", ".join(failed_titles[:3]) or "one or more requirements"

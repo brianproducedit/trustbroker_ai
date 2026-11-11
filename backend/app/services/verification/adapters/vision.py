@@ -216,7 +216,7 @@ def _try_openrouter_vision_models(
 
 
 def _parse_retry_delay(headers: httpx.Headers) -> float:
-    """Read common provider reset formats and cap waits to two minutes."""
+    """Read common provider reset formats and cap waits to five minutes."""
     retry_after = headers.get("retry-after", "")
     reset = headers.get("x-ratelimit-reset-requests", "")
     value = retry_after or reset
@@ -224,14 +224,14 @@ def _parse_retry_delay(headers: httpx.Headers) -> float:
         return 0.0
     try:
         if value.strip().replace(".", "", 1).isdigit():
-            return min(120.0, max(0.0, float(value)))
+            return min(300.0, max(0.0, float(value)))
     except ValueError:
         pass
     match = re.fullmatch(r"(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?", value.strip())
     if match:
         minutes = float(match.group(1) or 0)
         seconds = float(match.group(2) or 0)
-        return min(120.0, max(0.0, minutes * 60 + seconds))
+        return min(300.0, max(0.0, minutes * 60 + seconds))
     return 0.0
 
 
@@ -427,6 +427,7 @@ def _try_groq_vision(
                 "citation": str(validated["parsed"].get("summary_citation", "Visual inspection completed.")),
                 "defects": validated["parsed"].get("defects_or_gaps", []),
                 "passed": validated["matches"],
+                "needs_review": not validated["matches"],
             }
     except Exception as e:
         logger.debug(f"Groq vision model {model} attempt failed: {e}")
@@ -510,6 +511,7 @@ def _try_openrouter_vision(
                 "citation": str(validated["parsed"].get("summary_citation", "Visual inspection completed.")),
                 "defects": validated["parsed"].get("defects_or_gaps", []),
                 "passed": validated["matches"],
+                "needs_review": not validated["matches"],
             }
     except Exception as e:
         logger.debug(f"OpenRouter vision model {model} attempt failed: {e}")

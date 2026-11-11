@@ -607,16 +607,17 @@ export const useContractStore = create<ContractStore>((set, get) => ({
 
         // If verification was queued in the background, poll until the report lands.
         if (verifyRes?.status === 'queued' && deliveryId) {
-          for (let attempt = 0; attempt < 40 && !verifyRes?.report; attempt++) {
+          // Vision verification may deliberately wait for a provider rate-limit
+          // reset before retrying. Keep polling long enough for that job instead
+          // of starting a second verification request while it is still running.
+          for (let attempt = 0; attempt < 220 && !verifyRes?.report; attempt++) {
             await new Promise((r) => setTimeout(r, 1500))
             const statusRes = await api.deliveries.verificationStatus(deliveryId)
             if (statusRes?.report) {
               verifyRes = statusRes.report
             } else if (
-              statusRes?.status === 'pending' ||
               statusRes?.status === 'interrupted' ||
-              statusRes?.status === 'failed' ||
-              statusRes?.status === 'needs_review'
+              statusRes?.status === 'failed'
             ) {
               break
             }
