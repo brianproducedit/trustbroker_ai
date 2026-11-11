@@ -32,6 +32,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   const [isVerifying, setIsVerifying] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [forceNewOrder, setForceNewOrder] = useState(false)
+  const [hasInitiatedCheckout, setHasInitiatedCheckout] = useState(false)
 
   const handleManualCapture = async () => {
     setIsVerifying(true)
@@ -109,7 +110,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
       </p>
 
       {/* Pending Approval Recovery Banner */}
-      {paymentStatus === 'checkout_created' && (
+      {(paymentStatus === 'checkout_created' || hasInitiatedCheckout) && (
         <div className="p-3.5 bg-blue-950/50 border border-blue-700/60 text-blue-200 text-xs rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
             <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -165,6 +166,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
             disabled={isProcessing || isVerifying}
             createOrder={async () => {
               setErrorMsg(null)
+              setHasInitiatedCheckout(true)
               try {
                 const res = await api.payments.createOrder({
                   contract_id: contractId,
