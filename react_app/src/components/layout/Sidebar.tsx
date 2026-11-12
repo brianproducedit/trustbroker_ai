@@ -76,6 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRole }) => {
     { label: 'Home', icon: LayoutGrid, path: ROUTES.FREELANCER_HOME },
     { label: 'Find Work', icon: Search, path: ROUTES.MARKETPLACE },
     { label: 'Applications', icon: Inbox, path: ROUTES.FREELANCER_APPLICATIONS },
+    { label: 'My Contracts', icon: FileText, path: ROUTES.FREELANCER_CONTRACTS },
     { label: 'Active Work', icon: Briefcase, path: ROUTES.FREELANCER_WORK },
     { label: 'Operations', icon: BarChart3, path: ROUTES.FREELANCER_OPERATIONS },
     { label: 'Analytics Studio', icon: Sparkles, path: ROUTES.FREELANCER_STUDIO },

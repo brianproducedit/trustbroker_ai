@@ -37,6 +37,7 @@ export const ROUTES = {
   MARKETPLACE: '/app/freelancer/contracts',
   LISTING_DETAIL: (id: string = ':id') => `/app/freelancer/contracts/${id}`,
   FREELANCER_APPLICATIONS: '/app/freelancer/applications',
+  FREELANCER_CONTRACTS: '/app/freelancer/my-contracts',
   FREELANCER_PROFILE: '/app/freelancer/profile',
   FREELANCER_WORK: '/app/freelancer/work',
   FREELANCER_DELIVER: (id: string = ':id') => `/app/freelancer/work/${id}/deliver`,

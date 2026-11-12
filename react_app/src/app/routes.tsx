@@ -30,6 +30,7 @@ import { ClientProfile } from '@/pages/client/ClientProfile'
 import { ClientProfilePublic } from '@/pages/client/ClientProfilePublic'
 import { ClientPayoutsPage } from '@/pages/client/ClientPayoutsPage'
 import { FreelancerWork } from '@/pages/freelancer/FreelancerWork'
+import { FreelancerContracts } from '@/pages/freelancer/FreelancerContracts'
 import { NotificationsPage } from '@/pages/Notifications'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -197,6 +198,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <MyApplications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={ROUTES.FREELANCER_CONTRACTS}
+        element={
+          <ProtectedRoute>
+            <FreelancerContracts />
           </ProtectedRoute>
         }
       />
