@@ -152,7 +152,7 @@ If a deploy encounters a migration error:
 
 ## Automated Test Suite
 
-The backend includes a comprehensive 86-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, CORS security and vetting scoring:
+The backend includes a comprehensive 90-test regression suite covering authentication integrity, PayPal Orders/Payouts truthfulness, PolicyEngine safeguards, SSRF protection, multimodal evidence verification, CORS security and vetting scoring:
 
 ```bash
 # Run the full test suite
