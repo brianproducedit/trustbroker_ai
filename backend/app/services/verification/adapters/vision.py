@@ -29,7 +29,6 @@ GROQ_VISION_MODELS = [
 # OpenRouter free vision models (fallback when Groq is exhausted)
 OPENROUTER_VISION_MODELS = [
     "openrouter/free",
-    "google/gemini-2.0-flash-exp:free",
 ]
 
 
@@ -264,7 +263,7 @@ def _try_deepseek_vision(
         "max_tokens": 2000,
     }
     try:
-        with httpx.Client(timeout=45.0) as client:
+        with httpx.Client(timeout=20.0) as client:
             response = client.post(
                 "https://api.deepseek.com/chat/completions",
                 headers={
@@ -352,7 +351,7 @@ def _try_groq_vision(
         - None on hard failure
     """
     try:
-        with httpx.Client(timeout=25.0) as client:
+        with httpx.Client(timeout=10.0) as client:
             resp = client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={
@@ -432,7 +431,7 @@ def _try_openrouter_vision(
         - None on hard failure
     """
     try:
-        with httpx.Client(timeout=20.0) as client:
+        with httpx.Client(timeout=10.0) as client:
             resp = client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={

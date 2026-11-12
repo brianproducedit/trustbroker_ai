@@ -487,15 +487,9 @@ export const DeliveryVerification: React.FC = () => {
       id: ce.criterion_id,
       title: ce.title,
       description: ce.explanation || ce.title,
-      status: (
-        backendReport.requires_human_review &&
-        ce.status === 'fail' &&
-        /manual review|needs review|could not fully confirm|personal check/i.test(
-          `${ce.explanation || ''} ${ce.evidence_match_snippet || ''}`,
-        )
-          ? 'needs_review'
-          : ce.status
-      ),
+      status: backendReport.requires_human_review && !ce.passed
+        ? 'needs_review'
+        : ce.status,
       aiConfidence: (ce.score ?? 0) / 100,
       evidenceMatchSnippet: ce.evidence_match_snippet || undefined,
     })),
@@ -511,8 +505,14 @@ export const DeliveryVerification: React.FC = () => {
         const explanation = String(criterion.description || criterion.feedback || '').trim()
         const evidence = String(criterion.evidenceMatchSnippet || '').trim()
         const sameText = explanation && evidence && explanation.toLowerCase() === evidence.toLowerCase()
+        const normalizedStatus = (
+          (rawAssessment.requiresHumanReview || backendReport?.requires_human_review) &&
+          !criterion.passed &&
+          criterion.status === 'fail'
+        ) ? 'needs_review' : criterion.status
         return {
           ...criterion,
+          status: normalizedStatus,
           description: explanation,
           feedback: undefined,
           evidenceMatchSnippet: sameText ? '' : evidence,

@@ -326,11 +326,10 @@ def get_delivery_verification_status(
     for cr, title, criterion_status, evidence_match_snippet in criterion_rows:
         status_value = criterion_status.value if hasattr(criterion_status, "value") else criterion_status
         explanation = cr.explanation or ""
-        review_language = any(
-            phrase in f"{explanation} {evidence_match_snippet or ''}".lower()
-            for phrase in ("manual review", "needs review", "could not fully confirm", "personal check")
-        )
-        if report.requires_human_review and not cr.passed and review_language:
+        # A report-level human-review decision is authoritative for every
+        # non-passing criterion. Older persisted reports may have stored
+        # ``fail`` before the review state was normalized.
+        if report.requires_human_review and not cr.passed:
             status_value = "needs_review"
         criterion_evaluations.append({
             "criterion_id": str(cr.criterion_id),

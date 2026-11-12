@@ -91,10 +91,6 @@ GROQ_MODELS = [
 ]
 
 OPENROUTER_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemini-2.0-flash-exp:free",
-    "qwen/qwen-2.5-coder-32b-instruct:free",
-    "deepseek/deepseek-r1:free",
     "openrouter/auto",
 ]
 
@@ -284,7 +280,7 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
                 "temperature": 0.2,
                 "max_tokens": 4096,
             }
-            with httpx.Client(timeout=60.0) as client:
+            with httpx.Client(timeout=15.0) as client:
                 res = client.post(url, headers=headers, json=payload)
 
                 if res.status_code in (401, 403):
@@ -367,7 +363,7 @@ def call_deepseek(system_prompt: str, user_prompt: str, model_override: str = No
                 "temperature": 0.2,
                 "max_tokens": 3500,
             }
-            with httpx.Client(timeout=60.0) as client:
+            with httpx.Client(timeout=20.0) as client:
                 res = client.post(url, headers=headers, json=payload)
 
                 if res.status_code == 429:
