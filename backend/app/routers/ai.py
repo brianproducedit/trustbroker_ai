@@ -200,35 +200,57 @@ def studio_turn(
             "total_earnings_usd": total_earned,
         }
 
-    # 2. Build system and user prompt for Groq/OpenRouter
+    # 2. Build a deliberately narrow system prompt. The Copilot must describe
+    # TrustBroker's actual state, not invent a support organisation or workflow.
+    request_context = req.context or {}
     system_prompt = (
         "You are TrustBroker AI Operations Copilot, an analytical assistant embedded in the "
         f"AG Studio operations dashboard for the {req.workspace} workspace.\n"
-        "You have direct access to the live PostgreSQL database state for this user:\n"
+        "You have direct access only to the live PostgreSQL database state supplied below. "
+        "The database context is the source of truth; do not guess, generalize or invent facts.\n"
         f"DATABASE CONTEXT: {json.dumps(live_context, default=str)}\n\n"
+        f"ACTIVE SCREEN CONTEXT: {json.dumps(request_context, default=str)}\n\n"
         "Instructions:\n"
-        "1. Answer user questions directly, accurately and authoritatively based on the database context.\n"
-        "2. If asked about unpaid funded milestones, earnings, win rates or contract health, quote the exact figures.\n"
-        "3. Use simple English for a non-technical client or freelancer. Explain payment and contract terms in plain language.\n"
-        "4. Provide 2-3 concise, actionable next steps or suggested actions.\n"
-        "5. Format your response strictly as a JSON object with keys:\n"
+        "1. Answer only about the TrustBroker features and records represented in the supplied context: "
+        "contracts, milestones, deliveries, evidence verification, revisions, applications, earnings and PayPal Sandbox payment state.\n"
+        "2. Quote exact figures only when they are present in the context. Never invent dates, deadlines, amounts, contract names, progress, users or actions.\n"
+        "3. If the context does not contain the answer, say exactly: "
+        "'I do not have that information in the current TrustBroker data.' Then ask the user to open the relevant contract, milestone or delivery page.\n"
+        "4. Do not mention customer support, a support team, an administrator, an account manager or a person the user should contact. TrustBroker has no support workflow in this assistant.\n"
+        "5. Do not give generic internet, staffing, project-management or business advice unless the user explicitly asks for it and the advice is tied to a record in the context.\n"
+        "6. Use simple English. Give at most one next action, and only if it is an actual TrustBroker action supported by the context.\n"
+        "7. Format the response strictly as a JSON object with keys:\n"
         "   - 'response': string with clear markdown formatted explanation\n"
         "   - 'type': 'text' | 'chart' | 'table'\n"
         "   - 'suggested_actions': list of short action strings\n"
         "   - 'data_summary': object summarizing the referenced numbers\n"
     )
 
-    user_prompt = f"User query: {req.message}\nActive workspace: {req.workspace}"
+    user_prompt = (
+        f"User query: {req.message}\n"
+        f"Active workspace: {req.workspace}\n"
+        "Use only the supplied live context. If the question is unrelated or unsupported, say so plainly."
+    )
 
     # Call AI with fallbacks
     ai_result, provider_used = ai_provider.call_ai_with_fallbacks(system_prompt, user_prompt)
 
     if ai_result and isinstance(ai_result, dict) and "response" in ai_result:
+        response_text = str(ai_result.get("response", "")).strip()
+        unsupported_support_language = (
+            "contact support", "reach out to support", "support team",
+            "customer support", "account manager", "administrator",
+        )
+        if any(phrase in response_text.lower() for phrase in unsupported_support_language):
+            response_text = (
+                "I do not have that information in the current TrustBroker data. "
+                "Please open the relevant contract, milestone or delivery page so I can use its records."
+            )
         return StudioTurnResponse(
-            response=str(ai_result.get("response", "")),
+            response=response_text,
             workspace=req.workspace,
             type=str(ai_result.get("type", "text")),
-            suggested_actions=ai_result.get("suggested_actions", []),
+            suggested_actions=(ai_result.get("suggested_actions", []) or [])[:1],
             data_summary=ai_result.get("data_summary", live_context),
         )
 

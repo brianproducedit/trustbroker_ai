@@ -10,6 +10,7 @@ Dispatches evidence to specialized adapters by evidence_type:
 Aggregates factual results with scoring rules and persists report and criterion outcomes.
 """
 import logging
+import time
 import uuid
 from typing import Any, Dict, List, Optional
 from fastapi import HTTPException
@@ -77,6 +78,7 @@ def run_verification_orchestration(
     session.commit()
 
     try:
+        verification_started_at = time.perf_counter()
         # Pre-index files by extension/type
         image_files = [f for f in delivery_files if f.mime_type.startswith("image/") or f.file_name.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))]
         doc_files = [f for f in delivery_files if f.file_name.lower().endswith((".pdf", ".docx", ".txt", ".md"))]
@@ -87,6 +89,7 @@ def run_verification_orchestration(
         models_used: List[str] = []
 
         for c in criteria:
+            criterion_started_at = time.perf_counter()
             _ensure_not_cancelled(session, delivery.id)
             cid = str(c.id)
             etype = (c.evidence_type or "text").lower().strip()
@@ -231,6 +234,13 @@ def run_verification_orchestration(
             elif facts.get("adapter") in {"github_api", "zip_listing"}:
                 facts["semantic_evidence"] = False
             criterion_facts[cid] = facts
+            logger.info(
+                "Verification evidence collected delivery=%s criterion=%s adapter=%s elapsed=%.2fs",
+                delivery.id,
+                cid,
+                facts.get("adapter", "unknown"),
+                time.perf_counter() - criterion_started_at,
+            )
 
         # ------------------------------------------------------------------ #
         # AI Criterion Evaluator — connected to real orchestration path       #
@@ -257,6 +267,13 @@ def run_verification_orchestration(
             live_url=delivery.live_url or None,
             file_names=uploaded_file_names or None,
             evidence_findings=criterion_facts,
+        )
+        logger.info(
+            "Verification AI evaluation completed delivery=%s provider=%s elapsed=%.2fs total=%.2fs",
+            delivery.id,
+            ai_result.get("provider_used", "fallback:none"),
+            time.perf_counter() - verification_started_at,
+            time.perf_counter() - verification_started_at,
         )
 
         ai_provider_used: str = ai_result.get("provider_used", "fallback:none")

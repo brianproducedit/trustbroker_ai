@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   Bot,
   // Sparkles,
@@ -180,9 +179,6 @@ export const AICopilotFAB: React.FC<AICopilotFABProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-white tracking-tight">Studio AI Copilot</h3>
-                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-500/10 text-[9px] font-mono px-1.5 py-0">
-                    Live Account Data
-                  </Badge>
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {workspace === 'client' ? 'Your contract and payment assistant' : 'Your work and earnings assistant'}
