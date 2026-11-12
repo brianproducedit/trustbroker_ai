@@ -52,7 +52,7 @@ users = [
             "organization": "DevStudio Zimbabwe",
             "role": "freelancer",
             "primary_workspace": "freelancer",
-            "paypal_payout_email": "sb-5jzzm53788146@business.example.com",
+            "paypal_payout_email": "sb-0ddzz53854054@personal.example.com",
         },
     },
     {
@@ -87,7 +87,7 @@ users = [
             "organization": "DevStudio Zimbabwe",
             "role": "freelancer",
             "primary_workspace": "freelancer",
-            "paypal_payout_email": "sb-5jzzm53788146@business.example.com",
+            "paypal_payout_email": "sb-0ddzz53854054@personal.example.com",
         },
     },
 ]

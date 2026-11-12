@@ -121,7 +121,7 @@ def seed_database():
                 ],
                 "profile_completeness": 100,
                 "primary_workspace": "freelancer",
-                "paypal_payout_email": "sb-5jzzm53788146@business.example.com",
+                "paypal_payout_email": "sb-0ddzz53854054@personal.example.com",
             },
             {
                 "id": uuid.UUID("f2b2b247-9690-4a2d-88a6-5a994559dea7"),
@@ -222,7 +222,7 @@ def seed_database():
                 full_name="Tariro Moyo",
                 organization="DevStudio Zimbabwe",
                 primary_workspace="freelancer",
-                paypal_payout_email="sb-5jzzm53788146@business.example.com",
+                paypal_payout_email="sb-0ddzz53854054@personal.example.com",
                 created_at=now - timedelta(days=30),
                 updated_at=now - timedelta(days=30),
             )
@@ -231,8 +231,13 @@ def seed_database():
             print("  Created Freelancer Profile: Tariro Moyo (tariro@devstudio.co.zw)")
         else:
             freelancer_id = freelancer.id
-            if freelancer.paypal_payout_email in (None, "", "freelancer-payout@sandbox.paypal.com"):
-                freelancer.paypal_payout_email = "sb-5jzzm53788146@business.example.com"
+            if freelancer.paypal_payout_email in (
+                None,
+                "",
+                "freelancer-payout@sandbox.paypal.com",
+                "sb-5jzzm53788146@business.example.com",
+            ):
+                freelancer.paypal_payout_email = "sb-0ddzz53854054@personal.example.com"
                 session.add(freelancer)
                 session.commit()
 

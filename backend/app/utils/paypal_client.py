@@ -41,7 +41,6 @@ async def create_paypal_order(
     """Create an order with PayPal Orders v2 API with intent=CAPTURE."""
     token = await get_paypal_access_token()
     base_url = get_base_url()
-    paypal_batch_id = sender_batch_id or request_id
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -105,9 +104,10 @@ async def create_payout(
     """Send funds from the platform PayPal balance to the freelancer via Payouts API."""
     token = await get_paypal_access_token()
     base_url = get_base_url()
+    paypal_batch_id = sender_batch_id or request_id
     payload = {
         "sender_batch_header": {
-        "sender_batch_id": paypal_batch_id,
+            "sender_batch_id": paypal_batch_id,
             "email_subject": "You have a payout from TrustBroker AI",
             "email_message": note,
         },
