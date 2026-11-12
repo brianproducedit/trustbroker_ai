@@ -123,6 +123,12 @@ def run_verification_orchestration(
                         models_used.append(img_fact["model_used"])
                     # Merge observation into citation
                     facts["citation"] = f"{facts.get('citation', '')}; Vision: {img_fact.get('citation', '')}"
+                    facts["observation"] = img_fact.get("observation", "")
+                    facts["visual_elements"] = img_fact.get("visual_elements", [])
+                    facts["defects"] = img_fact.get("defects", [])
+                    facts["vision_confidence"] = img_fact.get("confidence")
+                    if img_fact.get("needs_review"):
+                        facts["needs_review"] = True
                     if not img_fact.get("passed", False):
                         facts["passed"] = False
                         facts["error"] = img_fact.get("observation", "Screenshot failed vision check")

@@ -232,7 +232,7 @@ def call_groq(system_prompt: str, user_prompt: str, model_override: str = None) 
                     logger.warning(f"Groq [{model}] returned HTTP {res.status_code}: {res.text[:200]}")
                     return None
 
-        result = _retry_with_backoff(_attempt, max_retries=1, base_delay=2.0)
+        result = _retry_with_backoff(_attempt, max_retries=0, base_delay=2.0)
         if result is _RATE_LIMITED:
             logger.info(f"Groq [{model}] rate-limited — skipping to next model immediately.")
             continue
@@ -317,7 +317,7 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
                     logger.warning(f"OpenRouter [{model}] returned HTTP {res.status_code}: {res.text[:200]}")
                     return None
 
-        result = _retry_with_backoff(_attempt, max_retries=1, base_delay=3.0)
+        result = _retry_with_backoff(_attempt, max_retries=0, base_delay=3.0)
         if result is _RATE_LIMITED:
             logger.info(f"OpenRouter [{model}] rate-limited — skipping to next model immediately.")
             continue
@@ -391,7 +391,7 @@ def call_deepseek(system_prompt: str, user_prompt: str, model_override: str = No
                     logger.warning(f"DeepSeek [{model}] returned HTTP {res.status_code}: {res.text[:200]}")
                     return None
 
-        result = _retry_with_backoff(_attempt, max_retries=1, base_delay=2.0)
+        result = _retry_with_backoff(_attempt, max_retries=0, base_delay=2.0)
         if result is _RATE_LIMITED:
             logger.info(f"DeepSeek [{model}] rate-limited — skipping to next model immediately.")
             continue

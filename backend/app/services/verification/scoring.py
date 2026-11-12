@@ -41,6 +41,37 @@ def _client_facing_evidence(citation: str, facts: Dict[str, Any]) -> str:
     return raw
 
 
+def _detailed_review_explanation(
+    llm_evaluation: Optional[Dict[str, Any]],
+    facts: Dict[str, Any],
+    client_evidence: str,
+    fallback: str,
+) -> str:
+    """Keep useful findings when a result must remain human-reviewable."""
+    explanation = str((llm_evaluation or {}).get("explanation") or "").strip()
+    observations: List[str] = []
+
+    observation = str(facts.get("observation") or "").strip()
+    if observation:
+        observations.append(observation)
+    elements = facts.get("visual_elements") or facts.get("visual_elements_found") or []
+    if isinstance(elements, list) and elements:
+        observations.append("Visible elements included " + ", ".join(str(item) for item in elements[:8]) + ".")
+    defects = facts.get("defects") or facts.get("defects_or_gaps") or []
+    if isinstance(defects, list) and defects:
+        observations.append("The check also noted: " + "; ".join(str(item) for item in defects[:8]) + ".")
+    if client_evidence and client_evidence not in observations:
+        observations.append(client_evidence)
+
+    if not explanation:
+        explanation = fallback
+    if observations:
+        details = " What was found: " + " ".join(observations)
+        if details.lower() not in explanation.lower():
+            explanation = explanation.rstrip(". ") + "." + details
+    return explanation
+
+
 def is_subjective_criterion(title: str, description: str) -> bool:
     """Detect whether a criterion relies on subjective human judgment."""
     combined = f"{title} {description}".lower()
@@ -78,13 +109,12 @@ def score_criterion_result(
             "passed": False,
             "score": 50,
             "confidence": 0.60,
-            "explanation": (
-                llm_evaluation.get("explanation")
-                if llm_evaluation and llm_evaluation.get("needs_review")
-                else (
-                    "The submitted evidence was found, but the automatic check could not confirm "
-                    "that the work meets this requirement. Please review it before approving payment."
-                )
+            "explanation": _detailed_review_explanation(
+                llm_evaluation,
+                adapter_facts,
+                client_evidence,
+                "The submitted evidence was found, but the automatic check could not confirm "
+                "that the work meets this requirement. Please review it before approving payment.",
             ),
             "evidence_match_snippet": client_evidence,
             "adapter_used": adapter_name,
@@ -100,9 +130,12 @@ def score_criterion_result(
             "passed": False,
             "score": 50,
             "confidence": 0.60,
-            "explanation": (
+            "explanation": _detailed_review_explanation(
+                llm_evaluation,
+                adapter_facts,
+                client_evidence,
                 "The automatic check could not fully confirm this requirement. "
-                "Manual review is required before approving payment. Please review the submitted evidence."
+                "Manual review is required before approving payment.",
             ),
             "evidence_match_snippet": client_evidence or "The submitted evidence needs human review.",
             "adapter_used": adapter_name,

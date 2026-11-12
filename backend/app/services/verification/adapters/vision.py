@@ -30,8 +30,6 @@ GROQ_VISION_MODELS = [
 OPENROUTER_VISION_MODELS = [
     "openrouter/free",
     "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3.2-11b-vision-instruct:free",
-    "qwen/qwen-2-vl-72b-instruct:free",
 ]
 
 
@@ -188,6 +186,8 @@ def _try_openrouter_vision_models(
         if result:
             last_result = result
             delay = max(delay, float(result.get("retry_after_seconds", 0.0)))
+            if result.get("rate_limited") or result.get("auth_failed"):
+                return last_result, delay
     return last_result, delay
 
 
@@ -264,7 +264,7 @@ def _try_deepseek_vision(
         "max_tokens": 2000,
     }
     try:
-        with httpx.Client(timeout=90.0) as client:
+        with httpx.Client(timeout=45.0) as client:
             response = client.post(
                 "https://api.deepseek.com/chat/completions",
                 headers={
@@ -432,7 +432,7 @@ def _try_openrouter_vision(
         - None on hard failure
     """
     try:
-        with httpx.Client(timeout=40.0) as client:
+        with httpx.Client(timeout=20.0) as client:
             resp = client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
@@ -454,7 +454,7 @@ def _try_openrouter_vision(
 
             if resp.status_code in (401, 403):
                 logger.warning(f"OpenRouter vision authentication failed (HTTP {resp.status_code})")
-                return {"error": f"Auth failed on OpenRouter/{model}"}
+                return {"error": f"Auth failed on OpenRouter/{model}", "auth_failed": True}
 
             if resp.status_code == 429:
                 delay = _parse_retry_delay(resp.headers)
