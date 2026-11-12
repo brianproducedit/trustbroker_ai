@@ -615,16 +615,21 @@ export const useContractStore = create<ContractStore>((set, get) => ({
           elapsedSeconds: 0,
         })
 
-        // If verification was queued in the background, poll until the report lands.
+        // If verification was queued in the background, poll only within the
+        // backend-advertised lifetime of this job. Never start a second run
+        // from the browser after the original job times out.
         if (verifyRes?.status === 'queued' && deliveryId) {
-          // Vision verification may deliberately wait for a provider rate-limit
-          // reset before retrying. Keep polling long enough for that job instead
-          // of starting a second verification request while it is still running.
-          for (let attempt = 0; attempt < 220 && !verifyRes?.report; attempt++) {
+          const POLL_MS = 8000
+          const maximumSeconds = Math.max(
+            60,
+            Number(verifyRes.maximum_seconds) || 420,
+          )
+          const deadline = Date.now() + maximumSeconds * 1000
+          for (; Date.now() < deadline && !verifyRes?.report;) {
             if (submission.isVerificationCancelled?.()) {
               throw new Error('Verification cancelled')
             }
-            await new Promise((r) => setTimeout(r, 1500))
+            await new Promise((r) => setTimeout(r, POLL_MS))
             const statusRes = await api.deliveries.verificationStatus(deliveryId)
             progress?.({
               deliveryId,
@@ -642,19 +647,23 @@ export const useContractStore = create<ContractStore>((set, get) => ({
               break
             }
           }
+
+          if (!verifyRes?.report && !['cancelled', 'interrupted', 'failed'].includes(verifyRes?.status)) {
+            throw new Error(
+              'Automated verification did not finish within the provider time window. Manual review is required.',
+            )
+          }
         }
 
         if (verifyRes?.status === 'cancelled' || submission.isVerificationCancelled?.()) {
           throw new Error('Verification cancelled')
         }
 
-        if ((!verifyRes || verifyRes.status === 'queued') && deliveryId) {
-          // Fallback to the synchronous AI verification endpoint if polling yielded nothing.
-          verifyRes = await api.ai.verifyDelivery({
-            contract_id: contractId,
-            milestone_id: milestoneId,
-            delivery_id: deliveryId,
-          })
+        if (verifyRes?.status === 'interrupted' || verifyRes?.status === 'failed') {
+          throw new Error(
+            verifyRes.error ||
+            'Automated verification was interrupted. Manual review is required.',
+          )
         }
 
         if (verifyRes) {

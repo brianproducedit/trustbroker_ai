@@ -14,7 +14,6 @@ import json
 import logging
 import os
 import re
-import time
 from typing import Any, Dict, List, Optional
 import httpx
 from app.config import settings
@@ -109,47 +108,24 @@ def inspect_screenshot_with_vision(
     ]
 
     last_error: Optional[str] = None
-    groq_rate_limited = False
-    openrouter_rate_limited = False
-    retry_delay = 0.0
 
-    # Give both free providers a first chance, then retry them once after the
-    # longest advertised reset window. This keeps good Groq capacity usable
-    # without spinning on a rate-limited endpoint.
-    for round_number in range(2):
-        if round_number == 1 and (groq_rate_limited or openrouter_rate_limited):
-            if retry_delay > 0:
-                logger.info(
-                    "Waiting %.1fs before retrying rate-limited vision providers for '%s'",
-                    retry_delay,
-                    criterion_title,
-                )
-                time.sleep(retry_delay)
+    # --- PRIMARY: Groq Vision ---
+    groq_result, _groq_delay = _try_groq_vision_models(system_prompt, user_content)
+    if groq_result and not groq_result.get("error"):
+        return groq_result
+    if groq_result:
+        last_error = groq_result["error"]
+        if groq_result.get("rate_limited"):
+            logger.info("Groq vision rate-limited — switching immediately to OpenRouter (no sleep).")
 
-        groq_result, groq_delay = _try_groq_vision_models(system_prompt, user_content)
-        if groq_result and not groq_result.get("error"):
-            return groq_result
-        if groq_result:
-            last_error = groq_result["error"]
-            groq_rate_limited = groq_result.get("rate_limited", False)
-            retry_delay = max(retry_delay, groq_delay)
-
-        openrouter_result, openrouter_delay = _try_openrouter_vision_models(system_prompt, user_content)
-        if openrouter_result and not openrouter_result.get("error"):
-            return openrouter_result
-        if openrouter_result:
-            last_error = openrouter_result["error"]
-            openrouter_rate_limited = openrouter_result.get("rate_limited", False)
-            retry_delay = max(retry_delay, openrouter_delay)
-
-        if round_number == 0 and not (groq_rate_limited or openrouter_rate_limited):
-            break
-        if round_number == 0:
-            logger.warning(
-                "Vision providers were rate-limited for criterion '%s'; "
-                "will retry Groq then OpenRouter after reset",
-                criterion_title,
-            )
+    # --- SECONDARY: OpenRouter Vision (immediate fallback, no waiting) ---
+    openrouter_result, _openrouter_delay = _try_openrouter_vision_models(system_prompt, user_content)
+    if openrouter_result and not openrouter_result.get("error"):
+        return openrouter_result
+    if openrouter_result:
+        last_error = openrouter_result["error"]
+        if openrouter_result.get("rate_limited"):
+            logger.info("OpenRouter vision also rate-limited — switching immediately to DeepSeek (no sleep).")
 
     # --- TERTIARY: DeepSeek Paid Fallback (image-capable review) ---
     # DeepSeek Flash supports image input through the official OpenAI-compatible

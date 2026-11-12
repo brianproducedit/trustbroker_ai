@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr, ValidationError
 from app.config import settings
 
 logger = logging.getLogger("trustbroker.ai")
@@ -15,7 +15,7 @@ class _CriterionEvaluation(BaseModel):
     criterion_id: StrictStr
     passed: StrictBool
     score: StrictInt = Field(ge=0, le=100)
-    confidence: float = Field(ge=0.0, le=1.0)
+    confidence: StrictFloat = Field(ge=0.0, le=1.0)
     explanation: StrictStr
     evidence_match_snippet: StrictStr
 
@@ -52,6 +52,18 @@ def _validate_delivery_evaluation(
             actual_ids,
         )
         return None
+
+    if any(item.passed != (item.score >= 80) for item in validated.criterion_evaluations):
+        logger.warning("AI evaluator returned inconsistent criterion pass flags and scores")
+        return None
+    if validated.passed != (
+        validated.overall_score >= 80
+        and all(item.passed for item in validated.criterion_evaluations)
+        and not validated.requires_human_review
+    ):
+        logger.warning("AI evaluator returned an inconsistent overall pass decision")
+        return None
+
     return validated.model_dump()
 
 
@@ -96,12 +108,23 @@ DEEPSEEK_MODELS = [
 # Retry & Resilience Utilities
 # ==============================================================================
 
+_RATE_LIMITED = object()  # Sentinel returned when a provider returns HTTP 429
+
+
 def _retry_with_backoff(func, max_retries: int = 2, base_delay: float = 1.0):
-    """Execute a function with exponential backoff retry on failure."""
+    """Execute a function with exponential backoff retry on 5xx/transient failures.
+
+    Rate-limit (429) responses are NOT retried — the caller must handle them by
+    immediately skipping to the next model/provider.  The sentinel ``_RATE_LIMITED``
+    is propagated as-is so the outer cascade loop can ``continue`` without sleeping.
+    """
     last_error = None
     for attempt in range(max_retries + 1):
         try:
             result = func()
+            # Propagate the rate-limited sentinel immediately — no sleep, no retry.
+            if result is _RATE_LIMITED:
+                return _RATE_LIMITED
             if result is not None:
                 return result
         except Exception as e:
@@ -186,14 +209,15 @@ def call_groq(system_prompt: str, user_prompt: str, model_override: str = None) 
                     reset = res.headers.get("x-ratelimit-reset-requests")
                     logger.warning(
                         "Groq rate-limited on %s (429). retry_after=%s "
-                        "requests_remaining=%s requests_limit=%s reset=%s",
+                        "requests_remaining=%s requests_limit=%s reset=%s — "
+                        "skipping immediately to next model (no sleep).",
                         model,
                         retry_after or "not-provided",
                         remaining or "not-provided",
                         rate_limit or "not-provided",
                         reset or "not-provided",
                     )
-                    raise Exception(f"Rate limited (429) on {model}")
+                    return _RATE_LIMITED  # skip immediately, no retry/sleep
 
                 if res.status_code == 200:
                     data = res.json()
@@ -209,6 +233,9 @@ def call_groq(system_prompt: str, user_prompt: str, model_override: str = None) 
                     return None
 
         result = _retry_with_backoff(_attempt, max_retries=1, base_delay=2.0)
+        if result is _RATE_LIMITED:
+            logger.info(f"Groq [{model}] rate-limited — skipping to next model immediately.")
+            continue
         if result:
             return result, model
         logger.info(f"Groq [{model}] exhausted, trying next model...")
@@ -266,8 +293,8 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
                     return None
 
                 if res.status_code == 429:
-                    logger.warning(f"OpenRouter rate-limited on {model}")
-                    raise Exception(f"Rate limited (429) on {model}")
+                    logger.warning(f"OpenRouter rate-limited on {model} — skipping immediately to next model (no sleep).")
+                    return _RATE_LIMITED  # skip immediately, no retry/sleep
 
                 if res.status_code == 200:
                     data = res.json()
@@ -291,6 +318,9 @@ def call_openrouter(system_prompt: str, user_prompt: str, model_override: str = 
                     return None
 
         result = _retry_with_backoff(_attempt, max_retries=1, base_delay=3.0)
+        if result is _RATE_LIMITED:
+            logger.info(f"OpenRouter [{model}] rate-limited — skipping to next model immediately.")
+            continue
         if result:
             return result, model
         if auth_failed:
@@ -341,8 +371,8 @@ def call_deepseek(system_prompt: str, user_prompt: str, model_override: str = No
                 res = client.post(url, headers=headers, json=payload)
 
                 if res.status_code == 429:
-                    logger.warning(f"DeepSeek rate-limited on {model}")
-                    raise Exception(f"Rate limited (429) on {model}")
+                    logger.warning(f"DeepSeek rate-limited on {model} — skipping immediately to next model (no sleep).")
+                    return _RATE_LIMITED  # skip immediately, no retry/sleep
 
                 if res.status_code == 200:
                     data = res.json()
@@ -362,6 +392,9 @@ def call_deepseek(system_prompt: str, user_prompt: str, model_override: str = No
                     return None
 
         result = _retry_with_backoff(_attempt, max_retries=1, base_delay=2.0)
+        if result is _RATE_LIMITED:
+            logger.info(f"DeepSeek [{model}] rate-limited — skipping to next model immediately.")
+            continue
         if result:
             return result, model
         logger.info(f"DeepSeek [{model}] exhausted, trying next model...")

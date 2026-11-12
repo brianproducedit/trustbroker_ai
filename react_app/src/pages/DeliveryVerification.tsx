@@ -1104,7 +1104,7 @@ export const DeliveryVerification: React.FC = () => {
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             <span className="flex-1 text-left">
               AI is inspecting evidence... usually under 1 minute
-              {verificationElapsedSeconds > 45 ? ' (a provider retry may take up to 5 minutes)' : ''}
+              {verificationElapsedSeconds > 45 ? ' (a provider retry may take up to 7 minutes)' : ''}
             </span>
             <Button
               type="button"
