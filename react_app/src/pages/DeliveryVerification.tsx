@@ -487,7 +487,15 @@ export const DeliveryVerification: React.FC = () => {
       id: ce.criterion_id,
       title: ce.title,
       description: ce.explanation || ce.title,
-      status: ce.status,
+      status: (
+        backendReport.requires_human_review &&
+        ce.status === 'fail' &&
+        /manual review|needs review|could not fully confirm|personal check/i.test(
+          `${ce.explanation || ''} ${ce.evidence_match_snippet || ''}`,
+        )
+          ? 'needs_review'
+          : ce.status
+      ),
       aiConfidence: (ce.score ?? 0) / 100,
       evidenceMatchSnippet: ce.evidence_match_snippet || undefined,
     })),
@@ -1236,9 +1244,16 @@ export const DeliveryVerification: React.FC = () => {
               </span>
               {(assessment.criteriaResults || []).map((c: any) => {
                 const isPass = c.status === 'pass'
-                const isFail = c.status === 'fail'
                 const explanation = String(c.feedback || c.description || '').trim()
                 const evidenceSnippet = String(c.evidenceMatchSnippet || '').trim()
+                const isReview = c.status === 'needs_review' || (
+                  assessment.requiresHumanReview &&
+                  !isPass &&
+                  /manual review|needs review|could not fully confirm|personal check/i.test(
+                    `${explanation} ${evidenceSnippet}`,
+                  )
+                )
+                const isFail = c.status === 'fail' && !isReview
                 const showEvidenceSnippet = evidenceSnippet && evidenceSnippet.toLowerCase() !== explanation.toLowerCase()
 
                 return (

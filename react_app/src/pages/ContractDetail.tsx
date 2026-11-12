@@ -638,7 +638,7 @@ export const ContractDetail: React.FC = () => {
             </Button>
 
             {/* ONLY Clients can add milestones */}
-            {isClient && (
+            {isClient && ['draft', 'open'].includes(contract.status) && !isBothAccepted && (
               <Button
                 size="sm"
                 onClick={() => setAddMilestoneOpen(true)}
@@ -1041,8 +1041,8 @@ export const ContractDetail: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* ONLY Clients can add milestones */}
-                  {isClient && (
+                  {/* Milestones can only be changed before award and acceptance */}
+                  {isClient && ['draft', 'open'].includes(contract.status) && !isBothAccepted && (
                     <Button
                       size="sm"
                       onClick={() => setAddMilestoneOpen(true)}
@@ -2175,7 +2175,7 @@ export const ContractDetail: React.FC = () => {
                 Contract Actions
               </span>
 
-              {isClient && (
+              {isClient && ['draft', 'open'].includes(contract.status) && !isBothAccepted && (
                 <Button
                   onClick={() => setAddMilestoneOpen(true)}
                   variant="outline"
