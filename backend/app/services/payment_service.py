@@ -42,6 +42,12 @@ def _active_funded_milestone(session: Session, contract_id: uuid.UUID) -> Option
     return None
 
 
+def _paypal_batch_id(milestone_id: uuid.UUID, attempt: int = 0) -> str:
+    """Create a PayPal-compatible sender batch ID (<= 30 safe characters)."""
+    suffix = f"-{attempt}" if attempt else ""
+    return f"TB{milestone_id.hex[:26 - len(suffix)]}{suffix}"
+
+
 def _next_unfunded_milestone(session: Session, contract_id: uuid.UUID) -> Optional[Milestone]:
     """Return the next unfunded milestone eligible for funding.
     
@@ -455,7 +461,14 @@ async def release_milestone_payout(
         require_client(client, contract)
 
     request_id = f"payout:{milestone.id}"
+    payout_attempt = 0
     existing = session.exec(select(Payout).where(Payout.idempotency_key == request_id)).first()
+    if not existing:
+        existing = session.exec(
+            select(Payout)
+            .where(Payout.milestone_id == milestone.id)
+            .order_by(Payout.created_at.desc())
+        ).first()
     if existing and existing.status in (
         PayoutStatus.SUCCESS.value,
         PayoutStatus.PROCESSING.value,
@@ -489,6 +502,24 @@ async def release_milestone_payout(
             status_code=400,
             detail="Freelancer has not configured a PayPal payout email. Payout cannot be released.",
         )
+
+    if existing and existing.status == PayoutStatus.FAILED.value:
+        # A DENIED/FAILED PayPal batch cannot be replayed with the same
+        # request ID. Create a new safe attempt while retaining the same
+        # local payout ledger row and milestone relationship.
+        retry_number = 1
+        while session.exec(
+            select(Payout).where(Payout.idempotency_key == f"{request_id}:retry:{retry_number}")
+        ).first():
+            retry_number += 1
+        payout_attempt = retry_number
+        request_id = f"{request_id}:retry:{retry_number}"
+        existing.idempotency_key = request_id
+        existing.status = PayoutStatus.PENDING.value
+        existing.paypal_batch_id = None
+        existing.paypal_item_id = None
+        existing.updated_at = datetime.now(timezone.utc)
+        session.add(existing)
 
     payout = existing or Payout(
         contract_id=contract.id,
@@ -527,6 +558,7 @@ async def release_milestone_payout(
             currency=contract.currency,
             receiver_email=receiver,
             request_id=request_id,
+            sender_batch_id=_paypal_batch_id(milestone.id, payout_attempt),
             note=f"TrustBroker payout for {contract.code} — {milestone.title}",
         )
     except (httpx.TimeoutException, TimeoutError) as exc:
